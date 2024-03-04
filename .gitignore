@@ -1,0 +1,5 @@
+.env
+.eva
+.idea
+.ipynb_checkpoints
+*.ipynb
