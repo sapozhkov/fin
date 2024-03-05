@@ -273,14 +273,17 @@ class ScalpingBot:
                 # прикидываем цены
                 last_candles = self.fetch_candles()
                 forecast_low, forecast_high = self.forecast_next_candle(last_candles)
+                diff = forecast_high - forecast_low
 
-                if not self.buy_order and self.can_buy():
-                    self.logger.debug(f"Заявка на покупку по  {forecast_low}")
-                    self.buy_order = self.buy_limit(forecast_low)
+                # проверяем что есть смысл торговать на таком диапазоне цен
+                if diff >= self.last_price * self.profit_percent:
+                    if not self.buy_order and self.can_buy():
+                        self.logger.debug(f"Заявка на покупку по  {forecast_low}")
+                        self.buy_order = self.buy_limit(forecast_low)
 
-                if not self.sell_order and self.can_sell():
-                    self.logger.debug(f"Заявка на продажу по  {forecast_high}")
-                    self.sell_order = self.sell_limit(forecast_high)
+                    if not self.sell_order and self.can_sell():
+                        self.logger.debug(f"Заявка на продажу по  {forecast_high}")
+                        self.sell_order = self.sell_limit(forecast_high)
 
             self.logger.debug(f"отторговали, ждем следующего цикла, sleep {self.sleep_no_trade}")
             time.sleep(self.sleep_trading)
