@@ -81,19 +81,13 @@ class ScalpingBot:
         self.sleep_trading = 10
 
         order_book = self.fetch_order_book()
-
         self.last_price = self.quotation_to_float(order_book.last_price)
-        self.desired_spread = self.last_price * 0.001  # todo подумать. это было на глаз сделано
-
-        self.side_buyers = 0
-        self.side_sellers = 0
-        self.side_balanced = 0
 
         self.buy_order = None
         self.sell_order = None
 
+        self.logger.info('INIT')
         self.logger.info(f"FIGI - {self.figi}")
-        self.logger.debug(f"desired_spread - {self.desired_spread}")
 
     @staticmethod
     def quotation_to_float(quotation):
@@ -132,29 +126,6 @@ class ScalpingBot:
 
     def update_values(self, order_book):
         self.last_price = self.quotation_to_float(order_book.last_price)
-
-    def analyze_spread(self, order_book):
-        if not (order_book.asks and order_book.bids):
-            return None
-        best_ask = order_book.asks[0].price  # Лучшая цена продажи
-        best_bid = order_book.bids[0].price  # Лучшая цена покупки
-        spread = best_ask - best_bid
-        self.logger.debug(f"Spread {spread}")
-        return spread
-
-    def analyze_market_side(self, order_book):
-        total_bid_volume = sum([bid.quantity for bid in order_book.bids])
-        total_ask_volume = sum([ask.quantity for ask in order_book.asks])
-
-        if total_bid_volume > total_ask_volume:
-            self.side_buyers += 1
-            return "buyers"
-        elif total_bid_volume < total_ask_volume:
-            self.side_sellers += 1
-            return "sellers"
-        else:
-            self.side_balanced += 1
-            return "balanced"
 
     def place_order(self, lots, operation, price=None, order_type=OrderType.ORDER_TYPE_MARKET):
         with Client(self.token) as client:
@@ -195,8 +166,19 @@ class ScalpingBot:
     # Базовая функция для загрузки данных последних свечей
     def fetch_candles(self, interval=CandleInterval.CANDLE_INTERVAL_5_MIN, candles_count=5):
         with Client(self.token) as client:
+            interval_duration_minutes = {
+                CandleInterval.CANDLE_INTERVAL_1_MIN: 1,
+                CandleInterval.CANDLE_INTERVAL_5_MIN: 5,
+                CandleInterval.CANDLE_INTERVAL_15_MIN: 15,
+                CandleInterval.CANDLE_INTERVAL_30_MIN: 30,
+                CandleInterval.CANDLE_INTERVAL_HOUR: 60,
+                CandleInterval.CANDLE_INTERVAL_4_HOUR: 240,
+                CandleInterval.CANDLE_INTERVAL_DAY: 1440,
+            }
+
             to_date = datetime.now(timezone.utc)
-            from_date = to_date - timedelta(minutes=interval.value * candles_count)
+            minutes_per_candle = interval_duration_minutes[interval]
+            from_date = to_date - timedelta(minutes=minutes_per_candle * candles_count)
 
             candles = client.market_data.get_candles(
                 figi=self.figi,
@@ -244,9 +226,6 @@ class ScalpingBot:
         return forecast_low, forecast_high
 
     def run(self):
-
-        self.logger.info('INIT')
-
         while True:
             if not self.can_trade():
                 self.logger.debug(f"can not trade, sleep {self.sleep_no_trade}")
@@ -274,6 +253,9 @@ class ScalpingBot:
                 last_candles = self.fetch_candles()
                 forecast_low, forecast_high = self.forecast_next_candle(last_candles)
                 diff = forecast_high - forecast_low
+
+                order_book = self.fetch_order_book()
+                self.update_values(order_book)
 
                 # проверяем что есть смысл торговать на таком диапазоне цен
                 if diff >= self.last_price * self.profit_percent:
