@@ -10,7 +10,7 @@
 
 Задача:
     1. V Имплемент предыдущей
-    2. O Учимся покупать внизу, а продавать вверху
+    2. 0 Учимся покупать внизу, а продавать вверху
 
 Логика v2:
     1. состояние анализа
@@ -49,6 +49,10 @@ from datetime import datetime, timezone, timedelta
 from datetime import time as datetime_time
 import pytz
 import logging
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from mplfinance.original_flavor import candlestick_ohlc
+import pandas as pd
 
 
 load_dotenv()
@@ -76,7 +80,7 @@ class ScalpingBot:
         self.state = self.STATE_HAS_1
 
         self.logger = logging.getLogger(__name__)
-        logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
         # self.sleep_no_trade = 60
         # self.sleep_trading = 20
@@ -94,6 +98,9 @@ class ScalpingBot:
 
         self.logger.info('INIT')
         self.logger.info(f"FIGI - {self.figi}")
+
+        plt.ion()  # Включаем интерактивный режим
+        self.figure, self.ax = plt.subplots()
 
     def reset_last_operation_time(self):
         self.last_successful_operation_time = datetime.now(timezone.utc)
@@ -229,8 +236,8 @@ class ScalpingBot:
         avg_low_change = sum(low_changes) / len(low_changes)
 
         # Применяем среднее процентное изменение к последним high и low для прогноза
-        forecast_high = high_prices[-1] * (1 + avg_high_change)
-        forecast_low = low_prices[-1] * (1 + avg_low_change)
+        forecast_high = round(high_prices[-1] * (1 + avg_high_change), 2)
+        forecast_low = round(low_prices[-1] * (1 + avg_low_change), 2)
 
         return forecast_low, forecast_high
 
@@ -268,6 +275,49 @@ class ScalpingBot:
             self.cancel_active_orders()
             self.reset_last_operation_time()
 
+    def plot_candles_with_forecast(self, candles, forecast_low, forecast_high):
+        # Преобразуем данные в DataFrame для удобства
+        data = [{
+            'time': candle.time,
+            'open': self.quotation_to_float(candle.open),
+            'high': self.quotation_to_float(candle.high),
+            'low': self.quotation_to_float(candle.low),
+            'close': self.quotation_to_float(candle.close)
+        } for candle in candles.candles]
+        df = pd.DataFrame(data)
+        df['time'] = pd.to_datetime(df['time'])
+        df['time'] = df['time'].apply(mdates.date2num)  # Преобразуем время в формат, подходящий для matplotlib
+
+        # Очищаем предыдущий график
+        self.ax.clear()
+
+        candlestick_ohlc(self.ax, df[['time', 'open', 'high', 'low', 'close']].values,
+                         width=0.6 / (24 * 60), colorup='g', colordown='r')
+
+        # Устанавливаем шкалу
+        self.ax.set_ylim(df[['low', 'high']].min().min(), df[['low', 'high']].max().max())
+
+        # Добавляем линии прогнозируемых цен покупки и продажи
+        plt.axhline(y=forecast_low, color='blue', linestyle='--', label='Forecast Buy Price')
+        plt.axhline(y=forecast_high, color='orange', linestyle='--', label='Forecast Sell Price')
+
+        # Добавляем цены заявок на покупку и продажу, если они существуют
+        if self.buy_order:
+            plt.axhline(y=self.buy_order.initial_order_price, color='purple', linestyle='-', label='Buy Order Price')
+        if self.sell_order:
+            plt.axhline(y=self.sell_order.initial_order_price, color='brown', linestyle='-', label='Sell Order Price')
+
+        # Форматируем ось времени
+        self.ax.xaxis_date()
+        self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+
+        # Добавляем легенду и заголовок
+        plt.legend()
+        plt.title('Candlestick chart with forecast and orders')
+
+        plt.draw()  # Перерисовываем график
+        plt.pause(0.1)  # Пауза, чтобы график успел обновиться
+
     def run(self):
         while True:
             if not self.can_trade():
@@ -294,12 +344,12 @@ class ScalpingBot:
             # сбрасываем активные заявки, если не было активных действий за последнее время
             self.check_and_cansel_orders()
 
+            # прикидываем цены
+            last_candles = self.fetch_candles()
+            forecast_low, forecast_high = self.forecast_next_candle(last_candles)
+
             # если нет хоть одной заявки
             if not self.buy_order or not self.sell_order:
-
-                # прикидываем цены
-                last_candles = self.fetch_candles()
-                forecast_low, forecast_high = self.forecast_next_candle(last_candles)
                 diff = round(forecast_high - forecast_low, 2)
 
                 order_book = self.fetch_order_book()
@@ -319,6 +369,8 @@ class ScalpingBot:
                 else:
                     self.logger.info(f"Пока не торгуем. "
                                      f"Ожидаемая разница в торгах - {diff}, а требуется минимум {need_profit} ")
+
+            self.plot_candles_with_forecast(last_candles, forecast_low, forecast_high)
 
             self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_no_trade}")
             time.sleep(self.sleep_trading)
