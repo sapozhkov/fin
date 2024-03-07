@@ -49,7 +49,7 @@
 import os
 import time
 from tinkoff.invest import Client, OrderDirection, OrderType, CandleInterval, Quotation, OrderExecutionReportStatus, \
-    RequestError, MarketDataResponse, GetCandlesResponse
+    RequestError, GetCandlesResponse
 from dotenv import load_dotenv
 from datetime import datetime, timezone, timedelta
 from datetime import time as datetime_time
@@ -83,6 +83,7 @@ class ScalpingBot:
 
         self.logger = logging.getLogger(__name__)
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        self.logger_last_message = ''
 
         # self.sleep_no_trade = 60
         # self.sleep_trading = 20
@@ -101,17 +102,22 @@ class ScalpingBot:
         # plt.ion()  # Включаем интерактивный режим
         # self.figure, self.ax = plt.subplots()
 
-        self.logger.info('INIT')
-        self.logger.info(f"FIGI - {self.figi}")
+        self.log('INIT')
+        self.log(f"FIGI - {self.figi}")
 
         # в пуле должна быть 1 акция
         # todo можно автоматически откупать при отсечке бездействия, но, кажется, это приведет только к потерям
         #   надо протестировать, может и 1 в пуле тоже не очень хорошо и начинать надо всегда снизу
         if self.get_instruments_count() == 0:
             self.buy()
-            self.logger.info('Покупаем первую акцию в пул')
+            self.log('Покупаем первую акцию в пул')
         self.state = self.STATE_HAS_1
 
+    def log(self, message, repeat=False):
+        if self.logger_last_message != message or repeat:
+            self.logger.info(message)
+            self.logger_last_message = message
+        
     def reset_last_operation_time(self):
         self.last_successful_operation_time = datetime.now(timezone.utc)
 
@@ -216,7 +222,7 @@ class ScalpingBot:
                 return candles
             except RequestError as e:
                 self.logger.error(f"Ошибка при запросе свечей: {e}")
-                return GetCandlesResponse()
+                return GetCandlesResponse([])
 
     def order_is_executed(self, order):
         with Client(self.token) as client:
@@ -225,6 +231,9 @@ class ScalpingBot:
 
     @staticmethod
     def forecast_next_candle(candles):
+        if len(candles.candles) < 2:
+            return None, None
+
         # Извлекаем значения high и low из свечей
         high_prices = [candle.high.units + candle.high.nano * 1e-9 for candle in candles.candles]
         low_prices = [candle.low.units + candle.low.nano * 1e-9 for candle in candles.candles]
@@ -260,12 +269,12 @@ class ScalpingBot:
         with Client(self.token) as client:
             if self.buy_order:
                 client.orders.cancel_order(account_id=self.account_id, order_id=self.buy_order.order_id)
-                self.logger.info(f"Buy order {self.buy_order.order_id} canceled")
+                self.log(f"Buy order {self.buy_order.order_id} canceled")
                 self.buy_order = None
 
             if self.sell_order:
                 client.orders.cancel_order(account_id=self.account_id, order_id=self.sell_order.order_id)
-                self.logger.info(f"Sell order {self.sell_order.order_id} canceled")
+                self.log(f"Sell order {self.sell_order.order_id} canceled")
                 self.sell_order = None
 
             self.reset_last_operation_time()
@@ -275,7 +284,7 @@ class ScalpingBot:
         no_operation_timeout_seconds = 600  # 10 минут = 600 секунд
         current_time = datetime.now(timezone.utc)
         if (current_time - self.last_successful_operation_time).total_seconds() > no_operation_timeout_seconds:
-            self.logger.info(f"{no_operation_timeout_seconds/60} минут без активности. Снимаем и переставляем заявки.")
+            self.log(f"{no_operation_timeout_seconds/60} минут без активности. Снимаем и переставляем заявки.")
             self.cancel_active_orders()
             self.reset_last_operation_time()
 
@@ -297,7 +306,7 @@ class ScalpingBot:
             # отслеживаем исполнение заявки на покупку
             if self.buy_order and self.order_is_executed(self.buy_order):
                 # todo вот это можно обновить и взять актуальную цену продажу
-                self.logger.info(f"BUY order executed, price {self.buy_order.initial_order_price}")
+                self.log(f"BUY order executed, price {self.buy_order.initial_order_price}")
                 self.change_state_bought()
                 self.buy_order = None
                 self.reset_last_operation_time()
@@ -305,7 +314,7 @@ class ScalpingBot:
             # отслеживаем исполнение заявки на продажу
             if self.sell_order and self.order_is_executed(self.sell_order):
                 # todo вот это можно обновить и взять актуальную цену продажу
-                self.logger.info(f"SELL order executed, price {self.sell_order.initial_order_price}")
+                self.log(f"SELL order executed, price {self.sell_order.initial_order_price}")
                 self.change_state_sold()
                 self.sell_order = None
                 self.reset_last_operation_time()
@@ -316,6 +325,9 @@ class ScalpingBot:
             # прикидываем цены
             last_candles = self.fetch_candles(candles_count=3)
             forecast_low, forecast_high = self.forecast_next_candle(last_candles)
+            if forecast_low is None:
+                self.log('Ошибка вычисления прогнозируемого диапазона. Перезапуск алгоритма')
+                continue
 
             # если нет хоть одной заявки
             if not self.buy_order or not self.sell_order:
@@ -332,21 +344,21 @@ class ScalpingBot:
                     # todo эксперимент. сужаем рамки торговли. проверяем будет ли выхлоп по количеству и качеству сделок
                     step = 0.1
                     if diff - 2 * step >= need_profit:
-                        self.logger.info(f"Сужаем диапазон на 2 шага")
+                        self.log(f"Сужаем диапазон на 2 шага")
                         forecast_high -= step
                         forecast_low += step
 
                     if not self.buy_order and self.can_buy():
                         self.buy_order = self.buy_limit(forecast_low)
-                        self.logger.info(f"Размещена заявка на покупку по {forecast_low}")
+                        self.log(f"Размещена заявка на покупку по {forecast_low}")
 
                     if not self.sell_order and self.can_sell():
                         self.sell_order = self.sell_limit(forecast_high)
-                        self.logger.info(f"Размещена заявка на продажу по {forecast_high}")
+                        self.log(f"Размещена заявка на продажу по {forecast_high}")
 
                 else:
-                    self.logger.info(f"Пока не торгуем. "
-                                     f"Ожидаемая разница в торгах - {diff}, а требуется минимум {need_profit} ")
+                    self.log(f"Пока не торгуем. "
+                             f"Ожидаемая разница в торгах - {diff}, а требуется минимум {need_profit} ")
 
             self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_no_trade}")
             time.sleep(self.sleep_trading)
