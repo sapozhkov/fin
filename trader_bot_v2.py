@@ -8,7 +8,10 @@
 Недостатки этой
     1. раз в 10 минут проводить
     2. сливает деньги за счет того, что не угадывает поведение рынка и продает ниже покупки
-            - пробуем сделать анализ на основе 3 последних свечей, а не 5
+            - пробуем сделать анализ на основе 3 последних свечей, а не 5 - не помогает
+            - надо корректировать заявки если кажется, что пойдет рост, сейчас сливается за минимальную цену,
+                    а потом идет сильный рост, да и слив идет иногда ниже покупки
+            - надо учитывать цену покупки? а может и не надо
 
 Задача:
     1. V Имплемент предыдущей
@@ -90,8 +93,8 @@ class ScalpingBot:
         self.sleep_no_trade = 20
         self.sleep_trading = 10
 
-        order_book = self.fetch_order_book()
-        self.last_price = self.quotation_to_float(order_book.last_price)
+        self.last_price = None
+        self.update_current_price()
 
         self.last_successful_operation_time = datetime.now(timezone.utc)
         self.reset_last_operation_time()
@@ -151,13 +154,25 @@ class ScalpingBot:
 
         return True
 
-    def fetch_order_book(self):
+    def update_current_price(self):
         with Client(self.token) as client:
-            order_book = client.market_data.get_order_book(figi=self.figi, depth=10)
-        return order_book
+            # Запрашиваем стакан цен с глубиной 1
+            try:
+                order_book = client.market_data.get_order_book(figi=self.figi, depth=1)
+            except RequestError as e:
+                self.logger.error(f"Ошибка при стакана: {e}")
+                return
 
-    def update_values(self, order_book):
-        self.last_price = self.quotation_to_float(order_book.last_price)
+            # Последняя цена может быть определена как среднее между лучшим предложением покупки и продажи
+            if order_book.bids and order_book.asks:
+                best_bid = order_book.bids[0].price.units + order_book.bids[0].price.nano * 1e-9
+                best_ask = order_book.asks[0].price.units + order_book.asks[0].price.nano * 1e-9
+                current_price = (best_bid + best_ask) / 2
+            else:
+                current_price = None  # В случае отсутствия данных в стакане
+
+            if current_price:
+                self.last_price = current_price
 
     def place_order(self, lots, operation, price=None, order_type=OrderType.ORDER_TYPE_MARKET):
         with Client(self.token) as client:
@@ -335,8 +350,7 @@ class ScalpingBot:
 
                 diff = round(forecast_high - forecast_low, 2)
 
-                order_book = self.fetch_order_book()
-                self.update_values(order_book)
+                self.update_current_price()
 
                 # проверяем что есть смысл торговать на таком диапазоне цен
                 if diff >= need_profit:
