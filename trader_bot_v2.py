@@ -177,16 +177,21 @@ class ScalpingBot:
     def place_order(self, lots, operation, price=None, order_type=OrderType.ORDER_TYPE_MARKET):
         with Client(self.token) as client:
             price_quotation = self.float_to_quotation(price=price) if price else None
-            order_response = client.orders.post_order(
-                order_id=str(datetime.now(timezone.utc)),
-                figi=self.figi,
-                quantity=lots,
-                direction=operation,
-                account_id=ACCOUNT_ID,
-                order_type=order_type,
-                price=price_quotation
-            )
-            return order_response
+            try:
+                order_response = client.orders.post_order(
+                    order_id=str(datetime.now(timezone.utc)),
+                    figi=self.figi,
+                    quantity=lots,
+                    direction=operation,
+                    account_id=ACCOUNT_ID,
+                    order_type=order_type,
+                    price=price_quotation
+                )
+                return order_response
+            except RequestError as e:
+                self.logger.error(f"Ошибка при выставлении заявки, operation={operation}"
+                                  f" price={price}, order_type= {order_type}")
+                return None
 
     def buy(self, lots=1, price=None):
         return self.place_order(lots, OrderDirection.ORDER_DIRECTION_BUY, price)
@@ -284,12 +289,12 @@ class ScalpingBot:
         with Client(self.token) as client:
             if self.buy_order:
                 client.orders.cancel_order(account_id=self.account_id, order_id=self.buy_order.order_id)
-                self.log(f"Buy order {self.buy_order.order_id} canceled")
+                self.log(f"Buy order {self.buy_order.order_id}, price={self.buy_order.initial_order_price} canceled")
                 self.buy_order = None
 
             if self.sell_order:
                 client.orders.cancel_order(account_id=self.account_id, order_id=self.sell_order.order_id)
-                self.log(f"Sell order {self.sell_order.order_id} canceled")
+                self.log(f"Sell order {self.sell_order.order_id}, price={self.sell_order.initial_order_price} canceled")
                 self.sell_order = None
 
             self.reset_last_operation_time()
@@ -364,11 +369,17 @@ class ScalpingBot:
 
                     if not self.buy_order and self.can_buy():
                         self.buy_order = self.buy_limit(forecast_low)
-                        self.log(f"Размещена заявка на покупку по {forecast_low}")
+                        if self.buy_order:
+                            self.log(f"Размещена заявка на покупку по {forecast_low}")
+                        else:
+                            self.log(f"НЕ Размещена заявка на покупку по {forecast_low}")
 
                     if not self.sell_order and self.can_sell():
                         self.sell_order = self.sell_limit(forecast_high)
-                        self.log(f"Размещена заявка на продажу по {forecast_high}")
+                        if self.sell_order:
+                            self.log(f"Размещена заявка на продажу по {forecast_high}")
+                        else:
+                            self.log(f"НЕ Размещена заявка на продажу по {forecast_high}")
 
                 else:
                     self.log(f"Пока не торгуем. "
