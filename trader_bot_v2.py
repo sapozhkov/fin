@@ -55,10 +55,6 @@ from datetime import datetime, timezone, timedelta
 from datetime import time as datetime_time
 import pytz
 import logging
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from mplfinance.original_flavor import candlestick_ohlc
-import pandas as pd
 
 
 load_dotenv()
@@ -101,6 +97,9 @@ class ScalpingBot:
 
         self.buy_order = None
         self.sell_order = None
+
+        # plt.ion()  # Включаем интерактивный режим
+        # self.figure, self.ax = plt.subplots()
 
         self.logger.info('INIT')
         self.logger.info(f"FIGI - {self.figi}")
@@ -280,28 +279,6 @@ class ScalpingBot:
             self.cancel_active_orders()
             self.reset_last_operation_time()
 
-    def plot_candles_with_forecast(self, candles, forecast_low, forecast_high):
-        # Преобразуем данные в DataFrame для удобства
-        data = [{
-            'time': candle.time,
-            'open': self.quotation_to_float(candle.open),
-            'high': self.quotation_to_float(candle.high),
-            'low': self.quotation_to_float(candle.low),
-            'close': self.quotation_to_float(candle.close)
-        } for candle in candles.candles]
-        df = pd.DataFrame(data)
-        df['time'] = pd.to_datetime(df['time'])
-        df['time'] = df['time'].apply(mdates.date2num)  # Преобразуем время в формат, подходящий для matplotlib
-
-        # Очищаем предыдущий график
-        self.ax.clear()
-
-        candlestick_ohlc(self.ax, df[['time', 'open', 'high', 'low', 'close']].values,
-                         width=0.6 / (24 * 60), colorup='g', colordown='r')
-
-        # Устанавливаем шкалу
-        self.ax.set_ylim(df[['low', 'high']].min().min(), df[['low', 'high']].max().max())
-
     def get_instruments_count(self):
         with Client(self.token) as client:
             portfolio = client.operations.get_portfolio(account_id=self.account_id)
@@ -370,8 +347,6 @@ class ScalpingBot:
                 else:
                     self.logger.info(f"Пока не торгуем. "
                                      f"Ожидаемая разница в торгах - {diff}, а требуется минимум {need_profit} ")
-
-            self.plot_candles_with_forecast(last_candles, forecast_low, forecast_high)
 
             self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_no_trade}")
             time.sleep(self.sleep_trading)
