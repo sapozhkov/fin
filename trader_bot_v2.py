@@ -190,7 +190,7 @@ class ScalpingBot:
                 return order_response
             except RequestError as e:
                 self.logger.error(f"Ошибка при выставлении заявки, operation={operation}"
-                                  f" price={price}, order_type= {order_type}")
+                                  f" price={price}, order_type= {order_type}. ({e})")
                 return None
 
     def buy(self, lots=1, price=None):
