@@ -30,6 +30,8 @@
     4. при исполнении заявки выставляем аналогичную повторно в соответствие с прогнозами
 
 Мысли на будущее:
+    0. если сильно активный рост, то можно останавливать торговлю
+    0. если долго растет, то должен быть разворот. тут нужна нейронка
     0. держать про запас 1 заявку ниже рынка на рубль, чтобы откупать пробои вниз.
         Но это должно скользить от текущей цены.
         Потом что-то с ними делать
@@ -74,7 +76,6 @@ logging.getLogger('tinkoff.invest').setLevel(logging.CRITICAL)
 class ScalpingBot:
     STATE_HAS_0 = 0
     STATE_HAS_1 = 1
-    STATE_HAS_2 = 2
 
     def __init__(self, token, figi, account_id, profit_percent=0.13, stop_loss_percent=1.0):
         self.commission = 0.0005
@@ -108,13 +109,8 @@ class ScalpingBot:
         self.log('INIT')
         self.log(f"FIGI - {self.figi}")
 
-        # в пуле должна быть 1 акция
-        # todo можно автоматически откупать при отсечке бездействия, но, кажется, это приведет только к потерям
-        #   надо протестировать, может и 1 в пуле тоже не очень хорошо и начинать надо всегда снизу
-        if self.get_instruments_count() == 0:
-            self.buy()
-            self.log('Покупаем первую акцию в пул')
-        self.state = self.STATE_HAS_1
+        # пока в нуле
+        self.state = self.STATE_HAS_0
 
     def log(self, message, repeat=False):
         if self.logger_last_message != message or repeat:
@@ -273,16 +269,16 @@ class ScalpingBot:
         return forecast_low, forecast_high
 
     def change_state_bought(self):
-        self.state = min(self.STATE_HAS_2, self.state + 1)
+        self.state = self.STATE_HAS_1
 
     def change_state_sold(self):
-        self.state = max(self.STATE_HAS_0, self.state - 1)
+        self.state = self.STATE_HAS_0
 
     def can_buy(self):
-        return self.state != self.STATE_HAS_2
+        return self.state == self.STATE_HAS_0
 
     def can_sell(self):
-        return self.state != self.STATE_HAS_0
+        return self.state == self.STATE_HAS_1
 
     def cancel_active_orders(self):
         """Отменяет все активные заявки."""
@@ -343,7 +339,7 @@ class ScalpingBot:
             self.check_and_cansel_orders()
 
             # прикидываем цены
-            last_candles = self.fetch_candles(candles_count=3)
+            last_candles = self.fetch_candles(candles_count=4)
             forecast_low, forecast_high = self.forecast_next_candle(last_candles)
             if forecast_low is None:
                 self.log('Ошибка вычисления прогнозируемого диапазона. Перезапуск алгоритма')
