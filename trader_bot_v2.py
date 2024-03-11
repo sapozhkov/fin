@@ -147,6 +147,9 @@ class ScalpingBot:
         if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
             price = -price
         commission = self.quotation_to_float(order.executed_commission, 2)
+        # хак. иногда итоговая комиссия не проставляется в нужное поле
+        if commission == 0:
+            commission = self.quotation_to_float(order.initial_commission, 2)
         self.db_add_deal(
             order.direction,
             price,
