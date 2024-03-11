@@ -19,8 +19,8 @@
     1. V Имплемент предыдущей
     2. V Учимся покупать внизу, а продавать вверху
     3. V изменяющаяся заявка
-    4. -> нейронка для угадывания тренда
-    5. -> настроить стоп-лосс и тейк-профит
+    4. -> настроить стоп-лосс и тейк-профит
+    5. -> нейронка для угадывания тренда
 
 Логика v2:
     1. состояние анализа
@@ -72,6 +72,10 @@ class ScalpingBot:
     STATE_HAS_0 = 0
     STATE_HAS_1 = 1
 
+    # profit_percent
+    #   0.13 - 0.2
+    #   0.19 - 0.3
+    #
     def __init__(self, token, figi, account_id, profit_percent=0.13, stop_loss_percent=1.0):
         self.commission = 0.0005
         self.token = token
@@ -105,7 +109,7 @@ class ScalpingBot:
         # пока в нуле
         self.state = self.STATE_HAS_0
 
-        self.db_alg_name = f"{self.figi}_{__name__}"
+        self.db_alg_name = f"{self.figi}_{__file__}"
         self.db_file_name = 'db/trading_bot.db'
 
         # Создание базы данных
@@ -137,12 +141,12 @@ class ScalpingBot:
         # conn.close()
 
     def db_add_deal_by_order(self, order):
-        price = self.quotation_to_float(order.initial_order_price)
-        if order.order_type == OrderDirection.ORDER_DIRECTION_BUY:
+        price = self.quotation_to_float(order.executed_order_price)
+        if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
             price = -price
-        commission = self.quotation_to_float(order.initial_commission, 2)
+        commission = self.quotation_to_float(order.executed_commission, 2)
         self.db_add_deal(
-            order.order_type,
+            order.direction,
             price,
             commission,
             round(price - commission, 2)
@@ -289,7 +293,10 @@ class ScalpingBot:
     def order_is_executed(self, order):
         with Client(self.token) as client:
             order_state = client.orders.get_order_state(account_id=self.account_id, order_id=order.order_id)
-            return order_state.execution_report_status == OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL
+            return (
+                order_state.execution_report_status == OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL,
+                order_state
+            )
 
     def forecast_next_candle(self, candles):
         if len(candles.candles) < 2:
@@ -333,19 +340,27 @@ class ScalpingBot:
     def cancel_buy_order(self):
         with Client(self.token) as client:
             if self.buy_order:
-                client.orders.cancel_order(account_id=self.account_id, order_id=self.buy_order.order_id)
-                self.log(f"Buy order {self.buy_order.order_id}, "
-                         f"price={self.quotation_to_float(self.buy_order.initial_order_price)} canceled")
+                try:
+                    client.orders.cancel_order(account_id=self.account_id, order_id=self.buy_order.order_id)
+                    self.log(f"Buy order {self.buy_order.order_id}, "
+                             f"price={self.quotation_to_float(self.buy_order.initial_order_price)} canceled")
+                except RequestError as e:
+                    self.logger.error(f"Ошибка при закрытии заявки на покупку: {e}")
                 self.buy_order = None
+
         self.reset_last_operation_time()
 
     def cancel_sell_order(self):
         with Client(self.token) as client:
             if self.sell_order:
-                client.orders.cancel_order(account_id=self.account_id, order_id=self.sell_order.order_id)
-                self.log(f"Sell order {self.sell_order.order_id}, "
-                         f"price={self.quotation_to_float(self.sell_order.initial_order_price)} canceled")
+                try:
+                    client.orders.cancel_order(account_id=self.account_id, order_id=self.sell_order.order_id)
+                    self.log(f"Sell order {self.sell_order.order_id}, "
+                             f"price={self.quotation_to_float(self.sell_order.initial_order_price)} canceled")
+                except RequestError as e:
+                    self.logger.error(f"Ошибка при закрытии заявки на продажу: {e}")
                 self.sell_order = None
+
         self.reset_last_operation_time()
 
     def check_and_cansel_orders(self):
@@ -387,22 +402,24 @@ class ScalpingBot:
                 continue
 
             # отслеживаем исполнение заявки на покупку
-            if self.buy_order and self.order_is_executed(self.buy_order):
-                # todo вот это можно обновить и взять актуальную цену продажу
-                self.log(f"BUY order executed, price {self.quotation_to_float(self.buy_order.initial_order_price)}")
-                self.db_add_deal_by_order(self.buy_order)
-                self.change_state_bought()
-                self.buy_order = None
-                self.reset_last_operation_time()
+            if self.buy_order:
+                order_is_executed, order_status = self.order_is_executed(self.buy_order)
+                if order_is_executed:
+                    self.log(f"BUY order executed, price {self.quotation_to_float(order_status.executed_order_price)}")
+                    self.db_add_deal_by_order(order_status)
+                    self.change_state_bought()
+                    self.buy_order = None
+                    self.reset_last_operation_time()
 
             # отслеживаем исполнение заявки на продажу
-            if self.sell_order and self.order_is_executed(self.sell_order):
-                # todo вот это можно обновить и взять актуальную цену продажу
-                self.log(f"SELL order executed, price {self.quotation_to_float(self.sell_order.initial_order_price)}")
-                self.db_add_deal_by_order(self.sell_order)
-                self.change_state_sold()
-                self.sell_order = None
-                self.reset_last_operation_time()
+            if self.sell_order:
+                order_is_executed, order_status = self.order_is_executed(self.sell_order)
+                if order_is_executed:
+                    self.log(f"SELL order executed, price {self.quotation_to_float(order_status.initial_order_price)}")
+                    self.db_add_deal_by_order(order_status)
+                    self.change_state_sold()
+                    self.sell_order = None
+                    self.reset_last_operation_time()
 
             # сбрасываем активные заявки, если не было активных действий за последнее время
             self.check_and_cansel_orders()
@@ -424,7 +441,7 @@ class ScalpingBot:
                 # проверяем что есть смысл торговать на таком диапазоне цен
                 if diff >= need_profit:
 
-                    # todo эксперимент. сужаем рамки торговли. проверяем будет ли выхлоп по количеству и качеству сделок
+                    # эксперимент. сужаем рамки торговли. проверяем будет ли выхлоп по количеству и качеству сделок
                     step = 0.1
                     if diff - 2 * step >= need_profit:
                         self.log(f"Сужаем диапазон на 2 шага")
