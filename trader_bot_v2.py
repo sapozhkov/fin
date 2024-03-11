@@ -6,16 +6,21 @@
     2. ~ редко торгует (раз в час/два) - в процессе
 
 Недостатки этой
-    1. раз в 10 минут проводить
-    2. сливает деньги за счет того, что не угадывает поведение рынка и продает ниже покупки
+    1. готово - раз в 10 минут проводить
+    2. готово - сливает деньги за счет того, что не угадывает поведение рынка и продает ниже покупки
             - пробуем сделать анализ на основе 3 последних свечей, а не 5 - не помогает
             - надо корректировать заявки если кажется, что пойдет рост, сейчас сливается за минимальную цену,
                     а потом идет сильный рост, да и слив идет иногда ниже покупки
             - надо учитывать цену покупки? а может и не надо
+    3. на подъеме вроде отыгрывала норм, но проверить без фоновых акций
+    4. теряет на 4 свечах, если начинает болтать туда-сюда тренд
 
 Задача:
     1. V Имплемент предыдущей
-    2. 0 Учимся покупать внизу, а продавать вверху
+    2. V Учимся покупать внизу, а продавать вверху
+    3. V изменяющаяся заявка
+    4. -> нейронка для угадывания тренда
+    5. -> настроить стоп-лосс и тейк-профит
 
 Логика v2:
     1. состояние анализа
@@ -35,18 +40,7 @@
     0. держать про запас 1 заявку ниже рынка на рубль, чтобы откупать пробои вниз.
         Но это должно скользить от текущей цены.
         Потом что-то с ними делать
-    0. смещаем заявку, если ориентировочная цена ушла, а сделка долго висит
-    1. сделать 1 купленную акцию в базе (тогда можно её продать, как шорт, но без мажоритарной торговли)
-        в итоге в зависимости от состояния рынка можно получать доход
-        максимум 2 акции
-            0 - всё продано, ждем откупа назад
-            1 - одна лежит на балансе
-            2 - балансная + купленная. Ждем продажи
     2. сделать отсечку, если сильно падает и уход в сон?
-    3. ожидаем N минут и меняем стратегию, если ничего не происходит
-        - хотим купить внизу, а туда уже не упадем
-        - хотим продать вверху, а скатились вниз
-        тогда фиксируем убыток и начинаем заново
 
 За основу взят алгоритм сгенеренный ChatGPT с доработками логики
 """
@@ -60,6 +54,7 @@ from datetime import datetime, timezone, timedelta
 from datetime import time as datetime_time
 import pytz
 import logging
+import sqlite3
 
 
 load_dotenv()
@@ -104,14 +99,64 @@ class ScalpingBot:
         self.buy_order = None
         self.sell_order = None
 
-        # plt.ion()  # Включаем интерактивный режим
-        # self.figure, self.ax = plt.subplots()
-
         self.log('INIT')
         self.log(f"FIGI - {self.figi}")
 
         # пока в нуле
         self.state = self.STATE_HAS_0
+
+        self.db_alg_name = f"{self.figi}_{__name__}"
+        self.db_file_name = 'db/trading_bot.db'
+
+        # Создание базы данных
+        # Подключение к базе данных (файл будет создан, если не существует)
+        # conn = sqlite3.connect('db/trading_bot.db')
+        #
+        # # Создание курсора
+        # cursor = conn.cursor()
+        #
+        # # Создание таблицы сделок
+        # cursor.execute('''
+        # CREATE TABLE IF NOT EXISTS deals (
+        #     id INTEGER PRIMARY KEY,
+        #     algorithm_name TEXT NOT NULL,
+        #     type INTEGER NOT NULL,
+        #     instrument TEXT NOT NULL,
+        #     datetime DATETIME DEFAULT CURRENT_TIMESTAMP,
+        #     price REAL NOT NULL,
+        #     commission REAL NOT NULL,
+        #     total REAL NOT NULL
+        # )
+        # ''')
+        #
+        # # Создание индексов
+        # cursor.execute('CREATE INDEX IF NOT EXISTS idx_instrument_datetime ON deals (instrument, datetime)')
+        # cursor.execute('CREATE INDEX IF NOT EXISTS idx_datetime ON deals (datetime)')
+        #
+        # # Закрытие соединения
+        # conn.close()
+
+    def db_add_deal_by_order(self, order):
+        price = self.quotation_to_float(order.initial_order_price)
+        if order.order_type == OrderDirection.ORDER_DIRECTION_BUY:
+            price = -price
+        commission = self.quotation_to_float(order.initial_commission, 2)
+        self.db_add_deal(
+            order.order_type,
+            price,
+            commission,
+            round(price - commission, 2)
+        )
+
+    def db_add_deal(self, deal_type, price, commission, total):
+        conn = sqlite3.connect(self.db_file_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+        INSERT INTO deals (algorithm_name, type, instrument, price, commission, total)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ''', (self.db_alg_name, deal_type, self.figi, price, commission, total))
+        conn.commit()
+        conn.close()
 
     def log(self, message, repeat=False):
         if self.logger_last_message != message or repeat:
@@ -121,9 +166,10 @@ class ScalpingBot:
     def reset_last_operation_time(self):
         self.last_successful_operation_time = datetime.now(timezone.utc)
 
-    @staticmethod
-    def quotation_to_float(quotation):
-        return quotation.units + quotation.nano * 1e-9
+    def quotation_to_float(self, quotation, digits=None):
+        if digits is None:
+            digits = self.round_signs
+        return round(quotation.units + quotation.nano * 1e-9, digits)
 
     def float_to_quotation(self, price) -> Quotation:
         return Quotation(units=int(price), nano=int((self.round(price - int(price))) * 1e9))
@@ -344,6 +390,7 @@ class ScalpingBot:
             if self.buy_order and self.order_is_executed(self.buy_order):
                 # todo вот это можно обновить и взять актуальную цену продажу
                 self.log(f"BUY order executed, price {self.quotation_to_float(self.buy_order.initial_order_price)}")
+                self.db_add_deal_by_order(self.buy_order)
                 self.change_state_bought()
                 self.buy_order = None
                 self.reset_last_operation_time()
@@ -352,6 +399,7 @@ class ScalpingBot:
             if self.sell_order and self.order_is_executed(self.sell_order):
                 # todo вот это можно обновить и взять актуальную цену продажу
                 self.log(f"SELL order executed, price {self.quotation_to_float(self.sell_order.initial_order_price)}")
+                self.db_add_deal_by_order(self.sell_order)
                 self.change_state_sold()
                 self.sell_order = None
                 self.reset_last_operation_time()
