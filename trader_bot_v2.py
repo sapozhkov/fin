@@ -55,6 +55,8 @@ from datetime import time as datetime_time
 import pytz
 import logging
 import sqlite3
+from signal import *
+import sys
 
 
 load_dotenv()
@@ -394,11 +396,24 @@ class ScalpingBot:
     def round(self, price):
         return round(price, self.round_signs)
 
+    def stop(self):
+        self.log("Остановка бота...")
+        self.cancel_active_orders()
+
+        # продать откупленные инструменты
+        if self.state == self.STATE_HAS_1:
+            order_status = self.sell()
+            self.log(f"SELL order executed, price {self.quotation_to_float(order_status.executed_order_price)}")
+            self.db_add_deal_by_order(order_status)
+            self.change_state_sold()
+            self.sell_order = None
+
     def run(self):
         while True:
             if not self.can_trade():
-                self.logger.debug(f"can not trade, sleep {self.sleep_no_trade}")
+                self.log(f"can not trade, sleep {self.sleep_no_trade}")
                 time.sleep(self.sleep_no_trade)  # Спим, если торговать нельзя
+                print('.', end='')
                 continue
 
             # отслеживаем исполнение заявки на покупку
@@ -415,7 +430,7 @@ class ScalpingBot:
             if self.sell_order:
                 order_is_executed, order_status = self.order_is_executed(self.sell_order)
                 if order_is_executed:
-                    self.log(f"SELL order executed, price {self.quotation_to_float(order_status.initial_order_price)}")
+                    self.log(f"SELL order executed, price {self.quotation_to_float(order_status.executed_order_price)}")
                     self.db_add_deal_by_order(order_status)
                     self.change_state_sold()
                     self.sell_order = None
@@ -493,4 +508,14 @@ class ScalpingBot:
 
 
 bot = ScalpingBot(TOKEN, FIGI, ACCOUNT_ID)
+
+
+def clean(*args):
+    bot.stop()
+    sys.exit(0)
+
+
+for sig in (SIGABRT, SIGILL, SIGINT, SIGSEGV, SIGTERM):
+    signal(sig, clean)
+
 bot.run()
