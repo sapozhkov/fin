@@ -29,10 +29,10 @@
         - ставим заявку на покупку по низу и продажу по верху
     2. сохраняем список заявок и периодически проверяем их состояние
     3. крутимся вокруг 1 акции
-        - 1 заявка на покупку по низу
-        - 1 заявка на продажу по верху
-        - 1 акция в наличии
-    4. при исполнении заявки выставляем аналогичную повторно в соответствие с прогнозами
+        - 1 заявка на покупку по низу, если нет купленных
+        - 1 заявка на продажу по верху, если есть купленные
+    4. при исполнении заявки выставляем другую в соответствие с прогнозами
+    5. при повторном прогоне заявки могут быть изменены, если поменялся прогноз границ свечи
 
 Мысли на будущее:
     0. если сильно активный рост, то можно останавливать торговлю
@@ -81,7 +81,12 @@ class ScalpingBot:
     #   0.13 - 0.2
     #   0.19 - 0.3
     #
-    def __init__(self, token, figi, instrument, account_id, profit_percent=0.13, stop_loss_percent=1.0):
+    def __init__(
+            self, token, figi, instrument, account_id,
+            profit_percent=0.13,
+            stop_loss_percent=1.0,
+            candles_count=5,
+    ):
         self.commission = 0.0005
         self.token = token
         self.figi = figi
@@ -89,6 +94,7 @@ class ScalpingBot:
         self.account_id = account_id
         self.profit_percent = profit_percent / 100
         self.stop_loss_percent = stop_loss_percent / 100
+        self.candles_count = candles_count
         self.round_signs = 1
 
         self.logger = logging.getLogger(__name__)
@@ -454,7 +460,7 @@ class ScalpingBot:
             self.check_and_cansel_orders()
 
             # прикидываем цены
-            last_candles = self.fetch_candles(candles_count=4)
+            last_candles = self.fetch_candles(candles_count=self.candles_count)
             forecast_low, forecast_high = self.forecast_next_candle(last_candles)
             if forecast_low is None:
                 self.log('Ошибка вычисления прогнозируемого диапазона. Перезапуск алгоритма')
@@ -521,7 +527,7 @@ class ScalpingBot:
             time.sleep(self.sleep_trading)
 
 
-bot = ScalpingBot(TOKEN, FIGI, INSTRUMENT, ACCOUNT_ID)
+bot = ScalpingBot(TOKEN, FIGI, INSTRUMENT, ACCOUNT_ID, candles_count=4)
 
 
 def clean(*_args):
