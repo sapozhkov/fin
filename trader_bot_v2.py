@@ -513,7 +513,7 @@ class ScalpingBot:
 bot = ScalpingBot(TOKEN, FIGI, ACCOUNT_ID)
 
 
-def clean(*args):
+def clean(*_args):
     bot.stop()
     sys.exit(0)
 
