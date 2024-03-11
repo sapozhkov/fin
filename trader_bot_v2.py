@@ -47,6 +47,7 @@
 
 import os
 import time
+from pathlib import Path
 from tinkoff.invest import Client, OrderDirection, OrderType, CandleInterval, Quotation, OrderExecutionReportStatus, \
     RequestError, GetCandlesResponse
 from dotenv import load_dotenv
@@ -65,7 +66,9 @@ TOKEN = os.getenv("INVEST_TOKEN")
 ACCOUNT_ID = os.getenv("ACCOUNT_ID")
 
 # FIGI = 'BBG004730N88'  # SBER
-FIGI = 'BBG00F9XX7H4'  # RNFT
+
+INSTRUMENT = 'RNFT'
+FIGI = 'BBG00F9XX7H4'
 
 logging.getLogger('tinkoff.invest').setLevel(logging.CRITICAL)
 
@@ -78,10 +81,11 @@ class ScalpingBot:
     #   0.13 - 0.2
     #   0.19 - 0.3
     #
-    def __init__(self, token, figi, account_id, profit_percent=0.13, stop_loss_percent=1.0):
+    def __init__(self, token, figi, instrument, account_id, profit_percent=0.13, stop_loss_percent=1.0):
         self.commission = 0.0005
         self.token = token
         self.figi = figi
+        self.instrument = instrument
         self.account_id = account_id
         self.profit_percent = profit_percent / 100
         self.stop_loss_percent = stop_loss_percent / 100
@@ -111,7 +115,10 @@ class ScalpingBot:
         # пока в нуле
         self.state = self.STATE_HAS_0
 
-        self.db_alg_name = f"{self.figi}_{__file__}"
+        file_path = Path(__file__)
+        file_name = file_path.name
+
+        self.db_alg_name = f"{instrument}_{file_name}"
         self.db_file_name = 'db/trading_bot.db'
 
         # Создание базы данных
@@ -163,7 +170,7 @@ class ScalpingBot:
         cursor.execute('''
         INSERT INTO deals (algorithm_name, type, instrument, price, commission, total)
         VALUES (?, ?, ?, ?, ?, ?)
-        ''', (self.db_alg_name, deal_type, self.figi, price, commission, total))
+        ''', (self.db_alg_name, deal_type, self.instrument, price, commission, total))
         conn.commit()
         conn.close()
 
@@ -510,7 +517,7 @@ class ScalpingBot:
             time.sleep(self.sleep_trading)
 
 
-bot = ScalpingBot(TOKEN, FIGI, ACCOUNT_ID)
+bot = ScalpingBot(TOKEN, FIGI, INSTRUMENT, ACCOUNT_ID)
 
 
 def clean(*_args):
