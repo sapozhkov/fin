@@ -66,9 +66,7 @@ TOKEN = os.getenv("INVEST_TOKEN")
 ACCOUNT_ID = os.getenv("ACCOUNT_ID")
 
 # FIGI = 'BBG004730N88'  # SBER
-
-INSTRUMENT = 'RNFT'
-FIGI = 'BBG00F9XX7H4'
+TICKER = 'RNFT'
 
 logging.getLogger('tinkoff.invest').setLevel(logging.CRITICAL)
 
@@ -82,24 +80,24 @@ class ScalpingBot:
     #   0.19 - 0.3
     #
     def __init__(
-            self, token, figi, instrument, account_id,
+            self, token, ticker, account_id,
             profit_percent=0.13,
             stop_loss_percent=1.0,
             candles_count=5,
     ):
+        self.logger = logging.getLogger(__name__)
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        self.logger_last_message = ''
+
         self.commission = 0.0005
         self.token = token
-        self.figi = figi
-        self.instrument = instrument
+        self.figi = self.find_figi_by_ticker(ticker)
+        self.ticker = ticker
         self.account_id = account_id
         self.profit_percent = profit_percent / 100
         self.stop_loss_percent = stop_loss_percent / 100
         self.candles_count = candles_count
         self.round_signs = 1
-
-        self.logger = logging.getLogger(__name__)
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-        self.logger_last_message = ''
 
         # self.sleep_no_trade = 60
         # self.sleep_trading = 20
@@ -116,7 +114,7 @@ class ScalpingBot:
         self.sell_order = None
 
         self.log('INIT')
-        self.log(f"FIGI - {self.figi}")
+        self.log(f"FIGI - {self.figi} ({self.ticker})")
 
         # пока в нуле
         self.state = self.STATE_HAS_0
@@ -124,7 +122,7 @@ class ScalpingBot:
         file_path = Path(__file__)
         file_name = file_path.name
 
-        self.db_alg_name = f"{instrument}_{file_name}"
+        self.db_alg_name = f"{ticker}_{file_name}"
         self.db_file_name = 'db/trading_bot.db'
 
         # Создание базы данных
@@ -155,6 +153,16 @@ class ScalpingBot:
         # # Закрытие соединения
         # conn.close()
 
+    def find_figi_by_ticker(self, ticker):
+        with Client(self.token) as client:
+            # Используем метод инструментов для поиска по тикеру
+            instruments = client.instruments.shares()
+            for instrument in instruments.instruments:
+                if instrument.ticker == ticker:
+                    return instrument.figi
+        self.log(f"Не найден figi для {ticker}")
+        exit()
+
     def db_add_deal_by_order(self, order):
         price = self.quotation_to_float(order.executed_order_price)
         if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
@@ -176,7 +184,7 @@ class ScalpingBot:
         cursor.execute('''
         INSERT INTO deals (algorithm_name, type, instrument, price, commission, total)
         VALUES (?, ?, ?, ?, ?, ?)
-        ''', (self.db_alg_name, deal_type, self.instrument, price, commission, total))
+        ''', (self.db_alg_name, deal_type, self.ticker, price, commission, total))
         conn.commit()
         conn.close()
 
@@ -527,7 +535,7 @@ class ScalpingBot:
             time.sleep(self.sleep_trading)
 
 
-bot = ScalpingBot(TOKEN, FIGI, INSTRUMENT, ACCOUNT_ID, candles_count=4)
+bot = ScalpingBot(TOKEN, TICKER, ACCOUNT_ID, candles_count=4)
 
 
 def clean(*_args):
