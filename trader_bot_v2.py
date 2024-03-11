@@ -190,8 +190,7 @@ class ScalpingBot:
     def float_to_quotation(self, price) -> Quotation:
         return Quotation(units=int(price), nano=int((self.round(price - int(price))) * 1e9))
 
-    @staticmethod
-    def can_trade():
+    def can_trade(self):
         # Установите часовой пояс, соответствующий рынку, на котором вы торгуете
         market_tz = pytz.timezone('Europe/Moscow')
         now = datetime.now(market_tz)
@@ -200,15 +199,20 @@ class ScalpingBot:
         if now.weekday() >= 5:
             return False
 
-        # Проверка, что текущее время между 10:00 и 19:00
+        # Проверка, что текущее время между 10:00 и 18:40
         if not (datetime_time(10, 0) <= now.time() <= datetime_time(18, 40)):
             return False
 
-        # todo дописать. где-то был как раз нужный код
-        # Здесь добавьте логику проверки доступности торговли через API
-        # Это будет зависеть от API, которое вы используете
-        # Пример:
-        # return self.check_market_status_via_api()
+        # Проверка доступности рыночной торговли через API
+        try:
+            with Client(self.token) as client:
+                trading_status = client.market_data.get_trading_status(figi=self.figi)
+                if not trading_status.limit_order_available_flag:
+                    self.log('Торговля закрыта (ответ из API)')
+                    return False
+        except RequestError as e:
+            self.log(f"Ошибка при запросе статуса торговли: {e}")
+            return False
 
         return True
 
