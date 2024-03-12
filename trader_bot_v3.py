@@ -84,6 +84,7 @@ class ScalpingBot:
         self.stop_loss_percent = stop_loss_percent / 100
         self.candles_count = candles_count
         self.round_signs = 1
+        self.no_operation_timeout_seconds = 600
 
         # self.sleep_no_trade = 60
         # self.sleep_trading = 20
@@ -362,10 +363,9 @@ class ScalpingBot:
 
     def check_and_cansel_orders(self):
         """Сбрасываем активные заявки, если не было активных действий за последнее время"""
-        no_operation_timeout_seconds = 600  # 10 минут = 600 секунд
         current_time = datetime.now(timezone.utc)
-        if (current_time - self.last_successful_operation_time).total_seconds() > no_operation_timeout_seconds:
-            self.log(f"{no_operation_timeout_seconds/60} минут без активности. Снимаем и переставляем заявки.")
+        if (current_time - self.last_successful_operation_time).total_seconds() > self.no_operation_timeout_seconds:
+            self.log(f"{self.no_operation_timeout_seconds/60} минут без активности. Снимаем и переставляем заявки.")
             self.cancel_active_orders()
             self.reset_last_operation_time()
 
@@ -459,40 +459,20 @@ class ScalpingBot:
                         forecast_low = self.round(forecast_low + step)
 
                     # можем покупать
-                    if self.can_buy():
-                        # есть заявка
+                    if self.can_buy() and not self.buy_order:
+                        self.buy_order = self.buy_limit(forecast_low)
                         if self.buy_order:
-                            # цена отличается - меняем
-                            if not self.equivalent_prices(self.buy_order.initial_order_price, forecast_low):
-                                self.log(f"Меняем цену покупки на {forecast_low}")
-                                self.cancel_buy_order()
-                                self.buy_order = self.buy_limit(forecast_low)
-
-                        # нет заявки - ставим
+                            self.log(f"Размещена заявка на покупку по {forecast_low}")
                         else:
-                            self.buy_order = self.buy_limit(forecast_low)
-                            if self.buy_order:
-                                self.log(f"Размещена заявка на покупку по {forecast_low}")
-                            else:
-                                self.log(f"НЕ Размещена заявка на покупку по {forecast_low}")
+                            self.log(f"НЕ Размещена заявка на покупку по {forecast_low}")
 
                     # можем продавать
-                    if self.can_sell():
-                        # есть заявка
+                    if self.can_sell() and not self.sell_order:
+                        self.sell_order = self.sell_limit(forecast_high)
                         if self.sell_order:
-                            # цена отличается - меняем
-                            if not self.equivalent_prices(self.sell_order.initial_order_price, forecast_high):
-                                self.log(f"Меняем цену продажи на {forecast_high}")
-                                self.cancel_sell_order()
-                                self.sell_order = self.sell_limit(forecast_high)
-
-                        # нет заявки - ставим
+                            self.log(f"Размещена заявка на продажу по {forecast_high}")
                         else:
-                            self.sell_order = self.sell_limit(forecast_high)
-                            if self.sell_order:
-                                self.log(f"Размещена заявка на продажу по {forecast_high}")
-                            else:
-                                self.log(f"НЕ Размещена заявка на продажу по {forecast_high}")
+                            self.log(f"НЕ Размещена заявка на продажу по {forecast_high}")
 
                 else:
                     self.log(f"Пока не торгуем. "
