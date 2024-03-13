@@ -214,8 +214,8 @@ class ScalpingBot:
         if now.weekday() >= 5:
             return False
 
-        # Проверка, что текущее время между 10:00 и 18:40
-        if not (datetime_time(10, 0) <= now.time() <= datetime_time(18, 40)):
+        # Проверка, что текущее время между 10:30 и 18:40
+        if not (datetime_time(10, 30) <= now.time() <= datetime_time(18, 40)):
             return False
 
         # Проверка доступности рыночной торговли через API
