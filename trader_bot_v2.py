@@ -86,7 +86,7 @@ class ScalpingBot:
             candles_count=5,
     ):
         self.logger = logging.getLogger(__name__)
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+        self.setup_logger()
         self.logger_last_message = ''
 
         self.commission = 0.0005
@@ -125,33 +125,31 @@ class ScalpingBot:
         self.db_alg_name = f"{ticker}_{file_name}"
         self.db_file_name = 'db/trading_bot.db'
 
-        # Создание базы данных
-        # Подключение к базе данных (файл будет создан, если не существует)
-        # conn = sqlite3.connect('db/trading_bot.db')
-        #
-        # # Создание курсора
-        # cursor = conn.cursor()
-        #
-        # # Создание таблицы сделок
-        # cursor.execute('''
-        # CREATE TABLE IF NOT EXISTS deals (
-        #     id INTEGER PRIMARY KEY,
-        #     algorithm_name TEXT NOT NULL,
-        #     type INTEGER NOT NULL,
-        #     instrument TEXT NOT NULL,
-        #     datetime DATETIME DEFAULT CURRENT_TIMESTAMP,
-        #     price REAL NOT NULL,
-        #     commission REAL NOT NULL,
-        #     total REAL NOT NULL
-        # )
-        # ''')
-        #
-        # # Создание индексов
-        # cursor.execute('CREATE INDEX IF NOT EXISTS idx_instrument_datetime ON deals (instrument, datetime)')
-        # cursor.execute('CREATE INDEX IF NOT EXISTS idx_datetime ON deals (datetime)')
-        #
-        # # Закрытие соединения
-        # conn.close()
+    def setup_logger(self):
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+        # Получаем имя запущенного файла без расширения
+        file_name = os.path.basename(sys.argv[0]).replace('.py', '')
+
+        # Формируем путь к файлу лога
+        log_date = datetime.now().strftime('%Y.%m.%d')
+        log_directory = f"./log/{log_date}"
+        log_file_path = f"{log_directory}/{file_name}.log"
+
+        # Создаем директорию, если она не существует
+        if not os.path.exists(log_directory):
+            os.makedirs(log_directory)
+
+        # Создаем логгер
+        self.logger.setLevel(logging.INFO)
+
+        # Формат сообщений логгера
+        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+        # Создаем и настраиваем обработчик для записи в файл
+        file_handler = logging.FileHandler(log_file_path)
+        file_handler.setFormatter(formatter)
+        self.logger.addHandler(file_handler)
 
     def find_figi_by_ticker(self, ticker):
         with Client(self.token) as client:
