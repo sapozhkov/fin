@@ -179,12 +179,15 @@ class ScalpingBot:
         )
 
     def db_add_deal(self, deal_type, price, commission, total):
+        my_timezone = pytz.timezone('Europe/Moscow')
+        datetime_with_tz = datetime.now(my_timezone).strftime('%Y-%m-%d %H:%M:%S %z')
+
         conn = sqlite3.connect(self.db_file_name)
         cursor = conn.cursor()
         cursor.execute('''
-        INSERT INTO deals (algorithm_name, type, instrument, price, commission, total)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ''', (self.db_alg_name, deal_type, self.ticker, price, commission, total))
+        INSERT INTO deals (algorithm_name, type, instrument, datetime, price, commission, total)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (self.db_alg_name, deal_type, self.ticker, datetime_with_tz, price, commission, total))
         conn.commit()
         conn.close()
 
