@@ -86,10 +86,8 @@ class ScalpingBot:
         self.round_signs = 1
         self.no_operation_timeout_seconds = 600
 
-        # self.sleep_no_trade = 60
-        # self.sleep_trading = 20
-        self.sleep_no_trade = 20
-        self.sleep_trading = 10
+        self.sleep_no_trade = 60
+        self.sleep_trading = 20
 
         self.last_price = None
         self.update_current_price()
@@ -478,7 +476,7 @@ class ScalpingBot:
                     self.log(f"Пока не торгуем. "
                              f"Ожидаемая разница в торгах - {diff}, а требуется минимум {need_profit} ")
 
-            self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_no_trade}")
+            self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_trading}")
             time.sleep(self.sleep_trading)
 
 
