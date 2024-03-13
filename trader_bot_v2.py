@@ -120,9 +120,9 @@ class ScalpingBot:
         self.state = self.STATE_HAS_0
 
         file_path = Path(__file__)
-        file_name = file_path.name
+        file_name = file_path.name.replace('.py', '')
 
-        self.db_alg_name = f"{ticker}_{file_name}"
+        self.db_alg_name = f"{file_name}"
         self.db_file_name = 'db/trading_bot.db'
 
     def setup_logger(self):
