@@ -64,7 +64,8 @@ class ScalpingBot:
     # profit_percent
     #   0.13 - 0.2
     #   0.19 - 0.3
-    #
+    #   0.23 - 0.4
+    #   0.30 - 0.5
     def __init__(
             self, token, ticker,
             profit_percent=0.13,
@@ -84,7 +85,7 @@ class ScalpingBot:
         self.stop_loss_percent = stop_loss_percent / 100
         self.candles_count = candles_count
         self.round_signs = 1
-        self.no_operation_timeout_seconds = 600
+        self.no_operation_timeout_seconds = 300
 
         self.sleep_no_trade = 60
         self.sleep_trading = 20
@@ -391,7 +392,7 @@ class ScalpingBot:
     def check_and_cansel_orders(self):
         """Сбрасываем активные заявки, если не было активных действий за последнее время"""
         current_time = datetime.now(timezone.utc)
-        if (current_time - self.last_successful_operation_time).total_seconds() > self.no_operation_timeout_seconds:
+        if (current_time - self.last_successful_operation_time).total_seconds() >= self.no_operation_timeout_seconds:
             self.log(f"{self.no_operation_timeout_seconds/60} минут без активности. Снимаем и переставляем заявки.")
             self.cancel_active_orders()
             self.reset_last_operation_time()
@@ -510,7 +511,7 @@ class ScalpingBot:
 
 
 if __name__ == '__main__':
-    bot = ScalpingBot(TOKEN, TICKER, candles_count=4)
+    bot = ScalpingBot(TOKEN, TICKER)
 
 
     def clean(*_args):
