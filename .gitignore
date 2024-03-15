@@ -7,3 +7,4 @@ test*
 db/
 log/
 archive/
+daily_run/
