@@ -23,6 +23,7 @@ class TinkoffProxyClient:
 
         # авто расчет надо переделать если будут инструменты с шагом не кратным десятой доле #26
         self.round_signs = 0
+        self.step_size = 0
         self.set_ticker_params()
         self.account_id = self.get_account_id()
 
@@ -41,13 +42,15 @@ class TinkoffProxyClient:
             for instrument in instruments.instruments:
                 if instrument.ticker == self.ticker:
                     self.figi = instrument.figi
-                    min_increment = str(instrument.min_price_increment.units +
-                                        instrument.min_price_increment.nano * 1e-9)
-                    decimal_point_index = min_increment.find('.')
+                    min_increment = instrument.min_price_increment.units + instrument.min_price_increment.nano * 1e-9
+                    min_increment_str = str(min_increment)
+                    decimal_point_index = min_increment_str.find('.')
                     if decimal_point_index == -1:
                         self.round_signs = 0
                     else:
-                        self.round_signs = len(min_increment) - decimal_point_index - 1
+
+                        self.round_signs = len(min_increment_str) - decimal_point_index - 1
+                    self.step_size = self.round(min_increment)
                     return
         raise Exception("No figi found")
 

@@ -23,14 +23,9 @@ class ScalpingBot:
     STATE_HAS_0 = 0
     STATE_HAS_1 = 1
 
-    # profit_percent
-    #   0.13 - 0.2
-    #   0.19 - 0.3
-    #   0.23 - 0.4
-    #   0.30 - 0.5
     def __init__(
             self, token, ticker,
-            profit_percent=0.30,
+            profit_steps=5,
             stop_loss_percent=1.0,
             candles_count=4,
     ):
@@ -39,7 +34,7 @@ class ScalpingBot:
         self.client = TinkoffProxyClient(token, ticker, self.logger)
 
         self.commission = 0.0005
-        self.profit_percent = profit_percent / 100
+        self.profit_steps = profit_steps
         self.stop_loss_percent = stop_loss_percent / 100
 
         self.candles_count = candles_count
@@ -273,7 +268,7 @@ class ScalpingBot:
                 self.log('Ошибка вычисления прогнозируемого диапазона. Перезапуск алгоритма')
                 continue
 
-            need_profit = self.client.round(self.last_price * self.profit_percent)
+            need_profit = self.client.round(self.profit_steps * self.client.step_size)
             diff = self.client.round(forecast_high - forecast_low)
 
             self.update_current_price()
