@@ -29,23 +29,23 @@ class ScalpingBot:
             stop_loss_percent=1.0,
             candles_count=4,
     ):
+        # хелперы
         self.logger = LoggerHelper(__name__)
-
         self.client = TinkoffProxyClient(token, ticker, self.logger)
+        self.db = Database(__file__, self.client)
 
+        # конфигурация
         self.commission = 0.0005
         self.profit_steps = profit_steps
         self.stop_loss_percent = stop_loss_percent / 100
 
         self.candles_count = candles_count
 
+        self.sleep_trading = 300
+        self.sleep_no_trade = 300
         self.no_operation_timeout_seconds = 300
 
-        self.sleep_no_trade = 60
-        self.sleep_trading = 300
-
-        self.db = Database(__file__, self.client)
-
+        # внутренние переменные
         self.last_price = None
         self.update_current_price()
         self.state = self.STATE_HAS_0
@@ -56,8 +56,17 @@ class ScalpingBot:
         self.buy_order = None
         self.sell_order = None
 
-        self.log('INIT')
-        self.log(f"FIGI - {self.client.figi} ({self.client.ticker})")
+        self.log(f"INIT \n"
+                 f"     figi - {self.client.figi} ({self.client.ticker})\n"
+                 f"     candles_count - {self.candles_count}\n"
+                 f"     min profit - {self.profit_steps} steps * {self.client.step_size} = "
+                 f"{self.client.round(self.profit_steps * self.client.step_size)}\n"
+                 f"     stop_loss_percent - {stop_loss_percent} %\n"
+                 f"     commission - {self.commission * 100} %\n"
+                 f"     no_operation_timeout_seconds - {self.no_operation_timeout_seconds} sec\n"
+                 f"     sleep_trading - {self.sleep_trading} sec\n"
+                 f"     sleep_no_trade - {self.sleep_trading} sec\n"
+                 )
 
     def log(self, message, repeat=False):
         self.logger.log(message, repeat)
