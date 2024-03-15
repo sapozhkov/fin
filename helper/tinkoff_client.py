@@ -66,15 +66,6 @@ class TinkoffProxyClient:
             return False
         return True
 
-    def get_order_book(self, depth=1):
-        with Client(self.token) as client:
-            # Запрашиваем стакан цен с глубиной 1
-            try:
-                return client.market_data.get_order_book(figi=self.figi, depth=depth)
-            except RequestError as e:
-                self.logger.error(f"Ошибка при запросе стакана {e}")
-                return None
-
     def float_to_quotation(self, price) -> Quotation:
         return Quotation(units=int(price), nano=int((self.round(price - int(price))) * 1e9))
 

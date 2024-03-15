@@ -46,8 +46,6 @@ class ScalpingBot:
         self.no_operation_timeout_seconds = 300
 
         # внутренние переменные
-        self.last_price = None
-        self.update_current_price()
         self.state = self.STATE_HAS_0
 
         self.last_successful_operation_time = datetime.now(timezone.utc)
@@ -92,23 +90,6 @@ class ScalpingBot:
             return False
 
         return True
-
-    def update_current_price(self):
-        order_book = self.client.get_order_book()
-        if order_book is None:
-            self.logger.error(f"Ошибка при запросе стакана")
-            return
-
-        # Последняя цена может быть определена как среднее между лучшим предложением покупки и продажи
-        if order_book.bids and order_book.asks:
-            best_bid = order_book.bids[0].price.units + order_book.bids[0].price.nano * 1e-9
-            best_ask = order_book.asks[0].price.units + order_book.asks[0].price.nano * 1e-9
-            current_price = (best_bid + best_ask) / 2
-        else:
-            current_price = None  # В случае отсутствия данных в стакане
-
-        if current_price:
-            self.last_price = current_price
 
     def place_order(self, lots: int, operation, price: float | None = None, order_type=OrderType.ORDER_TYPE_MARKET):
         return self.client.place_order(lots, operation, price, order_type)
@@ -279,8 +260,6 @@ class ScalpingBot:
 
             need_profit = self.client.round(self.profit_steps * self.client.step_size)
             diff = self.client.round(forecast_high - forecast_low)
-
-            self.update_current_price()
 
             # проверяем что есть смысл торговать на таком диапазоне цен
             if diff >= need_profit:
