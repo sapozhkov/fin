@@ -10,7 +10,6 @@ from dotenv import load_dotenv
 from tinkoff.invest import OrderDirection, OrderType, CandleInterval, Quotation
 
 from helper.tinkoff_client import TinkoffProxyClient
-from helper.config import Config
 from helper.database import Database
 from helper.logger import LoggerHelper
 
@@ -39,11 +38,16 @@ class ScalpingBot:
 
         self.client = TinkoffProxyClient(token, ticker, self.logger)
 
-        self.config = Config(
-            profit_percent,
-            stop_loss_percent,
-            candles_count
-        )
+        self.commission = 0.0005
+        self.profit_percent = profit_percent / 100
+        self.stop_loss_percent = stop_loss_percent / 100
+
+        self.candles_count = candles_count
+
+        self.no_operation_timeout_seconds = 300
+
+        self.sleep_no_trade = 60
+        self.sleep_trading = 300
 
         self.db = Database(__file__, self.client)
 
@@ -200,8 +204,8 @@ class ScalpingBot:
         """Сбрасываем активные заявки, если не было активных действий за последнее время"""
         current_time = datetime.now(timezone.utc)
         if ((current_time - self.last_successful_operation_time).total_seconds() >=
-                self.config.no_operation_timeout_seconds):
-            self.log(f"{self.config.no_operation_timeout_seconds/60} "
+                self.no_operation_timeout_seconds):
+            self.log(f"{self.no_operation_timeout_seconds/60} "
                      f"минут без активности. Снимаем и переставляем заявки.")
             self.cancel_active_orders()
             self.reset_last_operation_time()
@@ -232,8 +236,8 @@ class ScalpingBot:
     def run(self):
         while True:
             if not self.can_trade():
-                self.log(f"can not trade, sleep {self.config.sleep_no_trade}")
-                time.sleep(self.config.sleep_no_trade)  # Спим, если торговать нельзя
+                self.log(f"can not trade, sleep {self.sleep_no_trade}")
+                time.sleep(self.sleep_no_trade)  # Спим, если торговать нельзя
                 print('.', end='')
                 continue
 
@@ -263,13 +267,13 @@ class ScalpingBot:
             self.check_and_cansel_orders()
 
             # прикидываем цены
-            last_candles = self.fetch_candles(candles_count=self.config.candles_count)
+            last_candles = self.fetch_candles(candles_count=self.candles_count)
             forecast_low, forecast_high = self.forecast_next_candle(last_candles)
             if forecast_low is None:
                 self.log('Ошибка вычисления прогнозируемого диапазона. Перезапуск алгоритма')
                 continue
 
-            need_profit = self.client.round(self.last_price * self.config.profit_percent)
+            need_profit = self.client.round(self.last_price * self.profit_percent)
             diff = self.client.round(forecast_high - forecast_low)
 
             self.update_current_price()
@@ -324,8 +328,8 @@ class ScalpingBot:
                 self.log(f"Пока не торгуем. "
                          f"Ожидаемая разница в торгах - {diff}, а требуется минимум {need_profit} ")
 
-            self.logger.debug(f"Ждем следующего цикла, sleep {self.config.sleep_trading}")
-            time.sleep(self.config.sleep_trading)
+            self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_trading}")
+            time.sleep(self.sleep_trading)
 
 
 if __name__ == '__main__':
