@@ -1,0 +1,141 @@
+from datetime import datetime, timezone
+
+from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus
+
+
+class TinkoffProxyClient:
+    def __init__(self, token, ticker, logger):
+        self.token = token
+        self.ticker = ticker
+        self.logger = logger
+        self.figi = ''
+
+        # авто расчет надо переделать если будут инструменты с шагом не кратным десятой доле #26
+        self.round_signs = 0
+        self.set_ticker_params()
+        self.account_id = self.get_account_id()
+
+    def get_account_id(self):
+        with Client(self.token) as client:
+            accounts = client.users.get_accounts().accounts
+            if accounts:
+                first_account_id = accounts[0].id
+                return first_account_id
+            else:
+                raise Exception("No accounts found")
+
+    def set_ticker_params(self):
+        with Client(self.token) as client:
+            instruments = client.instruments.shares()
+            for instrument in instruments.instruments:
+                if instrument.ticker == self.ticker:
+                    self.figi = instrument.figi
+                    min_increment = str(instrument.min_price_increment.units +
+                                        instrument.min_price_increment.nano * 1e-9)
+                    decimal_point_index = min_increment.find('.')
+                    if decimal_point_index == -1:
+                        self.round_signs = 0
+                    else:
+                        self.round_signs = len(min_increment) - decimal_point_index - 1
+                    return
+        raise Exception("No figi found")
+
+    def can_trade(self):
+        try:
+            with Client(self.token) as client:
+                trading_status = client.market_data.get_trading_status(figi=self.figi)
+                if not trading_status.limit_order_available_flag:
+                    self.logger.log('Торговля закрыта (ответ из API)')
+                    return False
+        except RequestError as e:
+            self.logger.log(f"Ошибка при запросе статуса торговли: {e}")
+            return False
+        return True
+
+    def get_order_book(self, depth=1):
+        with Client(self.token) as client:
+            # Запрашиваем стакан цен с глубиной 1
+            try:
+                return client.market_data.get_order_book(figi=self.figi, depth=depth)
+            except RequestError as e:
+                self.logger.error(f"Ошибка при запросе стакана {e}")
+                return None
+
+    def float_to_quotation(self, price) -> Quotation:
+        return Quotation(units=int(price), nano=int((self.round(price - int(price))) * 1e9))
+
+    def quotation_to_float(self, quotation: Quotation, digits=None):
+        if digits is None:
+            digits = self.round_signs
+        return round(quotation.units + quotation.nano * 1e-9, digits)
+
+    def round(self, price):
+        return round(price, self.round_signs)
+
+        # авто расчет надо переделать если будут инструменты с шагом не кратным десятой доле #26
+        # вариант:
+        # def align_price_to_increment(self, price, min_price_increment):
+        #     increments_count = price / min_price_increment
+        #     aligned_increments_count = round(increments_count)
+        #     aligned_price = aligned_increments_count * min_price_increment
+        #     return aligned_price
+
+    def place_order(self, lots: int, operation,
+                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET):
+        try:
+            price_quotation = self.float_to_quotation(price=price) if price else None
+            with Client(self.token) as client:
+                return client.orders.post_order(
+                    order_id=str(datetime.now(timezone.utc)),
+                    figi=self.figi,
+                    quantity=lots,
+                    direction=operation,
+                    account_id=self.account_id,
+                    order_type=order_type,
+                    price=price_quotation
+                )
+        except RequestError as e:
+            self.logger.error(f"Ошибка при выставлении заявки, operation={operation}"
+                              f" price={price}, order_type= {order_type}. ({e})")
+            return None
+
+    def get_candles(self, from_date, to_date, interval):
+        with Client(self.token) as client:
+            try:
+                candles = client.market_data.get_candles(
+                    figi=self.figi,
+                    from_=from_date,
+                    to=to_date,
+                    interval=interval
+                )
+                return candles
+            except RequestError as e:
+                self.logger.error(f"Ошибка при запросе свечей: {e}")
+                return GetCandlesResponse([])
+
+    def order_is_executed(self, order):
+        with Client(self.token) as client:
+            order_state = client.orders.get_order_state(account_id=self.account_id, order_id=order.order_id)
+            return (
+                order_state.execution_report_status == OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL,
+                order_state
+            )
+
+    def get_instruments_count(self):
+        with Client(self.token) as client:
+            portfolio = client.operations.get_portfolio(account_id=self.account_id)
+            for position in portfolio.positions:
+                if position.figi == self.figi:
+                    return position.quantity.units
+            return 0
+
+    def cancel_order(self, order):
+        if not order:
+            return False
+        with Client(self.token) as client:
+            try:
+                return client.orders.cancel_order(account_id=self.account_id, order_id=order.order_id)
+            except RequestError as e:
+                self.logger.error(f"Ошибка при закрытии заявки на покупку: {e}")
+        return False
+
