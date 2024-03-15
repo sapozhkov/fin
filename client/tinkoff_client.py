@@ -138,4 +138,3 @@ class TinkoffProxyClient:
             except RequestError as e:
                 self.logger.error(f"Ошибка при закрытии заявки на покупку: {e}")
         return False
-
