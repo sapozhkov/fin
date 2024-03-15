@@ -1,9 +1,20 @@
 from datetime import datetime, timezone
 
-from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus
+from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus, \
+    CandleInterval
 
 
 class TinkoffProxyClient:
+    interval_duration_minutes = {
+        CandleInterval.CANDLE_INTERVAL_1_MIN: 1,
+        CandleInterval.CANDLE_INTERVAL_5_MIN: 5,
+        CandleInterval.CANDLE_INTERVAL_15_MIN: 15,
+        CandleInterval.CANDLE_INTERVAL_30_MIN: 30,
+        CandleInterval.CANDLE_INTERVAL_HOUR: 60,
+        CandleInterval.CANDLE_INTERVAL_4_HOUR: 240,
+        CandleInterval.CANDLE_INTERVAL_DAY: 1440,
+    }
+
     def __init__(self, token, ticker, logger):
         self.token = token
         self.ticker = ticker
