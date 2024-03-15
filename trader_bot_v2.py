@@ -1,26 +1,17 @@
 """
-Вторая версия скальпинг бота
+Третья версия скальпинг бота
 
 Недостатки предыдущей версии:
-    1. V продает и тут же покупает обратно за ту же цену - исправлено
-    2. ~ редко торгует (раз в час/два) - в процессе
+    1. сливает деньги при боковике и небольшом спаде.
+        одна из предыдущих версий нормально это отрабатывала
+    2. очень часто меняет ставки, из-за этого вылетает
 
 Недостатки этой
-    1. готово - раз в 10 минут проводить
-    2. готово - сливает деньги за счет того, что не угадывает поведение рынка и продает ниже покупки
-            - пробуем сделать анализ на основе 3 последних свечей, а не 5 - не помогает
-            - надо корректировать заявки если кажется, что пойдет рост, сейчас сливается за минимальную цену,
-                    а потом идет сильный рост, да и слив идет иногда ниже покупки
-            - надо учитывать цену покупки? а может и не надо
-    3. на подъеме вроде отыгрывала норм, но проверить без фоновых акций
-    4. теряет на 4 свечах, если начинает болтать туда-сюда тренд
+    1. TBU
 
 Задача:
-    1. V Имплемент предыдущей
-    2. V Учимся покупать внизу, а продавать вверху
-    3. V изменяющаяся заявка
-    4. -> настроить стоп-лосс и тейк-профит
-    5. -> нейронка для угадывания тренда
+    1. настроить стоп-лосс
+    2. добиться стабильного поведения при боковике и спаде
 
 Логика v2:
     1. состояние анализа
@@ -35,12 +26,9 @@
     5. при повторном прогоне заявки могут быть изменены, если поменялся прогноз границ свечи
 
 Мысли на будущее:
-    0. если сильно активный рост, то можно останавливать торговлю
-    0. если долго растет, то должен быть разворот. тут нужна нейронка
-    0. держать про запас 1 заявку ниже рынка на рубль, чтобы откупать пробои вниз.
-        Но это должно скользить от текущей цены.
-        Потом что-то с ними делать
-    2. сделать отсечку, если сильно падает и уход в сон?
+    1. если сильно активный рост, то можно останавливать торговлю
+    2. если долго растет, то должен быть разворот. тут нужна нейронка
+    3. сделать отсечку, если сильно падает и уход в сон?
 
 За основу взят алгоритм сгенеренный ChatGPT с доработками логики
 """
@@ -59,11 +47,9 @@ import sqlite3
 from signal import *
 import sys
 
-
 load_dotenv()
 
 TOKEN = os.getenv("INVEST_TOKEN")
-ACCOUNT_ID = os.getenv("ACCOUNT_ID")
 
 # FIGI = 'BBG004730N88'  # SBER
 TICKER = 'RNFT'
@@ -80,9 +66,8 @@ class ScalpingBot:
     #   0.19 - 0.3
     #   0.23 - 0.4
     #   0.30 - 0.5
-    #
     def __init__(
-            self, token, ticker, account_id,
+            self, token, ticker,
             profit_percent=0.13,
             stop_loss_percent=1.0,
             candles_count=5,
@@ -93,13 +78,14 @@ class ScalpingBot:
 
         self.commission = 0.0005
         self.token = token
-        self.figi = self.find_figi_by_ticker(ticker)
         self.ticker = ticker
-        self.account_id = account_id
+        self.figi = self.find_figi_by_ticker(ticker)
+        self.account_id = self.get_account_id()
         self.profit_percent = profit_percent / 100
         self.stop_loss_percent = stop_loss_percent / 100
         self.candles_count = candles_count
         self.round_signs = 1
+        self.no_operation_timeout_seconds = 300
 
         self.sleep_no_trade = 60
         self.sleep_trading = 300
@@ -150,6 +136,15 @@ class ScalpingBot:
         file_handler = logging.FileHandler(log_file_path)
         file_handler.setFormatter(formatter)
         self.logger.addHandler(file_handler)
+
+    def get_account_id(self):
+        with Client(self.token) as client:
+            accounts = client.users.get_accounts().accounts
+            if accounts:
+                first_account_id = accounts[0].id
+                return first_account_id
+            else:
+                raise Exception("No accounts found")
 
     def find_figi_by_ticker(self, ticker):
         with Client(self.token) as client:
@@ -260,7 +255,7 @@ class ScalpingBot:
                     figi=self.figi,
                     quantity=lots,
                     direction=operation,
-                    account_id=ACCOUNT_ID,
+                    account_id=self.account_id,
                     order_type=order_type,
                     price=price_quotation
                 )
@@ -396,10 +391,9 @@ class ScalpingBot:
 
     def check_and_cansel_orders(self):
         """Сбрасываем активные заявки, если не было активных действий за последнее время"""
-        no_operation_timeout_seconds = 300  # 10 минут = 600 секунд
         current_time = datetime.now(timezone.utc)
-        if (current_time - self.last_successful_operation_time).total_seconds() >= no_operation_timeout_seconds:
-            self.log(f"{no_operation_timeout_seconds/60} минут без активности. Снимаем и переставляем заявки.")
+        if (current_time - self.last_successful_operation_time).total_seconds() >= self.no_operation_timeout_seconds:
+            self.log(f"{self.no_operation_timeout_seconds/60} минут без активности. Снимаем и переставляем заявки.")
             self.cancel_active_orders()
             self.reset_last_operation_time()
 
@@ -532,19 +526,20 @@ class ScalpingBot:
                     self.log(f"Пока не торгуем. "
                              f"Ожидаемая разница в торгах - {diff}, а требуется минимум {need_profit} ")
 
-            self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_no_trade}")
+            self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_trading}")
             time.sleep(self.sleep_trading)
 
 
-bot = ScalpingBot(TOKEN, TICKER, ACCOUNT_ID)
+if __name__ == '__main__':
+    bot = ScalpingBot(TOKEN, TICKER)
 
 
-def clean(*_args):
-    bot.stop()
-    sys.exit(0)
+    def clean(*_args):
+        bot.stop()
+        sys.exit(0)
 
 
-for sig in (SIGABRT, SIGILL, SIGINT, SIGSEGV, SIGTERM):
-    signal(sig, clean)
+    for sig in (SIGABRT, SIGILL, SIGINT, SIGSEGV, SIGTERM):
+        signal(sig, clean)
 
-bot.run()
+    bot.run()
