@@ -206,7 +206,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
                     if self.buy_order_executed_on_border:
                         self.total_completed_orders_on_border += 1
 
-            elif order.order_type == OrderDirection.ORDER_DIRECTION_SELL:
+            elif order.direction == OrderDirection.ORDER_DIRECTION_SELL:
                 if self.sell_order_executed:
                     res = True
                     order.executed_order_price = self.float_to_money_value(order_price)
