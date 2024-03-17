@@ -126,14 +126,6 @@ class ClientTestEnvHelper(AbstractProxyClient):
             result.append((current_time.hour, current_time.minute))
             current_time += timedelta(minutes=interval)
 
-        # Проверка, является ли последнее добавленное время равным to_date
-        # Если нет, добавляем следующую пару
-        last_time = result[-1]
-        last_datetime = datetime(from_date.year, from_date.month, from_date.day, last_time[0], last_time[1])
-        if last_datetime < to_date:
-            next_time = last_datetime + timedelta(minutes=interval)
-            result.append((next_time.hour, next_time.minute))
-
         return result
 
     @staticmethod
@@ -148,19 +140,39 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
         return prev_minutes
 
+    @staticmethod
+    def time_is_greater(time_pair, current_datetime):
+        """
+        Проверяет, больше ли или равно заданное время (час и минута) текущему времени.
+
+        :param time_pair: Кортеж, содержащий час и минуту (например, (14, 30)).
+        :param current_datetime: Объект datetime с текущим временем.
+        :return: True, если заданное время больше или равно текущему, иначе False.
+        """
+        hour, minute = time_pair
+        # Создаем объект datetime для заданного времени с использованием даты из current_datetime
+        given_datetime = current_datetime.replace(hour=hour, minute=minute, second=0, microsecond=0)
+
+        return given_datetime > current_datetime
+
     def get_calculated_candle(self, hour, minute, n=5):
         previous_minutes = self.get_n_minutes(hour, minute, n)
-        # todo важно!!! вот тут надо выбирать не все запрошенные, а не старше текущей даты
 
         open_ = None
         high = 0
         low = 1000000000
         close = 0
         volume = 0
+        is_complete = True
+
+        now = self.time.now()
 
         for time_pair in previous_minutes:
             t1 = self.candles_1_min_dict.get(time_pair, None)
             if t1 is None:
+                continue
+            if self.time_is_greater(time_pair, now):
+                is_complete = False
                 continue
             if open_ is None:
                 open_ = t1.open
@@ -169,8 +181,6 @@ class ClientTestEnvHelper(AbstractProxyClient):
             close = t1.close
             volume += t1.volume
 
-        now = self.time.now()
-
         return HistoricCandle(
             high=self.float_to_quotation(high),
             low=self.float_to_quotation(low),
@@ -178,7 +188,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
             close=close,
             volume=volume,
             time=datetime(now.year, now.month, now.day, hour, minute),
-            is_complete=True
+            is_complete=is_complete,
         )
 
     def order_is_executed(self, order: PostOrderResponse):

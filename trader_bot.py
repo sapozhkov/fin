@@ -45,7 +45,7 @@ class ScalpingBot:
 
         self.candles_count = candles_count
 
-        self.sleep_trading = 300
+        self.sleep_trading = 5 * 60
         self.sleep_no_trade = 300
         self.no_operation_timeout_seconds = 300
 
