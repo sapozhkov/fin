@@ -15,14 +15,6 @@ class AbstractTimeHelper(ABC):
     def sleep(self, seconds):
         pass
 
-    @abstractmethod
-    def set_time(self, new_time):
-        pass
-
-    @abstractmethod
-    def is_time_to_awake(self):
-        pass
-
 
 class TimeHelper(AbstractTimeHelper):
     def now(self):
@@ -33,9 +25,3 @@ class TimeHelper(AbstractTimeHelper):
 
     def sleep(self, seconds):
         time.sleep(seconds)
-
-    def is_time_to_awake(self):
-        raise 'not allowed, only for test environment'
-
-    def set_time(self, new_time):
-        raise 'not allowed, only for test environment'
