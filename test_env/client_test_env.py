@@ -7,9 +7,6 @@ from helper.tinkoff_client import AbstractProxyClient
 
 
 class ClientTestEnvHelper(AbstractProxyClient):
-    buy_id = '1'
-    sell_id = '2'
-
     def __init__(self, ticker, logger, time_helper, candles_1_min):
         super().__init__()
         self.ticker = ticker
@@ -64,7 +61,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
     def place_order(self, lots: int, operation,
                     price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse:
-        order_id = self.buy_id if operation == OrderDirection.ORDER_DIRECTION_BUY else self.sell_id
+        order_id = '111' if operation == OrderDirection.ORDER_DIRECTION_BUY else '222'
 
         # покупка по рыночной цене
         if order_type == OrderType.ORDER_TYPE_MARKET:
@@ -73,8 +70,8 @@ class ClientTestEnvHelper(AbstractProxyClient):
                 order_id=order_id,
                 order_type=order_type,
                 direction=operation,
-                initial_order_price=self.float_to_money_value(price),
-                executed_order_price=self.float_to_money_value(price),
+                initial_order_price=self.float_to_money_value(self.current_price),
+                executed_order_price=self.float_to_money_value(self.current_price),
                 initial_commission=self.float_to_money_value(self.current_price * self.commission),
                 executed_commission=self.float_to_money_value(self.current_price * self.commission),
             )
@@ -95,7 +92,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
                 direction=operation,
                 initial_order_price=self.float_to_money_value(price),
                 executed_order_price=self.float_to_money_value(0),
-                initial_commission=self.float_to_money_value(self.current_price * self.commission),
+                initial_commission=self.float_to_money_value(price * self.commission),
                 executed_commission=self.float_to_money_value(0),
             )
 
@@ -162,7 +159,9 @@ class ClientTestEnvHelper(AbstractProxyClient):
         volume = 0
 
         for time_pair in previous_minutes:
-            t1 = self.candles_1_min_dict[time_pair]
+            t1 = self.candles_1_min_dict.get(time_pair, None)
+            if t1 is None:
+                continue
             if open_ is None:
                 open_ = t1.open
             high = max(high, self.quotation_to_float(t1.high))

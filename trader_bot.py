@@ -7,7 +7,7 @@ from signal import *
 from dotenv import load_dotenv
 from tinkoff.invest import OrderDirection, OrderType, CandleInterval, Quotation, MoneyValue
 
-from helper.database import Database
+from helper.database_helper import Database, AbstractDatabaseHelper
 from helper.logger_helper import LoggerHelper, AbstractLoggerHelper
 from helper.time_helper import TimeHelper, AbstractTimeHelper
 from helper.tinkoff_client import TinkoffProxyClient, AbstractProxyClient
@@ -30,7 +30,7 @@ class ScalpingBot:
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
             client_helper: AbstractProxyClient | None = None,
-            database_helper: Database | None = None,
+            database_helper: AbstractDatabaseHelper | None = None,
     ):
         # хелперы
         self.time = time_helper or TimeHelper()

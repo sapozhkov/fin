@@ -1,9 +1,16 @@
 import sqlite3
+from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 
 import pytz
 from tinkoff.invest import OrderDirection
+
+
+class AbstractDatabaseHelper(ABC):
+    @abstractmethod
+    def add_deal_by_order(self, order):
+        pass
 
 
 class Database():
