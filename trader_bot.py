@@ -125,6 +125,7 @@ class ScalpingBot:
         minutes_per_candle = self.client.interval_duration_minutes[interval]
         from_date = to_date - timedelta(minutes=minutes_per_candle * candles_count)
 
+        # todo сверить тестовый прогон и реальный. тестовый отдает 3 шт. желательно, чтобы было одинаково
         return self.client.get_candles(from_date, to_date, interval)
 
     def forecast_next_candle(self, candles):
@@ -199,14 +200,8 @@ class ScalpingBot:
             self.reset_last_operation_time()
 
     def equivalent_prices(self, quotation_price: Quotation | MoneyValue, float_price: float) -> bool:
-        # Преобразование Quotation в float
-        # todo заменить на метод или прописать почему тут осталось так
-        quotation_to_float = quotation_price.units + quotation_price.nano * 1e-9
-
-        rounded_quotation_price = self.client.round(quotation_to_float)
+        rounded_quotation_price = self.client.quotation_to_float(quotation_price)
         rounded_float_price = self.client.round(float_price)
-
-        # Сравнение округленных значений
         return rounded_quotation_price == rounded_float_price
 
     def stop(self):

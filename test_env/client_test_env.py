@@ -12,7 +12,6 @@ class ClientTestEnvHelper(AbstractProxyClient):
         self.ticker = ticker
         self.logger = logger
         self.time = time_helper
-        # todo тут проверить нужен ли временной сдвиг на tmz
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles_1_min.candles}
 
         self.buy_order = None
@@ -168,7 +167,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         now = self.time.now()
 
         for time_pair in previous_minutes:
-            t1 = self.candles_1_min_dict.get(time_pair, None)
+            t1: HistoricCandle | None = self.candles_1_min_dict.get(time_pair, None)
             if t1 is None:
                 continue
             if self.time_is_greater(time_pair, now):
