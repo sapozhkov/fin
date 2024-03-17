@@ -1,19 +1,16 @@
 import os
 import sys
-import time
-from datetime import datetime, timezone, timedelta
 from datetime import time as datetime_time
+from datetime import timedelta
 from signal import *
 
-import pytz
 from dotenv import load_dotenv
-from tinkoff.invest import OrderDirection, OrderType, CandleInterval, Quotation
+from tinkoff.invest import OrderDirection, OrderType, CandleInterval, Quotation, MoneyValue
 
-from helper.time_helper import TimeHelper
-from helper.tinkoff_client import TinkoffProxyClient
 from helper.database import Database
-from helper.logger import LoggerHelper
-from test_env.time_test_env import TimeTestEnv
+from helper.logger_helper import LoggerHelper, AbstractLoggerHelper
+from helper.time_helper import TimeHelper, AbstractTimeHelper
+from helper.tinkoff_client import TinkoffProxyClient, AbstractProxyClient
 
 load_dotenv()
 
@@ -30,13 +27,16 @@ class ScalpingBot:
             profit_steps=5,
             stop_loss_percent=1.0,
             candles_count=4,
-            time_helper: TimeHelper | TimeTestEnv = TimeHelper()
+            time_helper: AbstractTimeHelper | None = None,
+            logger_helper: AbstractLoggerHelper | None = None,
+            client_helper: AbstractProxyClient | None = None,
+            database_helper: Database | None = None,
     ):
         # хелперы
-        self.logger = LoggerHelper(__name__)
-        self.client = TinkoffProxyClient(token, ticker, self.logger)
-        self.db = Database(__file__, self.client)
-        self.time = time_helper
+        self.time = time_helper or TimeHelper()
+        self.logger = logger_helper or LoggerHelper(__name__)
+        self.client = client_helper or TinkoffProxyClient(token, ticker, self.logger)
+        self.db = database_helper or Database(__file__, self.client)
 
         # конфигурация
         self.commission = 0.0005
@@ -45,7 +45,7 @@ class ScalpingBot:
 
         self.candles_count = candles_count
 
-        self.sleep_trading = 300
+        self.sleep_trading = 7 * 60
         self.sleep_no_trade = 300
         self.no_operation_timeout_seconds = 300
 
@@ -62,7 +62,7 @@ class ScalpingBot:
                  f"     figi - {self.client.figi} ({self.client.ticker})\n"
                  f"     candles_count - {self.candles_count}\n"
                  f"     min profit - {self.profit_steps} steps * {self.client.step_size} = "
-                 f"{self.client.round(self.profit_steps * self.client.step_size)}\n"
+                 f"{self.client.round(self.profit_steps * self.client.step_size)} {self.client.currency}\n"
                  f"     stop_loss_percent - {stop_loss_percent} %\n"
                  f"     commission - {self.commission * 100} %\n"
                  f"     no_operation_timeout_seconds - {self.no_operation_timeout_seconds} sec\n"
@@ -77,7 +77,6 @@ class ScalpingBot:
         self.last_successful_operation_time = self.time.now()
 
     def can_trade(self):
-        # Установите часовой пояс, соответствующий рынку, на котором вы торгуете
         now = self.time.now()
 
         # Проверка, что сейчас будний день (0 - понедельник, 6 - воскресенье)
@@ -85,7 +84,7 @@ class ScalpingBot:
             return False
 
         # Проверка, что текущее время между 10:30 и 18:40
-        if not (datetime_time(10, 30) <= now.time() <= datetime_time(18, 40)):
+        if not (datetime_time(10 - self.time.tmz, 30) <= now.time() <= datetime_time(18 - self.time.tmz, 40)):
             return False
 
         # Проверка доступности рыночной торговли через API
@@ -199,7 +198,7 @@ class ScalpingBot:
             self.cancel_active_orders()
             self.reset_last_operation_time()
 
-    def equivalent_prices(self, quotation_price: Quotation, float_price: float) -> bool:
+    def equivalent_prices(self, quotation_price: Quotation | MoneyValue, float_price: float) -> bool:
         # Преобразование Quotation в float
         # todo заменить на метод или прописать почему тут осталось так
         quotation_to_float = quotation_price.units + quotation_price.nano * 1e-9

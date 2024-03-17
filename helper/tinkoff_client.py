@@ -1,10 +1,11 @@
+from abc import abstractmethod, ABC
 from datetime import datetime, timezone
 
 from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus, \
-    CandleInterval
+    CandleInterval, PostOrderResponse, MoneyValue
 
 
-class TinkoffProxyClient:
+class AbstractProxyClient(ABC):
     interval_duration_minutes = {
         CandleInterval.CANDLE_INTERVAL_1_MIN: 1,
         CandleInterval.CANDLE_INTERVAL_5_MIN: 5,
@@ -15,15 +16,65 @@ class TinkoffProxyClient:
         CandleInterval.CANDLE_INTERVAL_DAY: 1440,
     }
 
-    def __init__(self, token, ticker, logger):
-        self.token = token
-        self.ticker = ticker
-        self.logger = logger
-        self.figi = ''
-
+    def __init__(self):
         # авто расчет надо переделать если будут инструменты с шагом не кратным десятой доле #26
         self.round_signs = 0
         self.step_size = 0
+        self.figi = ''
+        self.currency = ''
+
+    @abstractmethod
+    def can_trade(self):
+        pass
+
+    def float_to_quotation(self, price) -> Quotation:
+        return Quotation(units=int(price), nano=int((self.round(price - int(price))) * 1e9))
+
+    def quotation_to_float(self, quotation: Quotation | MoneyValue, digits=None):
+        if digits is None:
+            digits = self.round_signs
+        return round(quotation.units + quotation.nano * 1e-9, digits)
+
+    def round(self, price):
+        return round(price, self.round_signs)
+
+        # авто расчет надо переделать если будут инструменты с шагом не кратным десятой доле #26
+        # вариант:
+        # def align_price_to_increment(self, price, min_price_increment):
+        #     increments_count = price / min_price_increment
+        #     aligned_increments_count = round(increments_count)
+        #     aligned_price = aligned_increments_count * min_price_increment
+        #     return aligned_price
+
+    @abstractmethod
+    def place_order(self, lots: int, operation,
+                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse:
+        pass
+
+    @abstractmethod
+    def get_candles(self, from_date, to_date, interval):
+        pass
+
+    @abstractmethod
+    def order_is_executed(self, order):
+        pass
+
+    @abstractmethod
+    def get_instruments_count(self):
+        pass
+
+    @abstractmethod
+    def cancel_order(self, order):
+        pass
+
+
+class TinkoffProxyClient(AbstractProxyClient):
+    def __init__(self, token, ticker, logger):
+        super().__init__()
+        self.token = token
+        self.ticker = ticker
+        self.logger = logger
+
         self.set_ticker_params()
         self.account_id = self.get_account_id()
 
@@ -42,13 +93,13 @@ class TinkoffProxyClient:
             for instrument in instruments.instruments:
                 if instrument.ticker == self.ticker:
                     self.figi = instrument.figi
+                    self.currency = instrument.currency
                     min_increment = instrument.min_price_increment.units + instrument.min_price_increment.nano * 1e-9
                     min_increment_str = str(min_increment)
                     decimal_point_index = min_increment_str.find('.')
                     if decimal_point_index == -1:
                         self.round_signs = 0
                     else:
-
                         self.round_signs = len(min_increment_str) - decimal_point_index - 1
                     self.step_size = self.round(min_increment)
                     return
@@ -66,27 +117,8 @@ class TinkoffProxyClient:
             return False
         return True
 
-    def float_to_quotation(self, price) -> Quotation:
-        return Quotation(units=int(price), nano=int((self.round(price - int(price))) * 1e9))
-
-    def quotation_to_float(self, quotation: Quotation, digits=None):
-        if digits is None:
-            digits = self.round_signs
-        return round(quotation.units + quotation.nano * 1e-9, digits)
-
-    def round(self, price):
-        return round(price, self.round_signs)
-
-        # авто расчет надо переделать если будут инструменты с шагом не кратным десятой доле #26
-        # вариант:
-        # def align_price_to_increment(self, price, min_price_increment):
-        #     increments_count = price / min_price_increment
-        #     aligned_increments_count = round(increments_count)
-        #     aligned_price = aligned_increments_count * min_price_increment
-        #     return aligned_price
-
     def place_order(self, lots: int, operation,
-                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET):
+                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse:
         try:
             price_quotation = self.float_to_quotation(price=price) if price else None
             with Client(self.token) as client:

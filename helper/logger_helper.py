@@ -1,15 +1,36 @@
 import logging
 import os
 import sys
+from abc import ABC, abstractmethod
 from datetime import datetime
 
 
-class LoggerHelper:
-    def __init__(self, name):
-        self.logger = logging.getLogger(name)
-
+class AbstractLoggerHelper(ABC):
+    def __init__(self):
         self.logger_last_message = ''
 
+    def log(self, message, repeat=False):
+        if self.logger_last_message != message or repeat:
+            self.info(message)
+            self.logger_last_message = message
+
+    @abstractmethod
+    def info(self, message):
+        pass
+
+    @abstractmethod
+    def error(self, message):
+        pass
+
+    @abstractmethod
+    def debug(self, message):
+        pass
+
+
+class LoggerHelper(AbstractLoggerHelper):
+    def __init__(self, name):
+        super().__init__()
+        self.logger = logging.getLogger(name)
         self.setup_logger()
 
     def setup_logger(self):
@@ -40,10 +61,8 @@ class LoggerHelper:
         file_handler.setFormatter(formatter)
         self.logger.addHandler(file_handler)
 
-    def log(self, message, repeat=False):
-        if self.logger_last_message != message or repeat:
-            self.logger.info(message)
-            self.logger_last_message = message
+    def info(self, message):
+        self.logger.info(message)
 
     def error(self, message):
         self.logger.error(message)

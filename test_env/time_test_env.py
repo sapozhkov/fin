@@ -1,10 +1,11 @@
 from datetime import timedelta
 
-from helper.time_helper import AbstractTime
+from helper.time_helper import AbstractTimeHelper
 
 
-class TimeTestEnv(AbstractTime):
+class TimeTestEnvHelper(AbstractTimeHelper):
     def __init__(self, now):
+        super().__init__()
         self.current_time = now
         self.sleep_until = now
 
@@ -14,8 +15,8 @@ class TimeTestEnv(AbstractTime):
     def sleep(self, seconds):
         self.sleep_until = self.current_time + timedelta(seconds=seconds)
 
-    def set_time(self, time):
-        self.current_time = time
+    def set_time(self, new_time):
+        self.current_time = new_time
 
     def is_time_to_awake(self):
         return self.current_time >= self.sleep_until
