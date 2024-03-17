@@ -1,9 +1,9 @@
 from tinkoff.invest import OrderDirection
 
-from helper.database_helper import AbstractDatabaseHelper
+from helper.accounting_helper import AbstractAccountingHelper
 
 
-class DatabaseTestEnvHelper(AbstractDatabaseHelper):
+class AccountingTestEnvHelper(AbstractAccountingHelper):
     def __init__(self, client):
         self.client = client
         self.sum = 0

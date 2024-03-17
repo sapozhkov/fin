@@ -7,7 +7,7 @@ from signal import *
 from dotenv import load_dotenv
 from tinkoff.invest import OrderDirection, OrderType, CandleInterval, Quotation, MoneyValue
 
-from helper.database_helper import Database, AbstractDatabaseHelper
+from helper.accounting_helper import AbstractAccountingHelper, AccountingHelper
 from helper.logger_helper import LoggerHelper, AbstractLoggerHelper
 from helper.time_helper import TimeHelper, AbstractTimeHelper
 from helper.tinkoff_client import TinkoffProxyClient, AbstractProxyClient
@@ -30,13 +30,13 @@ class ScalpingBot:
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
             client_helper: AbstractProxyClient | None = None,
-            database_helper: AbstractDatabaseHelper | None = None,
+            accounting_helper: AbstractAccountingHelper | None = None,
     ):
         # хелперы
         self.time = time_helper or TimeHelper()
         self.logger = logger_helper or LoggerHelper(__name__)
         self.client = client_helper or TinkoffProxyClient(token, ticker, self.logger)
-        self.db = database_helper or Database(__file__, self.client)
+        self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
         # конфигурация
         self.commission = 0.0005
@@ -45,7 +45,7 @@ class ScalpingBot:
 
         self.candles_count = candles_count
 
-        self.sleep_trading = 7 * 60
+        self.sleep_trading = 300
         self.sleep_no_trade = 300
         self.no_operation_timeout_seconds = 300
 
@@ -217,7 +217,7 @@ class ScalpingBot:
         if self.state == self.STATE_HAS_1:
             order_status = self.sell()
             self.log(f"SELL order executed, price {self.client.quotation_to_float(order_status.executed_order_price)}")
-            self.db.add_deal_by_order(order_status)
+            self.accounting.add_deal_by_order(order_status)
             self.change_state_sold()
             self.sell_order = None
 
@@ -238,7 +238,7 @@ class ScalpingBot:
             if order_is_executed:
                 self.log(f"BUY order executed, price "
                          f"{self.client.quotation_to_float(order_status.executed_order_price)}")
-                self.db.add_deal_by_order(order_status)
+                self.accounting.add_deal_by_order(order_status)
                 self.change_state_bought()
                 self.buy_order = None
                 self.reset_last_operation_time()
@@ -249,7 +249,7 @@ class ScalpingBot:
             if order_is_executed:
                 self.log(f"SELL order executed, price "
                          f"{self.client.quotation_to_float(order_status.executed_order_price)}")
-                self.db.add_deal_by_order(order_status)
+                self.accounting.add_deal_by_order(order_status)
                 self.change_state_sold()
                 self.sell_order = None
                 self.reset_last_operation_time()

@@ -7,13 +7,13 @@ import pytz
 from tinkoff.invest import OrderDirection
 
 
-class AbstractDatabaseHelper(ABC):
+class AbstractAccountingHelper(ABC):
     @abstractmethod
     def add_deal_by_order(self, order):
         pass
 
 
-class Database():
+class AccountingHelper(AbstractAccountingHelper):
     def __init__(self, file, client):
         file_path = Path(file)
         file_name = file_path.name.replace('.py', '')
