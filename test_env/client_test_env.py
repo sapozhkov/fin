@@ -4,10 +4,11 @@ from tinkoff.invest import OrderType, PostOrderResponse, OrderDirection, MoneyVa
     GetCandlesResponse
 
 from helper.tinkoff_client import AbstractProxyClient
+from test_env.time_test_env import TimeTestEnvHelper
 
 
 class ClientTestEnvHelper(AbstractProxyClient):
-    def __init__(self, ticker, logger, time_helper, candles_1_min):
+    def __init__(self, ticker, logger, time_helper: TimeTestEnvHelper, candles_1_min):
         super().__init__()
         self.ticker = ticker
         self.logger = logger
