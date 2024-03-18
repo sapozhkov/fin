@@ -3,11 +3,14 @@ from test_env.time_test_env import TimeTestEnvHelper
 
 
 class LoggerTestEnvHelper(AbstractLoggerHelper):
-    def __init__(self, time_helper: TimeTestEnvHelper):
+    def __init__(self, time_helper: TimeTestEnvHelper, do_printing=True):
         super().__init__()
         self.time = time_helper
+        self.do_printing = do_printing
 
     def info(self, message):
+        if not self.do_printing:
+            return
         time = self.time.current_time
         print(f"{time.hour + self.time.tmz}{time.strftime(":%M")} - {message}")
 
