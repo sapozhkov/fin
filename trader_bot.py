@@ -143,8 +143,8 @@ class ScalpingBot:
         low_prices = [candle.low.units + candle.low.nano * 1e-9 for candle in candles.candles]
 
         # Рассчитываем процентное изменение для high и low
-        high_changes = [(high_prices[i] - high_prices[i - 1]) / high_prices[i - 1] for i in range(1, len(high_prices))]
-        low_changes = [(low_prices[i] - low_prices[i - 1]) / low_prices[i - 1] for i in range(1, len(low_prices))]
+        high_changes = [(high_prices[i] - high_prices[i - 1]) / high_prices[i - 1] if high_prices[i - 1] else 0 for i in range(1, len(high_prices))]
+        low_changes = [(low_prices[i] - low_prices[i - 1]) / low_prices[i - 1] if low_prices[i - 1] else 0 for i in range(1, len(low_prices))]
 
         # Среднее процентное изменение
         avg_high_change = sum(high_changes) / len(high_changes)

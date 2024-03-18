@@ -35,7 +35,7 @@ class HistoricalDataHandler:
         conn.close()
 
     @staticmethod
-    def get_previous_weekdays(end_date, days_num):
+    def get_days_list(end_date, days_num):
         """
         Возвращает список предыдущих будних дней.
 
@@ -58,6 +58,14 @@ class HistoricalDataHandler:
         weekdays.reverse()
 
         return weekdays
+
+    @staticmethod
+    def get_hour_minute_pairs(start_datetime, end_datetime):
+        """итератор по минутам для заданного времени"""
+        current_datetime = start_datetime
+        while current_datetime <= end_datetime:
+            yield current_datetime
+            current_datetime += timedelta(minutes=1)
 
     @staticmethod
     def q2f(quotation: Quotation, digits=2):

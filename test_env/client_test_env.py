@@ -8,12 +8,19 @@ from test_env.time_test_env import TimeTestEnvHelper
 
 
 class ClientTestEnvHelper(AbstractProxyClient):
-    def __init__(self, ticker, logger, time_helper: TimeTestEnvHelper, candles_1_min):
+    def __init__(self,
+                 ticker,
+                 logger,
+                 time_helper: TimeTestEnvHelper,
+                 candles_1_min: GetCandlesResponse | None = None
+                 ):
         super().__init__()
         self.ticker = ticker
         self.logger = logger
         self.time = time_helper
-        self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles_1_min.candles}
+        self.candles_1_min_dict: dict = {}
+        if candles_1_min:
+            self.set_candles_list(candles_1_min)
 
         self.buy_order = None
         self.buy_order_executed = False
@@ -29,6 +36,11 @@ class ClientTestEnvHelper(AbstractProxyClient):
         self.current_candle: HistoricCandle | None = None
         self.current_price: float = 0
         self.commission: float = 0.0005
+
+    def set_candles_list(self, candles: GetCandlesResponse):
+        self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
+        self.total_completed_orders = 0
+        self.total_completed_orders_on_border = 0
 
     def set_current_candle(self, candle: HistoricCandle):
         self.current_candle = candle

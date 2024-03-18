@@ -10,6 +10,10 @@ class AccountingTestEnvHelper(AbstractAccountingHelper):
         self.sum = 0
         self.deals = []
 
+    def reset(self):
+        self.sum = 0
+        self.deals = []
+
     def add_deal_by_order(self, order):
         price = self.client.quotation_to_float(order.executed_order_price)
 
