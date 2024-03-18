@@ -24,9 +24,15 @@ class ScalpingBot:
 
     def __init__(
             self, token, ticker,
+
             profit_steps=5,
             stop_loss_percent=1.0,
             candles_count=4,
+
+            sleep_trading=5 * 60,
+            sleep_no_trade=300,
+            no_operation_timeout_seconds=300,
+
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
             client_helper: AbstractProxyClient | None = None,
@@ -45,9 +51,9 @@ class ScalpingBot:
 
         self.candles_count = candles_count
 
-        self.sleep_trading = 5 * 60
-        self.sleep_no_trade = 300
-        self.no_operation_timeout_seconds = 300
+        self.sleep_trading = sleep_trading
+        self.sleep_no_trade = sleep_no_trade
+        self.no_operation_timeout_seconds = no_operation_timeout_seconds
 
         # внутренние переменные
         self.state = self.STATE_HAS_0
