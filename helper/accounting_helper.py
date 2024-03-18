@@ -19,7 +19,7 @@ class AccountingHelper(AbstractAccountingHelper):
         file_name = file_path.name.replace('.py', '')
 
         self.db_alg_name = f"{file_name}"
-        self.db_file_name = '../db/trading_bot.db'
+        self.db_file_name = 'db/trading_bot.db'
 
         self.client = client
 
