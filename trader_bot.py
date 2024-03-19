@@ -182,8 +182,6 @@ class ScalpingBot:
                      f"price={self.client.quotation_to_float(self.buy_order.initial_order_price)} canceled")
         self.buy_order = None
 
-        self.reset_last_operation_time()
-
     def cancel_sell_order(self):
         if self.sell_order is None:
             return
@@ -192,8 +190,6 @@ class ScalpingBot:
             self.log(f"Sell order {self.sell_order.order_id}, "
                      f"price={self.client.quotation_to_float(self.sell_order.initial_order_price)} canceled")
         self.sell_order = None
-
-        self.reset_last_operation_time()
 
     def check_and_cansel_orders(self):
         """Сбрасываем активные заявки, если не было активных действий за последнее время"""
