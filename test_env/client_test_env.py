@@ -41,6 +41,9 @@ class ClientTestEnvHelper(AbstractProxyClient):
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
         self.total_completed_orders = 0
         self.total_completed_orders_on_border = 0
+        self.sell_order = None  # ???
+        self.sell_order_executed = False
+        self.sell_order_executed_on_border = False
 
     def set_current_candle(self, candle: HistoricCandle):
         self.current_candle = candle
