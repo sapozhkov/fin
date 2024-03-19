@@ -75,7 +75,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         return MoneyValue(self.currency, units=int(price), nano=int((self.round(price - int(price))) * 1e9))
 
     def place_order(self, lots: int, operation,
-                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse:
+                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
         order_id = '111' if operation == OrderDirection.ORDER_DIRECTION_BUY else '222'
 
         # покупка по рыночной цене
@@ -243,7 +243,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
             return (
                 res,
-                order  # todo вот тут может отстрелить, так как не тот объект отдается, который ожидается
+                order
             )
 
         else:

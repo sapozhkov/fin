@@ -6,6 +6,7 @@ from test_env.client_test_env import ClientTestEnvHelper
 
 class AccountingTestEnvHelper(AbstractAccountingHelper):
     def __init__(self, client: ClientTestEnvHelper):
+        super().__init__()
         self.client = client
         self.sum = 0
         self.deals = []
@@ -15,6 +16,8 @@ class AccountingTestEnvHelper(AbstractAccountingHelper):
         self.deals = []
 
     def add_deal_by_order(self, order):
+        super().add_deal_by_order(order)
+
         price = self.client.quotation_to_float(order.executed_order_price)
 
         self.deals.append({

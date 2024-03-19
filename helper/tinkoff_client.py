@@ -1,8 +1,10 @@
 from abc import abstractmethod, ABC
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus, \
     CandleInterval, PostOrderResponse, MoneyValue
+
+from helper.time_helper import AbstractTimeHelper
 
 
 class AbstractProxyClient(ABC):
@@ -22,6 +24,8 @@ class AbstractProxyClient(ABC):
         self.step_size = 0
         self.figi = ''
         self.currency = ''
+        self.current_price = 0.0
+        self.time: AbstractTimeHelper | None = None
 
     @abstractmethod
     def can_trade(self):
@@ -48,8 +52,23 @@ class AbstractProxyClient(ABC):
 
     @abstractmethod
     def place_order(self, lots: int, operation,
-                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse:
+                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
         pass
+
+    # Базовая функция для загрузки данных последних свечей
+    def fetch_candles(self, interval=CandleInterval.CANDLE_INTERVAL_5_MIN, candles_count=5):
+        to_date = self.time.now()
+        minutes_per_candle = self.interval_duration_minutes[interval]
+        from_date = to_date - timedelta(minutes=minutes_per_candle * candles_count)
+
+        candles = self.get_candles(from_date, to_date, interval)
+
+        # обновляем текущую цену инструмента
+        if candles.candles:
+            last_candle = candles.candles[-1]
+            self.current_price = self.quotation_to_float(last_candle.close)
+
+        return candles
 
     @abstractmethod
     def get_candles(self, from_date, to_date, interval):
@@ -69,10 +88,11 @@ class AbstractProxyClient(ABC):
 
 
 class TinkoffProxyClient(AbstractProxyClient):
-    def __init__(self, token, ticker, logger):
+    def __init__(self, token, ticker, time, logger):
         super().__init__()
         self.token = token
         self.ticker = ticker
+        self.time = time
         self.logger = logger
 
         self.set_ticker_params()
@@ -118,7 +138,7 @@ class TinkoffProxyClient(AbstractProxyClient):
         return True
 
     def place_order(self, lots: int, operation,
-                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse:
+                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
         try:
             price_quotation = self.float_to_quotation(price=price) if price else None
             with Client(self.token) as client:

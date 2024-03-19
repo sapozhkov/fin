@@ -8,13 +8,21 @@ from tinkoff.invest import OrderDirection
 
 
 class AbstractAccountingHelper(ABC):
-    @abstractmethod
+    def __init__(self):
+        self.last_buy_price = 0.0
+        self.last_sell_price = 0.0
+
     def add_deal_by_order(self, order):
-        pass
+        price = self.client.quotation_to_float(order.executed_order_price)
+        if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
+            self.last_buy_price = price
+        else:
+            self.last_sell_price = price
 
 
 class AccountingHelper(AbstractAccountingHelper):
     def __init__(self, file, client):
+        super().__init__()
         file_path = Path(file)
         file_name = file_path.name.replace('.py', '')
 
@@ -24,6 +32,7 @@ class AccountingHelper(AbstractAccountingHelper):
         self.client = client
 
     def add_deal_by_order(self, order):
+        super().add_deal_by_order(order)
         price = self.client.quotation_to_float(order.executed_order_price)
         if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
             price = -price

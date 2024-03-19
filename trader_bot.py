@@ -1,11 +1,10 @@
 import os
 import sys
 from datetime import time as datetime_time
-from datetime import timedelta
 from signal import *
 
 from dotenv import load_dotenv
-from tinkoff.invest import OrderDirection, OrderType, CandleInterval, Quotation, MoneyValue
+from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue
 
 from helper.accounting_helper import AbstractAccountingHelper, AccountingHelper
 from helper.logger_helper import LoggerHelper, AbstractLoggerHelper
@@ -33,6 +32,8 @@ class ScalpingBot:
             sleep_no_trade=300,
             no_operation_timeout_seconds=300,
 
+            always_sell_koef=0.5,
+
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
             client_helper: AbstractProxyClient | None = None,
@@ -41,13 +42,14 @@ class ScalpingBot:
         # хелперы
         self.time = time_helper or TimeHelper()
         self.logger = logger_helper or LoggerHelper(__name__)
-        self.client = client_helper or TinkoffProxyClient(token, ticker, self.logger)
+        self.client = client_helper or TinkoffProxyClient(token, ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
         # конфигурация
         self.commission = 0.0005
         self.profit_steps = profit_steps
         self.stop_loss_percent = stop_loss_percent / 100
+        self.always_sell_koef = always_sell_koef / 100
 
         self.candles_count = candles_count
 
@@ -124,16 +126,6 @@ class ScalpingBot:
             order_type=OrderType.ORDER_TYPE_LIMIT
         )
 
-    # Базовая функция для загрузки данных последних свечей
-    def fetch_candles(self, interval=CandleInterval.CANDLE_INTERVAL_5_MIN, candles_count=5):
-        # todo вот тут проверить, что получается то время, которое нужно
-        to_date = self.time.now()
-        minutes_per_candle = self.client.interval_duration_minutes[interval]
-        from_date = to_date - timedelta(minutes=minutes_per_candle * candles_count)
-
-        # todo сверить тестовый прогон и реальный. тестовый отдает 3 шт. желательно, чтобы было одинаково
-        return self.client.get_candles(from_date, to_date, interval)
-
     def forecast_next_candle(self, candles):
         if len(candles.candles) < 2:
             return None, None
@@ -193,15 +185,15 @@ class ScalpingBot:
                      f"price={self.client.quotation_to_float(self.sell_order.initial_order_price)} canceled")
         self.sell_order = None
 
-    def check_and_cansel_orders(self):
-        """Сбрасываем активные заявки, если не было активных действий за последнее время"""
+    def check_is_inactive(self):
+        """Проверяем на бездействие в течение заданного времени"""
         current_time = self.time.now()
         if ((current_time - self.last_successful_operation_time).total_seconds() >=
                 self.no_operation_timeout_seconds):
             self.log(f"{self.no_operation_timeout_seconds / 60} "
                      f"минут без активности. Снимаем и переставляем заявки.")
-            self.cancel_active_orders()
-            self.reset_last_operation_time()
+            return True
+        return False
 
     def equivalent_prices(self, quotation_price: Quotation | MoneyValue, float_price: float) -> bool:
         rounded_quotation_price = self.client.quotation_to_float(quotation_price)
@@ -253,11 +245,13 @@ class ScalpingBot:
                 self.sell_order = None
                 self.reset_last_operation_time()
 
-        # сбрасываем активные заявки, если не было активных действий за последнее время
-        self.check_and_cansel_orders()
+        # сбрасываем заявку на покупку при бездействии
+        if self.check_is_inactive() and self.buy_order:
+            self.cancel_buy_order()
+            self.reset_last_operation_time()
 
         # прикидываем цены
-        last_candles = self.fetch_candles(candles_count=self.candles_count)
+        last_candles = self.client.fetch_candles(candles_count=self.candles_count)
         forecast_low, forecast_high = self.forecast_next_candle(last_candles)
         if forecast_low is None:
             self.log('Ошибка вычисления прогнозируемого диапазона. Перезапуск алгоритма')
@@ -311,6 +305,33 @@ class ScalpingBot:
                         self.log(f"Размещена заявка на продажу по {forecast_high}")
                     else:
                         self.log(f"НЕ Размещена заявка на продажу по {forecast_high}")
+
+        # если не в диапазоне торговли
+        elif self.always_sell_koef:
+
+            # можем продавать
+            if self.can_sell():
+
+                base_price = self.accounting.last_buy_price \
+                    if self.accounting.last_buy_price else self.client.current_price
+                need_sell_price = base_price * (1 + self.always_sell_koef)
+
+                # есть заявка
+                if self.sell_order:
+
+                    # цена отличается - меняем
+                    if not self.equivalent_prices(self.sell_order.initial_order_price, need_sell_price):
+                        self.log(f"Меняем цену продажи (резервная) на {need_sell_price}")
+                        self.cancel_sell_order()
+                        self.sell_order = self.sell_limit(need_sell_price)
+
+                # нет заявки - ставим
+                else:
+                    self.sell_order = self.sell_limit(need_sell_price)
+                    if self.sell_order:
+                        self.log(f"Размещена заявка на продажу (резервная) по {need_sell_price}")
+                    else:
+                        self.log(f"НЕ Размещена заявка на продажу (резервная) по {need_sell_price}")
 
         else:
             self.log(f"Пока не торгуем. "
