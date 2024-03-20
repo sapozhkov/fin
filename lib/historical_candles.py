@@ -3,12 +3,12 @@ from datetime import datetime, timedelta
 from tinkoff.invest import Client, GetCandlesResponse, CandleInterval, Quotation, HistoricCandle
 
 
-class HistoricalDataHandler:
+class HistoricalCandles:
     def __init__(self, token, figi, ticker):
         self.token = token
         self.figi = figi
         self.ticker = ticker
-        self.db_file = f"db/test_{ticker}.db"
+        self.db_file = f"./db/test_{ticker}.db"
         self.create_database()
 
     def create_database(self):
