@@ -75,7 +75,7 @@ class ScalpingBot:
                  f"     commission - {self.commission * 100} %\n"
                  f"     no_operation_timeout_seconds - {self.no_operation_timeout_seconds} sec\n"
                  f"     sleep_trading - {self.sleep_trading} sec\n"
-                 f"     sleep_no_trade - {self.sleep_trading} sec\n"
+                 f"     sleep_no_trade - {self.sleep_no_trade} sec\n"
                  )
 
     def log(self, message, repeat=False):
