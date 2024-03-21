@@ -1,11 +1,12 @@
-from datetime import timezone
+from datetime import timezone, datetime
 from dateutil import parser
 
 
 class DealDTO:
-    def __init__(self, id_, datetime, type_, algorithm_name, price, commission, total):
+    def __init__(self, id_, datetime_, type_, algorithm_name, price, commission, total):
         self.id = id_
-        self.datetime = parser.parse(datetime).astimezone(timezone.utc)
+        self.datetime = datetime_ if isinstance(datetime_, datetime) \
+            else parser.parse(datetime_).astimezone(timezone.utc)
         self.type = type_
         self.algorithm_name = algorithm_name
         self.price = price

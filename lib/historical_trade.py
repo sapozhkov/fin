@@ -64,7 +64,7 @@ class HistoricalTrade:
         conn.commit()
         conn.close()
 
-    def get_daily_totals(self, date=None) -> list[HistoricalTradeDTO]:
+    def get_daily_totals(self, date=None, alg_name=None) -> list[HistoricalTradeDTO]:
         if date is None:
             date = datetime.now().strftime('%Y-%m-%d')
 
@@ -72,7 +72,7 @@ class HistoricalTrade:
         cursor = conn.cursor()
 
         # Получаем аггрегированные данные по дням и algorithm_name
-        cursor.execute('''
+        query = '''
         SELECT 
             algorithm_name, 
             strftime('%Y-%m-%d', SUBSTR(datetime, 1, 19)) AS day,
@@ -80,9 +80,17 @@ class HistoricalTrade:
             count(*) AS cnt
         FROM deals
         WHERE date(SUBSTR(datetime, 1, 19)) = ?
-        GROUP BY algorithm_name, day
-        ORDER BY algorithm_name, day
-        ''', (date,))
+        '''
+
+        params = [date]
+
+        if alg_name:
+            query += ' AND algorithm_name = ?'
+            params.append(alg_name)
+
+        query += ' GROUP BY algorithm_name, day ORDER BY algorithm_name, day'
+
+        cursor.execute(query, tuple(params))
 
         aggregated_results = cursor.fetchall()
         results = []
