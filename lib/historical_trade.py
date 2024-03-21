@@ -2,14 +2,16 @@ from datetime import datetime
 import sqlite3
 from itertools import groupby
 
+from tinkoff.invest import OrderDirection
+
 from dto.deal_dto import DealDTO
 from dto.historical_trade_dto import HistoricalTradeDTO
 
 
 class HistoricalTrade:
 
-    TYPE_BUY = 1
-    TYPE_SELL = 2
+    TYPE_BUY = OrderDirection.ORDER_DIRECTION_BUY
+    TYPE_SELL = OrderDirection.ORDER_DIRECTION_SELL
 
     def __init__(self):
         self.db_file = './db/trading_bot.db'

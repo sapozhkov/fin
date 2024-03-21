@@ -38,7 +38,9 @@ class TestAlgorithm:
             candles_count=4,
             sleep_trading=5 * 60,
             sleep_no_trade=300,
-            always_sell_koef=.5,
+            take_profit_percent=1.5,
+            quit_on_balance_up_percent=2,
+            quit_on_balance_down_percent=2,
             start_time='07:45',  # 10:45
             end_time='15:15',  # 18:15
             no_operation_timeout_seconds=300,
@@ -76,7 +78,9 @@ class TestAlgorithm:
                 sleep_no_trade=sleep_no_trade,
                 no_operation_timeout_seconds=no_operation_timeout_seconds,
 
-                always_sell_koef=always_sell_koef,
+                take_profit_percent=take_profit_percent,
+                quit_on_balance_up_percent=quit_on_balance_up_percent,
+                quit_on_balance_down_percent=quit_on_balance_down_percent,
 
                 time_helper=self.time_helper,
                 logger_helper=self.logger_helper,
@@ -91,6 +95,9 @@ class TestAlgorithm:
 
             # Использование итератора для вывода каждой пары час-минута
             for dt in self.data_handler.get_hour_minute_pairs(date_from, date_to):
+                if not bot.continue_trading:
+                    break
+
                 # задаем время
                 self.time_helper.set_time(dt)
 
@@ -151,7 +158,7 @@ class TestAlgorithm:
             'candles_count': candles_count,
             'sleep_trading': sleep_trading,
 
-            'always_sell_koef': always_sell_koef,
+            'take_profit_percent': take_profit_percent,
 
             'operations_cnt': operations_cnt,
             'operations_avg': round(sum(operations_cnt_list) / test_days_num, 2),

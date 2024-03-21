@@ -22,6 +22,7 @@ class AbstractProxyClient(ABC):
         # авто расчет надо переделать если будут инструменты с шагом не кратным десятой доле #26
         self.round_signs = 0
         self.step_size = 0
+        self.ticker = ''
         self.figi = ''
         self.currency = ''
         self.current_price = 0.0

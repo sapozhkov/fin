@@ -25,14 +25,15 @@ class ScalpingBot:
             self, token, ticker,
 
             profit_steps=5,
-            stop_loss_percent=1.0,
             candles_count=4,
+            stop_loss_percent=0.3,
+            take_profit_percent=1.5,
+            quit_on_balance_up_percent=2,
+            quit_on_balance_down_percent=2,
 
             sleep_trading=5 * 60,
             sleep_no_trade=300,
             no_operation_timeout_seconds=300,
-
-            always_sell_koef=0.5,
 
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
@@ -44,12 +45,15 @@ class ScalpingBot:
         self.logger = logger_helper or LoggerHelper(__name__)
         self.client = client_helper or TinkoffProxyClient(token, ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
+        self.continue_trading = True
 
         # конфигурация
-        self.commission = 0.0005
+        self.commission = 0.05 / 100
         self.profit_steps = profit_steps
         self.stop_loss_percent = stop_loss_percent / 100
-        self.always_sell_koef = always_sell_koef / 100
+        self.take_profit_percent = take_profit_percent / 100
+        self.quit_on_balance_up_percent = quit_on_balance_up_percent / 100
+        self.quit_on_balance_down_percent = quit_on_balance_down_percent / 100
 
         self.candles_count = candles_count
 
@@ -202,6 +206,7 @@ class ScalpingBot:
 
     def stop(self):
         self.log("Остановка бота...")
+        self.continue_trading = False
         self.cancel_active_orders()
 
         # продать откупленные инструменты
@@ -212,11 +217,36 @@ class ScalpingBot:
             self.change_state_sold()
             self.sell_order = None
 
+    def check_trade_balance_limits(self):
+        balance = self.accounting.sum
+        threshold = self.client.current_price * 0.2
+
+        # сильное отклонение - мы не в нулевом состоянии
+        if not -threshold < balance < threshold:
+            return False
+
+        if self.quit_on_balance_up_percent:
+            need_change = round(self.client.current_price * self.quit_on_balance_up_percent, 2)
+            if balance >= need_change:
+                self.log(f"Достигнут требуемый лимит роста в {need_change} {self.client.currency}")
+                return True
+
+        if self.quit_on_balance_down_percent:
+            need_change = -round(self.client.current_price * self.quit_on_balance_down_percent, 2)
+            if balance <= need_change:
+                self.log(f"Достигнут ограничивающий лимит падения в {need_change} {self.client.currency}")
+                return True
+
+        return False
+
     def run(self):
-        while True:
+        while self.continue_trading:
             self.run_iteration()
 
     def run_iteration(self):
+        if not self.continue_trading:
+            return
+
         if not self.can_trade():
             self.log(f"can not trade, sleep {self.sleep_no_trade}")
             self.time.sleep(self.sleep_no_trade)  # Спим, если торговать нельзя
@@ -244,6 +274,11 @@ class ScalpingBot:
                 self.change_state_sold()
                 self.sell_order = None
                 self.reset_last_operation_time()
+
+        # если заработали в моменте больше порога, выходим
+        if self.check_trade_balance_limits():
+            self.stop()
+            return
 
         # сбрасываем заявку на покупку при бездействии
         if self.check_is_inactive() and self.buy_order:
@@ -307,14 +342,14 @@ class ScalpingBot:
                         self.log(f"НЕ Размещена заявка на продажу по {forecast_high}")
 
         # если не в диапазоне торговли
-        elif self.always_sell_koef:
+        elif self.take_profit_percent:
 
             # можем продавать
             if self.can_sell():
 
                 base_price = self.accounting.last_buy_price \
                     if self.accounting.last_buy_price else self.client.current_price
-                need_sell_price = base_price * (1 + self.always_sell_koef)
+                need_sell_price = base_price * (1 + self.take_profit_percent)
 
                 # есть заявка
                 if self.sell_order:
