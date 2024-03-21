@@ -40,7 +40,7 @@ class TestAlgorithm:
             sleep_no_trade=300,
             take_profit_percent=1.5,
             quit_on_balance_up_percent=2,
-            quit_on_balance_down_percent=2,
+            quit_on_balance_down_percent=1,
             start_time='07:45',  # 10:45
             end_time='15:15',  # 18:15
             no_operation_timeout_seconds=300,
@@ -57,7 +57,7 @@ class TestAlgorithm:
         # закручиваем цикл по датам
         for test_date in days_list:
             # дальше текущего времени не убегаем
-            end_time = self.get_end_date(test_date, end_time)
+            end_time = self.get_end_time(test_date, end_time)
 
             # прогоняем по дню (-3 часа для компенсации часового сдвига)
             date_from = datetime.strptime(test_date + ' ' + start_time, "%Y-%m-%d %H:%M")
@@ -159,6 +159,8 @@ class TestAlgorithm:
             'sleep_trading': sleep_trading,
 
             'take_profit_percent': take_profit_percent,
+            'quit_on_balance_up_percent': quit_on_balance_up_percent,
+            'quit_on_balance_down_percent': quit_on_balance_down_percent,
 
             'operations_cnt': operations_cnt,
             'operations_avg': round(sum(operations_cnt_list) / test_days_num, 2),
@@ -167,7 +169,7 @@ class TestAlgorithm:
         }
 
     @staticmethod
-    def get_end_date(test_date, end_time):
+    def get_end_time(test_date, end_time):
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         if test_date != today:
             return end_time

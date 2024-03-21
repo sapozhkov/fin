@@ -29,7 +29,7 @@ class ScalpingBot:
             stop_loss_percent=0.3,
             take_profit_percent=1.5,
             quit_on_balance_up_percent=2,
-            quit_on_balance_down_percent=2,
+            quit_on_balance_down_percent=1,
 
             sleep_trading=5 * 60,
             sleep_no_trade=300,
