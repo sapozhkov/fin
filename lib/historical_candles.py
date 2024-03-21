@@ -80,8 +80,8 @@ class HistoricalCandles:
     def get_candles(self, date):
         today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         if date == today:
-            # Запрос к API для сегодняшней даты
-            return self.fetch_candles_from_api(date)
+            # Запрос к API для сегодняшней даты всегда к API и без сохранения
+            return self.fetch_candles_from_api(date, False)
 
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
@@ -89,7 +89,10 @@ class HistoricalCandles:
         rows = cursor.fetchall()
         conn.close()
 
-        if rows and len(rows) > 1:
+        if rows:
+            if len(rows) == 1:
+                return GetCandlesResponse(candles=[])
+
             candles = []
             for row in rows:
                 date, open_, high, low, close, volume = row
@@ -106,9 +109,9 @@ class HistoricalCandles:
             return GetCandlesResponse(candles=candles)
         else:
             # Запрос к API, если нет данных в базе
-            return self.fetch_candles_from_api(date)
+            return self.fetch_candles_from_api(date, True)
 
-    def fetch_candles_from_api(self, date):
+    def fetch_candles_from_api(self, date, save=True):
         with Client(self.token) as client:
             from_time = datetime.strptime(date + " 06:55", "%Y-%m-%d %H:%M")
             to_time = datetime.strptime(date + " 19:00", "%Y-%m-%d %H:%M")
@@ -118,4 +121,34 @@ class HistoricalCandles:
                 to=to_time,
                 interval=CandleInterval.CANDLE_INTERVAL_1_MIN
             )
+
+            if save:
+                conn = sqlite3.connect(self.db_file)
+                cursor = conn.cursor()
+
+                if candles.candles:
+                    for candle in candles.candles:
+                        cursor.execute('''
+                        INSERT INTO candles (date, open, high, low, close, volume)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                        ''', (
+                            candle.time,
+                            self.q2f(candle.open),
+                            self.q2f(candle.high),
+                            self.q2f(candle.low),
+                            self.q2f(candle.close),
+                            candle.volume
+                        ))
+                    conn.commit()
+
+                else:
+                    # Сохранение записи-признака отсутствия данных
+                    cursor.execute('''
+                    INSERT INTO candles (date, open, high, low, close, volume)
+                    VALUES (?, 0, 0, 0, 0, 0)
+                    ''', (date + " 00:00",))
+                    conn.commit()
+
+                conn.close()
+
             return candles
