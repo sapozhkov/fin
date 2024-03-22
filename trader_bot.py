@@ -218,7 +218,7 @@ class ScalpingBot:
             self.sell_order = None
 
         self.log(f"Итог {round(self.accounting.sum, 2)} {self.client.currency} "
-                 f"({round(100* self.accounting.sum / self.client.current_price, 2)}%)")
+                 f"({round(100 * self.accounting.sum / self.client.current_price, 2)}%)")
 
     def check_trade_balance_limits(self):
         balance = self.accounting.sum
