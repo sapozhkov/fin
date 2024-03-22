@@ -217,6 +217,9 @@ class ScalpingBot:
             self.change_state_sold()
             self.sell_order = None
 
+        self.log(f"Итог {round(self.accounting.sum, 2)} {self.client.currency} "
+                 f"({round(100* self.accounting.sum / self.client.current_price, 2)}%)")
+
     def check_trade_balance_limits(self):
         balance = self.accounting.sum
         threshold = self.client.current_price * 0.2
@@ -228,13 +231,15 @@ class ScalpingBot:
         if self.quit_on_balance_up_percent:
             need_change = round(self.client.current_price * self.quit_on_balance_up_percent, 2)
             if balance >= need_change:
-                self.log(f"Достигнут требуемый лимит роста в {need_change} {self.client.currency}")
+                self.log(f"Достигнут требуемый лимит роста в {need_change} "
+                         f"(факт {balance}) {self.client.currency}")
                 return True
 
         if self.quit_on_balance_down_percent:
             need_change = -round(self.client.current_price * self.quit_on_balance_down_percent, 2)
             if balance <= need_change:
-                self.log(f"Достигнут ограничивающий лимит падения в {need_change} {self.client.currency}")
+                self.log(f"Достигнут ограничивающий лимит падения в {need_change} "
+                         f"(факт {balance}) {self.client.currency}")
                 return True
 
         return False
@@ -349,7 +354,7 @@ class ScalpingBot:
 
                 base_price = self.accounting.last_buy_price \
                     if self.accounting.last_buy_price else self.client.current_price
-                need_sell_price = base_price * (1 + self.take_profit_percent)
+                need_sell_price = self.client.round(base_price * (1 + self.take_profit_percent))
 
                 # есть заявка
                 if self.sell_order:
