@@ -8,7 +8,6 @@ class TaskProgress:
         self.start_time = time.time()
         self.current_iteration = 0
 
-        # Форматирование и вывод времени запуска
         print(f'Запуск в {datetime.now().strftime("%H:%M")}')
         print(f'Инициализация...', end='')
 
@@ -22,12 +21,17 @@ class TaskProgress:
 
         percent_complete = (self.current_iteration / self.total_iterations) * 100
 
-        # Очистка текущей строки в консоли
-        print('\r', end='')
-        print(f'Выполнено {percent_complete:.0f}% ({self.current_iteration}/{self.total_iterations}), ', end='')
+        # Расчет длины прогресс-бара
+        bar_length = 30
+        filled_length = int(round(bar_length * self.current_iteration / float(self.total_iterations)))
+        bar = '█' * filled_length + '-' * (bar_length - filled_length)
 
-        if self.current_iteration != self.total_iterations:
-            print(f'закончим в ~ {estimated_end_time.strftime("%H:%M")}', end='')
-        else:
-            print(f'закончено в {datetime.now().strftime("%H:%M")}, '
-                  f'длительность {timedelta(seconds=time.time() - self.start_time)}', end='\n')
+        # Очистка текущей строки в консоли и вывод прогресс-бара
+        print('\r', end='')
+        print(f'[{bar}] {percent_complete:.0f}% ({self.current_iteration}/{self.total_iterations}), '
+              f'закончим в ~ {estimated_end_time.strftime("%H:%M")}', end='')
+
+        if self.current_iteration == self.total_iterations:
+            print('\r' + ' ' * 100, end='\r')
+            duration = timedelta(seconds=round(elapsed_time))
+            print(f'Закончено в {datetime.now().strftime("%H:%M")}, длительность {duration}', end='\n')
