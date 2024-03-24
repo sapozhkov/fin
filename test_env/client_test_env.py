@@ -1,7 +1,7 @@
 from datetime import time as datetime_time, datetime, timedelta
 
 from tinkoff.invest import OrderType, PostOrderResponse, OrderDirection, MoneyValue, HistoricCandle, \
-    GetCandlesResponse
+    GetCandlesResponse, OrderState, OrderExecutionReportStatus
 
 from helper.tinkoff_client import AbstractProxyClient
 from test_env.time_test_env import TimeTestEnvHelper
@@ -37,6 +37,10 @@ class ClientTestEnvHelper(AbstractProxyClient):
         self.current_price: float = 0
         self.commission: float = 0.0005
 
+        self.order_next_index = 0
+        self.orders: dict[str, PostOrderResponse] = {}
+        self.executed_orders_ids = []
+
     def set_candles_list(self, candles: GetCandlesResponse):
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
         self.total_completed_orders = 0
@@ -44,6 +48,8 @@ class ClientTestEnvHelper(AbstractProxyClient):
         self.sell_order = None  # ???
         self.sell_order_executed = False
         self.sell_order_executed_on_border = False
+        self.orders = {}
+        self.executed_orders_ids = []
 
     def set_current_candle(self, candle: HistoricCandle):
         self.current_candle = candle
@@ -74,15 +80,18 @@ class ClientTestEnvHelper(AbstractProxyClient):
     def float_to_money_value(self, price) -> MoneyValue:
         return MoneyValue(self.currency, units=int(price), nano=int((self.round(price - int(price))) * 1e9))
 
+    def get_new_order_id(self):
+        self.order_next_index += 1
+        return str(self.order_next_index)
+
     def place_order(self, lots: int, operation,
                     price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
-        order_id = '111' if operation == OrderDirection.ORDER_DIRECTION_BUY else '222'
 
         # покупка по рыночной цене
         if order_type == OrderType.ORDER_TYPE_MARKET:
             # считаем сразу исполненной по указанной цене минус комиссия
             return PostOrderResponse(
-                order_id=order_id,
+                order_id=self.get_new_order_id(),
                 order_type=order_type,
                 direction=operation,
                 initial_order_price=self.float_to_money_value(self.current_price),
@@ -94,15 +103,8 @@ class ClientTestEnvHelper(AbstractProxyClient):
         # иначе лимитная заявка
         elif order_type == OrderType.ORDER_TYPE_LIMIT:
 
-            if operation == OrderDirection.ORDER_DIRECTION_BUY:
-                self.buy_order_executed = False
-                self.buy_order_executed_on_border = False
-            elif operation == OrderDirection.ORDER_DIRECTION_SELL:
-                self.sell_order_executed = False
-                self.sell_order_executed_on_border = False
-
-            return PostOrderResponse(
-                order_id=order_id,
+            order = PostOrderResponse(
+                order_id=self.get_new_order_id(),
                 order_type=order_type,
                 direction=operation,
                 initial_order_price=self.float_to_money_value(price),
@@ -110,6 +112,10 @@ class ClientTestEnvHelper(AbstractProxyClient):
                 initial_commission=self.float_to_money_value(price * self.commission),
                 executed_commission=self.float_to_money_value(0),
             )
+
+            self.orders[order.order_id] = order
+
+            return order
 
         else:
             raise f"Unknown order_type: {order_type}"
@@ -206,7 +212,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
             is_complete=is_complete,
         )
 
-    def order_is_executed(self, order: PostOrderResponse):
+    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState):
 
         # покупка по рыночной цене
         if order.order_type == OrderType.ORDER_TYPE_MARKET:
@@ -222,7 +228,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
             res = False
 
             if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
-                if self.buy_order_executed:
+                if order.order_id in self.executed_orders_ids:
                     res = True
                     order.executed_order_price = self.float_to_money_value(order_price)
                     order.executed_commission = self.float_to_money_value(self.current_price * self.commission)
@@ -232,7 +238,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
                         self.total_completed_orders_on_border += 1
 
             elif order.direction == OrderDirection.ORDER_DIRECTION_SELL:
-                if self.sell_order_executed:
+                if order.order_id in self.executed_orders_ids:
                     res = True
                     order.executed_order_price = self.float_to_money_value(order_price)
                     order.executed_commission = self.float_to_money_value(self.current_price * self.commission)
@@ -243,7 +249,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
             return (
                 res,
-                order
+                self.get_order_state(order)
             )
 
         else:
@@ -256,3 +262,19 @@ class ClientTestEnvHelper(AbstractProxyClient):
         if not order:
             return False
         return True
+
+    def get_active_orders(self):
+        return [order for order_id, order in self.orders.items() if order_id not in self.executed_orders_ids]
+
+    def get_order_state(self, order: PostOrderResponse) -> OrderState:
+        return OrderState(
+            order_id=order.order_id,
+            order_type=order.order_type,
+            direction=order.direction,
+            initial_order_price=order.initial_order_price,
+            executed_order_price=order.executed_order_price,
+            initial_commission=order.initial_commission,
+            executed_commission=order.executed_commission,
+            execution_report_status=OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL
+            if order.order_id in self.executed_orders_ids else OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_NEW,
+        )

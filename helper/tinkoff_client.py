@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 from datetime import datetime, timezone, timedelta
 
 from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus, \
-    CandleInterval, PostOrderResponse, MoneyValue
+    CandleInterval, PostOrderResponse, MoneyValue, OrderState
 
 from helper.time_helper import AbstractTimeHelper
 
@@ -27,6 +27,7 @@ class AbstractProxyClient(ABC):
         self.currency = ''
         self.current_price = 0.0
         self.time: AbstractTimeHelper | None = None
+        # todo перевести все на self.client = Client(self.token)
 
     @abstractmethod
     def can_trade(self):
@@ -76,7 +77,7 @@ class AbstractProxyClient(ABC):
         pass
 
     @abstractmethod
-    def order_is_executed(self, order):
+    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState):
         pass
 
     @abstractmethod
@@ -85,6 +86,10 @@ class AbstractProxyClient(ABC):
 
     @abstractmethod
     def cancel_order(self, order):
+        pass
+
+    @abstractmethod
+    def get_active_orders(self):
         pass
 
 
@@ -171,7 +176,7 @@ class TinkoffProxyClient(AbstractProxyClient):
                 self.logger.error(f"Ошибка при запросе свечей: {e}")
                 return GetCandlesResponse([])
 
-    def order_is_executed(self, order):
+    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState):
         with Client(self.token) as client:
             order_state = client.orders.get_order_state(account_id=self.account_id, order_id=order.order_id)
             return (
@@ -196,3 +201,15 @@ class TinkoffProxyClient(AbstractProxyClient):
             except RequestError as e:
                 self.logger.error(f"Ошибка при закрытии заявки на покупку: {e}")
         return False
+
+    def get_active_orders(self):
+        with Client(self.token) as client:
+            try:
+                all_orders = client.orders.get_orders(account_id=self.account_id)
+                # todo вот это чекнуть в проде
+                active_orders = [order for order in all_orders.orders if order.execution_report_status
+                                 == OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL]
+                return active_orders
+            except Exception as e:
+                self.logger.error(f"Ошибка при получении активных заявок: {e}", True)
+                return []  # Возвращаем пустой список в случае ошибки

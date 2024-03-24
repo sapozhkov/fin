@@ -9,7 +9,6 @@ from dto.historical_trade_dto import HistoricalTradeDTO
 
 
 class HistoricalTrade:
-
     TYPE_BUY = OrderDirection.ORDER_DIRECTION_BUY
     TYPE_SELL = OrderDirection.ORDER_DIRECTION_SELL
 
@@ -66,7 +65,7 @@ class HistoricalTrade:
         conn.commit()
         conn.close()
 
-    def get_daily_totals(self, date=None, alg_name=None) -> list[HistoricalTradeDTO]:
+    def get_daily_totals(self, date=None, alg_name: str | None = None) -> list[HistoricalTradeDTO]:
         if date is None:
             date = datetime.now().strftime('%Y-%m-%d')
 

@@ -14,6 +14,7 @@ class AbstractAccountingHelper(ABC):
         self.last_buy_price = 0.0
         self.last_sell_price = 0.0
         self.sum = 0
+        self.num = 0
         self.client: AbstractProxyClient = client
 
     def add_deal_by_order(self, order):
@@ -22,8 +23,10 @@ class AbstractAccountingHelper(ABC):
         if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
             self.last_buy_price = price
             price = -price
+            self.num += 1
         else:
             self.last_sell_price = price
+            self.num -= 1
 
         commission = self.client.quotation_to_float(order.executed_commission, 2)
         # хак. иногда итоговая комиссия не проставляется в нужное поле

@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from tinkoff.invest import OrderDirection
+
 from test_env.client_test_env import ClientTestEnvHelper
 from test_env.logger_test_env import LoggerTestEnvHelper
 from test_env.time_test_env import TimeTestEnvHelper
@@ -109,20 +111,21 @@ class TestAlgorithm:
                 # задаем текущее значение свечи
                 self.client_helper.set_current_candle(candle)
 
-                # анализируем заявки - успешные помечаем
-                if bot.buy_order:
-                    buy_price = self.client_helper.quotation_to_float(bot.buy_order.initial_order_price)
-                    low_buy_price = self.client_helper.quotation_to_float(candle.low)
-                    if buy_price >= low_buy_price:
-                        self.client_helper.buy_order_executed = True
-                        self.client_helper.buy_order_executed_on_border = buy_price == low_buy_price
+                for order_id, order in self.client_helper.orders.items():
+                    if order_id in self.client_helper.executed_orders_ids:
+                        continue
+                    price = self.client_helper.quotation_to_float(order.initial_order_price)
+                    if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
+                        low_buy_price = self.client_helper.quotation_to_float(candle.low)
+                        order_executed = price >= low_buy_price
+                        # order_executed_on_border = price == low_buy_price
+                    else:
+                        high_sell_price = self.client_helper.quotation_to_float(candle.high)
+                        order_executed = price <= high_sell_price
+                        # order_executed_on_border = price == high_sell_price
 
-                if bot.sell_order:
-                    sell_price = self.client_helper.quotation_to_float(bot.sell_order.initial_order_price)
-                    high_sell_price = self.client_helper.quotation_to_float(candle.high)
-                    if sell_price <= high_sell_price:
-                        self.client_helper.sell_order_executed = True
-                        self.client_helper.sell_order_executed_on_border = sell_price == high_sell_price
+                    if order_executed:
+                        self.client_helper.executed_orders_ids.append(order_id)
 
                 # если пора просыпаться
                 if self.time_helper.is_time_to_awake():

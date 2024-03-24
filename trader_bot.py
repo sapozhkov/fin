@@ -1,10 +1,11 @@
+import math
 import os
 import sys
 from datetime import time as datetime_time
 from signal import *
 
 from dotenv import load_dotenv
-from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue
+from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, OrderState, PostOrderResponse
 
 from helper.accounting_helper import AbstractAccountingHelper, AccountingHelper
 from helper.logger_helper import LoggerHelper, AbstractLoggerHelper
@@ -69,6 +70,16 @@ class ScalpingBot:
 
         self.buy_order = None
         self.sell_order = None
+
+        # New section
+
+        self.max_shares = 5
+        self.step_size = .5
+        self.step_cnt = 3
+        self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
+        self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
+
+        # End of new section
 
         self.log(f"INIT \n"
                  f"     figi - {self.client.figi} ({self.client.ticker})\n"
@@ -244,6 +255,87 @@ class ScalpingBot:
 
         return False
 
+    def set_sell_order_by_buy_order(self, order: PostOrderResponse):
+        price = self.client.quotation_to_float(order.executed_order_price)
+        price += self.step_size  # вот с этим параметром можно поиграть
+        order = self.sell_limit(price)
+        self.active_sell_orders[order.order_id] = order
+
+    def check_apply_order_execution(self, order: OrderState | PostOrderResponse) -> bool:
+        is_executed, order_state = self.client.order_is_executed(order)
+
+        if is_executed:
+            type_text = 'BUY' if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY else 'SELL'
+            self.log(f"{type_text} order executed, price {self.client.quotation_to_float(order.executed_order_price)}")
+            self.accounting.add_deal_by_order(order_state)
+
+        return is_executed
+
+    def update_orders(self):
+        active_order_ids = [order.order_id for order in self.client.get_active_orders()]
+
+        # Обновление заявок на продажу
+        actual_buy_orders = {}
+        for order_id, order in self.active_buy_orders.items():
+            if order_id in active_order_ids:
+                actual_buy_orders[order_id] = order
+            elif self.check_apply_order_execution(order):
+                self.set_sell_order_by_buy_order(order)
+        self.active_buy_orders = actual_buy_orders
+
+        # обновляем список активных, так как список меняется в блоке выше
+        active_order_ids = [order.order_id for order in self.client.get_active_orders()]
+
+        # Аналогично для заявок на покупку
+        actual_sell_orders = {}
+        for order_id, order in self.active_sell_orders.items():
+            if order_id in active_order_ids:
+                actual_sell_orders[order_id] = order
+            else:
+                self.check_apply_order_execution(order)
+        self.active_sell_orders = actual_sell_orders
+
+    def get_current_price(self):
+        return self.client.current_price
+
+    def place_buy_orders(self):
+        current_price = self.get_current_price()
+
+        current_buy_orders_cnt = len(self.active_buy_orders)
+
+        current_price = math.floor(current_price / self.step_size) * self.step_size
+
+        # todo поиграть с настройками. тут округление и еще шаг вниз
+        target_prices = {current_price - i * self.step_size for i in range(1, self.step_cnt + 1)}
+
+        # Исключаем цены, по которым уже выставлены заявки на покупку
+        order_buy_prices = {self.client.quotation_to_float(order.initial_order_price)
+                            for order_id, order in self.active_buy_orders.items()}
+        target_prices = target_prices - order_buy_prices
+
+        # # Исключаем цены, по которым уже есть откупленные акции
+        # # todo подумать надо ли это
+        # target_prices = [price for price in target_prices if price not in self.purchased_orders]
+
+        # Ставим заявки на покупку
+        # todo вот это проверить
+        for price in sorted(list(target_prices), reverse=True):
+            if current_buy_orders_cnt >= self.max_shares:
+                continue
+            order = self.buy_limit(price)
+            self.active_buy_orders[order.order_id] = order
+            current_buy_orders_cnt += 1
+
+        # todo и еще надо не выставлять заявок больше чем можно откупить всего, иначе вылетим за лимиты
+
+    # def place_sell_orders(self):
+    #     # По всем исполненным покупкам составляем список заявок на продажу
+    #     for share in self.purchased_orders:
+    #         sell_price = share['price'] + self.step_size  # Цена покупки плюс шаг
+    #         if sell_price not in [order['price'] for order in self.active_buy_orders if order['type'] == 'sell']:
+    #             # Здесь должен быть код для выставления заявки на продажу через API
+    #             pass
+
     def run(self):
         while self.continue_trading:
             self.run_iteration()
@@ -255,130 +347,12 @@ class ScalpingBot:
         if not self.can_trade():
             self.log(f"can not trade, sleep {self.sleep_no_trade}")
             self.time.sleep(self.sleep_no_trade)  # Спим, если торговать нельзя
-            print('.', end='')
             return
 
-        # отслеживаем исполнение заявки на покупку
-        if self.buy_order:
-            order_is_executed, order_status = self.client.order_is_executed(self.buy_order)
-            if order_is_executed:
-                self.log(f"BUY order executed, price "
-                         f"{self.client.quotation_to_float(order_status.executed_order_price)}")
-                self.accounting.add_deal_by_order(order_status)
-                self.change_state_bought()
-                self.buy_order = None
-                self.reset_last_operation_time()
+        self.update_orders()  # Обновляем список активных заявок
+        # тут же заявки на продажу при удачной покупке
 
-        # отслеживаем исполнение заявки на продажу
-        if self.sell_order:
-            order_is_executed, order_status = self.client.order_is_executed(self.sell_order)
-            if order_is_executed:
-                self.log(f"SELL order executed, price "
-                         f"{self.client.quotation_to_float(order_status.executed_order_price)}")
-                self.accounting.add_deal_by_order(order_status)
-                self.change_state_sold()
-                self.sell_order = None
-                self.reset_last_operation_time()
-
-        # если заработали в моменте больше порога, выходим
-        if self.check_trade_balance_limits():
-            self.stop()
-            return
-
-        # сбрасываем заявку на покупку при бездействии
-        if self.check_is_inactive() and self.buy_order:
-            self.cancel_buy_order()
-            self.reset_last_operation_time()
-
-        # прикидываем цены
-        last_candles = self.client.fetch_candles(candles_count=self.candles_count)
-        forecast_low, forecast_high = self.forecast_next_candle(last_candles)
-        if forecast_low is None:
-            self.log('Ошибка вычисления прогнозируемого диапазона. Перезапуск алгоритма')
-            return
-
-        need_profit = self.client.round(self.profit_steps * self.client.step_size)
-        diff = self.client.round(forecast_high - forecast_low)
-
-        # проверяем что есть смысл торговать на таком диапазоне цен
-        if diff >= need_profit:
-
-            # эксперимент. сужаем рамки торговли. проверяем будет ли выхлоп по количеству и качеству сделок
-            step = 0.1
-            if diff - 2 * step >= need_profit:
-                self.log(f"Сужаем диапазон на 2 шага")
-                forecast_high = self.client.round(forecast_high - step)
-                forecast_low = self.client.round(forecast_low + step)
-
-            # можем покупать
-            if self.can_buy():
-                # есть заявка
-                if self.buy_order:
-                    # цена отличается - меняем
-                    if not self.equivalent_prices(self.buy_order.initial_order_price, forecast_low):
-                        self.log(f"Меняем цену покупки на {forecast_low}")
-                        self.cancel_buy_order()
-                        self.buy_order = self.buy_limit(forecast_low)
-
-                # нет заявки - ставим
-                else:
-                    self.buy_order = self.buy_limit(forecast_low)
-                    if self.buy_order:
-                        self.log(f"Размещена заявка на покупку по {forecast_low}")
-                    else:
-                        self.log(f"НЕ Размещена заявка на покупку по {forecast_low}")
-
-            # можем продавать
-            if self.can_sell():
-                # есть заявка
-                if self.sell_order:
-                    # цена отличается - меняем
-                    if not self.equivalent_prices(self.sell_order.initial_order_price, forecast_high):
-                        self.log(f"Меняем цену продажи на {forecast_high}")
-                        self.cancel_sell_order()
-                        self.sell_order = self.sell_limit(forecast_high)
-
-                # нет заявки - ставим
-                else:
-                    self.sell_order = self.sell_limit(forecast_high)
-                    if self.sell_order:
-                        self.log(f"Размещена заявка на продажу по {forecast_high}")
-                    else:
-                        self.log(f"НЕ Размещена заявка на продажу по {forecast_high}")
-
-        # если не в диапазоне торговли
-        elif self.take_profit_percent:
-
-            # можем продавать
-            if self.can_sell():
-
-                base_price = self.accounting.last_buy_price \
-                    if self.accounting.last_buy_price else self.client.current_price
-                need_sell_price = self.client.round(base_price * (1 + self.take_profit_percent))
-
-                # есть заявка
-                if self.sell_order:
-
-                    # цена отличается - меняем
-                    if not self.equivalent_prices(self.sell_order.initial_order_price, need_sell_price):
-                        self.log(f"Меняем цену продажи (резервная) на {need_sell_price}")
-                        self.cancel_sell_order()
-                        self.sell_order = self.sell_limit(need_sell_price)
-
-                # нет заявки - ставим
-                else:
-                    self.sell_order = self.sell_limit(need_sell_price)
-                    if self.sell_order:
-                        self.log(f"Размещена заявка на продажу (резервная) по {need_sell_price}")
-                    else:
-                        self.log(f"НЕ Размещена заявка на продажу (резервная) по {need_sell_price}")
-
-        else:
-            self.log(f"Пока не торгуем. "
-                     f"Ожидаемая разница в торгах - {diff}, а требуется минимум {need_profit} ")
-
-        self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_trading}")
-        self.time.sleep(self.sleep_trading)
+        self.place_buy_orders()  # Выставляем заявки на покупку
 
 
 if __name__ == '__main__':
