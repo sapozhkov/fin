@@ -305,7 +305,7 @@ class ScalpingBot:
 
         current_price = math.floor(current_price / self.step_size) * self.step_size
 
-        # todo поиграть с настройками. тут округление и еще шаг вниз
+        # todo #46 поиграть с настройками. тут округление и еще шаг вниз
         target_prices = {current_price - i * self.step_size for i in range(1, self.step_cnt + 1)}
 
         # Исключаем цены, по которым уже выставлены заявки на покупку
@@ -314,11 +314,11 @@ class ScalpingBot:
         target_prices = target_prices - order_buy_prices
 
         # # Исключаем цены, по которым уже есть откупленные акции
-        # # todo подумать надо ли это
+        # # todo #46 подумать надо ли это
         # target_prices = [price for price in target_prices if price not in self.purchased_orders]
 
         # Ставим заявки на покупку
-        # todo вот это проверить
+        # todo #46 вот это проверить
         for price in sorted(list(target_prices), reverse=True):
             if current_buy_orders_cnt >= self.max_shares:
                 continue
@@ -326,7 +326,7 @@ class ScalpingBot:
             self.active_buy_orders[order.order_id] = order
             current_buy_orders_cnt += 1
 
-        # todo и еще надо не выставлять заявок больше чем можно откупить всего, иначе вылетим за лимиты
+        # todo #46 и еще надо не выставлять заявок больше чем можно откупить всего, иначе вылетим за лимиты
 
     # def place_sell_orders(self):
     #     # По всем исполненным покупкам составляем список заявок на продажу
