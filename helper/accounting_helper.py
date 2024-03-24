@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pytz
-from tinkoff.invest import OrderDirection
+from tinkoff.invest import OrderDirection, PostOrderResponse
 
 from helper.tinkoff_client import AbstractProxyClient
 
@@ -43,6 +43,12 @@ class AbstractAccountingHelper(ABC):
             commission,
             total
         )
+
+    def add_order(self, order: PostOrderResponse):
+        pass
+
+    def del_order(self, order: PostOrderResponse):
+        pass
 
     @abstractmethod
     def add_deal(self, deal_type, price, commission, total):

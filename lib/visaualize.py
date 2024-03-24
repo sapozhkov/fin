@@ -3,8 +3,10 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 from dto.deal_dto import DealDTO
+from dto.order_dto import OrderDTO
 from lib.historical_candles import HistoricalCandles
 from lib.historical_trade import HistoricalTrade
+from lib.order_helper import OrderHelper
 
 
 class Visualize:
@@ -16,7 +18,7 @@ class Visualize:
     def q2f(quotation: Quotation, digits=2):
         return round(quotation.units + quotation.nano * 1e-9, digits)
 
-    def draw(self, date, deals: list[DealDTO], title=None):
+    def draw(self, date, deals: list[DealDTO], orders: list[OrderDTO] = list, title=None):
 
         candles = self.historical_candles.get_candles(date)
 
@@ -35,9 +37,7 @@ class Visualize:
         # high_prices = [self.q2f(candle.high) for candle in candles.candles]
         # plt.plot([times, times], [low_prices, high_prices], color='grey', linewidth=1)
 
-        # Инициализация списка для отслеживания уникальных меток
         labels_added = set()
-
         for deal in deals:
             if deal.type == HistoricalTrade.TYPE_BUY:
                 # Добавляем метку только если она еще не была добавлена
@@ -49,6 +49,16 @@ class Visualize:
 
             # Помечаем метку как добавленную
             labels_added.add(deal.type)
+
+        labels_added = set()
+        for order in orders:
+            label_title, color, marker = OrderHelper.get_plot_settings(order.type)
+
+            label = label_title if order.type not in labels_added else ""
+            plt.scatter(order.datetime, abs(order.price), color=color, marker=marker, alpha=.5, s=50, label=label)
+
+            # Помечаем метку как добавленную
+            labels_added.add(order.type)
 
         # Форматирование оси времени
         ax.xaxis_date()  # Интерпретировать ось X как даты
