@@ -259,9 +259,10 @@ class ClientTestEnvHelper(AbstractProxyClient):
         raise 'Not implemented'
 
     def cancel_order(self, order):
-        if not order:
-            return False
-        return True
+        if order.order_id in self.orders:
+            del self.orders[order.order_id]
+            return True
+        return False
 
     def get_active_orders(self):
         return [order for order_id, order in self.orders.items() if order_id not in self.executed_orders_ids]

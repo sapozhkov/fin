@@ -60,6 +60,6 @@ class AccountingTestEnvHelper(AbstractAccountingHelper):
         self.orders.append(OrderDTO(
             self.client.time.now(),
             type_,
-            self.client.quotation_to_float(order.executed_order_price),
+            self.client.quotation_to_float(order.initial_order_price),
             'test_alg'
         ))

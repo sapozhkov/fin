@@ -11,9 +11,9 @@ class OrderHelper:
         UNKNOWN: ('Unknown', 'black', 'o'),
         OPEN_BUY_MARKET: ('Market buy', 'orange', '^'),
         OPEN_SELL_MARKET: ('Market sell', 'blue', 'v'),
-        OPEN_BUY_LIMIT: ('Limit buy open', 'green', 'o'),
+        OPEN_BUY_LIMIT: ('Limit buy open', 'cyan', 'o'),
         OPEN_SELL_LIMIT: ('Limit sell open', 'red', 'o'),
-        CANCEL_BUY_LIMIT: ('Close buy open', 'green', 'x'),
+        CANCEL_BUY_LIMIT: ('Close buy open', 'blue', 'x'),
         CANCEL_SELL_LIMIT: ('Close sell open', 'red', 'x'),
     }
 
