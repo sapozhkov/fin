@@ -173,8 +173,8 @@ class TestAlgorithm:
 
             'sleep_trading': sleep_trading,
 
-            'quit_on_balance_up_percent': quit_on_balance_up_percent,
-            'quit_on_balance_down_percent': quit_on_balance_down_percent,
+            # 'quit_on_balance_up_percent': quit_on_balance_up_percent,
+            # 'quit_on_balance_down_percent': quit_on_balance_down_percent,
 
             'max_shares': max_shares,
             'threshold_to_cancel_buy_steps': threshold_to_cancel_buy_steps,
