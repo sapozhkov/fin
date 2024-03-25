@@ -46,6 +46,11 @@ class TestAlgorithm:
             start_time='07:45',  # 10:45
             end_time='15:15',  # 18:15
             no_operation_timeout_seconds=300,
+
+            max_shares=5,
+            threshold_to_cancel_buy_steps=5,
+            step_size=.5,
+            step_cnt=3,
     ):
         balance = 0
         success_days = 0
@@ -86,6 +91,11 @@ class TestAlgorithm:
                 take_profit_percent=take_profit_percent,
                 quit_on_balance_up_percent=quit_on_balance_up_percent,
                 quit_on_balance_down_percent=quit_on_balance_down_percent,
+
+                max_shares=max_shares,
+                threshold_to_cancel_buy_steps=threshold_to_cancel_buy_steps,
+                step_size=step_size,
+                step_cnt=step_cnt,
 
                 time_helper=self.time_helper,
                 logger_helper=self.logger_helper,
@@ -167,6 +177,11 @@ class TestAlgorithm:
             'take_profit_percent': take_profit_percent,
             'quit_on_balance_up_percent': quit_on_balance_up_percent,
             'quit_on_balance_down_percent': quit_on_balance_down_percent,
+
+            'max_shares': max_shares,
+            'threshold_to_cancel_buy_steps': threshold_to_cancel_buy_steps,
+            'step_size': step_size,
+            'step_cnt': step_cnt,
 
             'operations_cnt': operations_cnt,
             'operations_avg': round(sum(operations_cnt_list) / test_days_num, 2),

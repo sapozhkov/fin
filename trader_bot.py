@@ -39,6 +39,11 @@ class ScalpingBot:
             sleep_no_trade=300,
             no_operation_timeout_seconds=300,
 
+            max_shares=5,
+            threshold_to_cancel_buy_steps=5,
+            step_size=.5,
+            step_cnt=3,
+
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
             client_helper: AbstractProxyClient | None = None,
@@ -54,6 +59,11 @@ class ScalpingBot:
         self.start_time = start_time
         self.end_time = end_time
 
+        self.max_shares = max_shares
+        self.threshold_to_cancel_buy_steps = threshold_to_cancel_buy_steps
+        self.step_size = step_size
+        self.step_cnt = step_cnt
+
         # конфигурация
         self.commission = 0.05 / 100
         # self.profit_steps = profit_steps
@@ -64,7 +74,7 @@ class ScalpingBot:
 
         # self.candles_count = candles_count
 
-        # self.sleep_trading = sleep_trading
+        self.sleep_trading = sleep_trading
         self.sleep_no_trade = sleep_no_trade
         # self.no_operation_timeout_seconds = no_operation_timeout_seconds
 
@@ -77,12 +87,6 @@ class ScalpingBot:
         # self.buy_order = None
         # self.sell_order = None
 
-        # New section
-
-        self.max_shares = 5
-        self.threshold_to_cancel_buy_steps = 5
-        self.step_size = .5
-        self.step_cnt = 3
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
 
@@ -385,6 +389,10 @@ class ScalpingBot:
 
         # Выставляем заявки на покупку
         self.place_buy_orders()
+
+        self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_trading}")
+        self.time.sleep(self.sleep_trading)
+
 
 
 if __name__ == '__main__':
