@@ -36,19 +36,14 @@ class TestAlgorithm:
             self,
             last_test_date='2024-03-15',
             test_days_num=1,
-            profit_steps=5,
-            candles_count=4,
             sleep_trading=5 * 60,
             sleep_no_trade=300,
-            take_profit_percent=1.5,
             quit_on_balance_up_percent=2,
             quit_on_balance_down_percent=1,
             start_time='07:45',  # 10:45
             end_time='15:15',  # 18:15
-            no_operation_timeout_seconds=300,
 
             shares_count=0,
-
             max_shares=5,
             threshold_to_cancel_buy_steps=5,
             step_size=.5,
@@ -85,14 +80,9 @@ class TestAlgorithm:
                 start_time=start_time,
                 end_time=end_time,
 
-                profit_steps=profit_steps,
-                candles_count=candles_count,
-
                 sleep_trading=sleep_trading,
                 sleep_no_trade=sleep_no_trade,
-                no_operation_timeout_seconds=no_operation_timeout_seconds,
 
-                take_profit_percent=take_profit_percent,
                 quit_on_balance_up_percent=quit_on_balance_up_percent,
                 quit_on_balance_down_percent=quit_on_balance_down_percent,
 
@@ -181,11 +171,8 @@ class TestAlgorithm:
             'success_days': success_days,
             'success_p': round(success_days / test_days_num, 2),
 
-            'profit_steps': profit_steps,
-            'candles_count': candles_count,
             'sleep_trading': sleep_trading,
 
-            'take_profit_percent': take_profit_percent,
             'quit_on_balance_up_percent': quit_on_balance_up_percent,
             'quit_on_balance_down_percent': quit_on_balance_down_percent,
 

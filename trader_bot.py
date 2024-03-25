@@ -19,8 +19,6 @@ TICKER = 'RNFT'
 
 
 class ScalpingBot:
-    # STATE_HAS_0 = 0
-    # STATE_HAS_1 = 1
     STATE_NEW = 1
     STATE_WORKING = 2
     STATE_FINISHED = 3
@@ -31,16 +29,12 @@ class ScalpingBot:
             start_time='07:45',  # 10:45
             end_time='15:15',  # 18:15
 
-            profit_steps=5,
-            candles_count=4,
             stop_loss_percent=0.3,
-            take_profit_percent=1.5,
             quit_on_balance_up_percent=2,
             quit_on_balance_down_percent=1,
 
             sleep_trading=5 * 60,
             sleep_no_trade=300,
-            no_operation_timeout_seconds=300,
 
             max_shares=5,
             base_shares=3,
@@ -74,47 +68,26 @@ class ScalpingBot:
 
         # конфигурация
         self.commission = 0.05 / 100
-        # self.profit_steps = profit_steps
-        # self.stop_loss_percent = stop_loss_percent / 100
-        # self.take_profit_percent = take_profit_percent / 100
         # self.quit_on_balance_up_percent = quit_on_balance_up_percent / 100
         # self.quit_on_balance_down_percent = quit_on_balance_down_percent / 100
 
-        # self.candles_count = candles_count
-
         self.sleep_trading = sleep_trading
         self.sleep_no_trade = sleep_no_trade
-        # self.no_operation_timeout_seconds = no_operation_timeout_seconds
 
         # внутренние переменные
         self.state = self.STATE_NEW
-
-        # self.last_successful_operation_time = self.time.now()
-        # self.reset_last_operation_time()
-
-        # self.buy_order = None
-        # self.sell_order = None
 
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
 
         self.log(f"INIT \n"
                  f"     figi - {self.client.figi} ({self.client.ticker})\n"
-                 # f"     candles_count - {self.candles_count}\n"
-                 # f"     min profit - {self.profit_steps} steps * {self.client.step_size} = "
-                 # f"{self.client.round(self.profit_steps * self.client.step_size)} {self.client.currency}\n"
                  f"     stop_loss_percent - {stop_loss_percent} %\n"
                  f"     commission - {self.commission * 100} %\n"
-                 # f"     no_operation_timeout_seconds - {self.no_operation_timeout_seconds} sec\n"
-                 # f"     sleep_trading - {self.sleep_trading} sec\n"
-                 # f"     sleep_no_trade - {self.sleep_no_trade} sec\n"
                  )
 
     def log(self, message, repeat=False):
         self.logger.log(message, repeat)
-
-    # def reset_last_operation_time(self):
-    #     self.last_successful_operation_time = self.time.now()
 
     def can_trade(self):
         now = self.time.now()
@@ -199,74 +172,10 @@ class ScalpingBot:
 
         return forecast_low, forecast_high
 
-    # def change_state_bought(self):
-    #     self.state = self.STATE_HAS_1
-    #
-    # def change_state_sold(self):
-    #     self.state = self.STATE_HAS_0
-    #
-    # def can_buy(self):
-    #     return self.state == self.STATE_HAS_0
-    #
-    # def can_sell(self):
-    #     return self.state == self.STATE_HAS_1
-    #
-    # def cancel_buy_order(self):
-    #     if self.buy_order is None:
-    #         return False
-    #
-    #     if self.client.cancel_order(self.buy_order):
-    #         self.log(f"Buy order {self.buy_order.order_id}, "
-    #                  f"price={self.client.quotation_to_float(self.buy_order.initial_order_price)} canceled")
-    #     self.buy_order = None
-
-    # def cancel_sell_order(self):
-    #     if self.sell_order is None:
-    #         return
-    #
-    #     if self.client.cancel_order(self.sell_order):
-    #         self.log(f"Sell order {self.sell_order.order_id}, "
-    #                  f"price={self.client.quotation_to_float(self.sell_order.initial_order_price)} canceled")
-    #     self.sell_order = None
-
-    # def check_is_inactive(self):
-    #     """Проверяем на бездействие в течение заданного времени"""
-    #     current_time = self.time.now()
-    #     if ((current_time - self.last_successful_operation_time).total_seconds() >=
-    #             self.no_operation_timeout_seconds):
-    #         self.log(f"{self.no_operation_timeout_seconds / 60} "
-    #                  f"минут без активности. Снимаем и переставляем заявки.")
-    #         return True
-    #     return False
-
     def equivalent_prices(self, quotation_price: Quotation | MoneyValue, float_price: float) -> bool:
         rounded_quotation_price = self.client.quotation_to_float(quotation_price)
         rounded_float_price = self.client.round(float_price)
         return rounded_quotation_price == rounded_float_price
-
-    # def check_trade_balance_limits(self):
-    #     balance = self.accounting.sum
-    #     threshold = self.client.current_price * 0.2
-    #
-    #     # сильное отклонение - мы не в нулевом состоянии
-    #     if not -threshold < balance < threshold:
-    #         return False
-    #
-    #     # if self.quit_on_balance_up_percent:
-    #     #     need_change = round(self.client.current_price * self.quit_on_balance_up_percent, 2)
-    #     #     if balance >= need_change:
-    #     #         self.log(f"Достигнут требуемый лимит роста в {need_change} "
-    #     #                  f"(факт {balance}) {self.client.currency}")
-    #     #         return True
-    #     #
-    #     # if self.quit_on_balance_down_percent:
-    #     #     need_change = -round(self.client.current_price * self.quit_on_balance_down_percent, 2)
-    #     #     if balance <= need_change:
-    #     #         self.log(f"Достигнут ограничивающий лимит падения в {need_change} "
-    #     #                  f"(факт {balance}) {self.client.currency}")
-    #     #         return True
-    #
-    #     return False
 
     def set_sell_order_by_buy_order(self, order: PostOrderResponse):
         price = self.client.quotation_to_float(order.executed_order_price)
