@@ -9,12 +9,12 @@ class OrderHelper:
 
     VARIANTS = {
         UNKNOWN: ('Unknown', 'black', 'o'),
-        OPEN_BUY_MARKET: ('Market buy', 'orange', '^'),
-        OPEN_SELL_MARKET: ('Market sell', 'blue', 'v'),
+        OPEN_BUY_MARKET: ('Market buy', 'black', '^'),
+        OPEN_SELL_MARKET: ('Market sell', 'black', 'v'),
         OPEN_BUY_LIMIT: ('Limit buy open', 'cyan', 'o'),
         OPEN_SELL_LIMIT: ('Limit sell open', 'red', 'o'),
         CANCEL_BUY_LIMIT: ('Close buy open', 'blue', 'x'),
-        CANCEL_SELL_LIMIT: ('Close sell open', 'red', 'x'),
+        CANCEL_SELL_LIMIT: ('Close sell open', 'magenta', 'x'),
     }
 
     @classmethod

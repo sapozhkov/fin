@@ -47,6 +47,8 @@ class TestAlgorithm:
             end_time='15:15',  # 18:15
             no_operation_timeout_seconds=300,
 
+            shares_count=0,
+
             max_shares=5,
             threshold_to_cancel_buy_steps=5,
             step_size=.5,
@@ -60,6 +62,8 @@ class TestAlgorithm:
         operations_cnt_list = []
 
         days_list = self.data_handler.get_days_list(last_test_date, test_days_num)
+
+        self.accounting_helper.num = shares_count
 
         # закручиваем цикл по датам
         for test_date in days_list:
@@ -103,14 +107,13 @@ class TestAlgorithm:
                 accounting_helper=self.accounting_helper,
             )
 
-            bot.reset_last_operation_time()
             self.client_helper.set_candles_list(self.data_handler.get_candles(test_date))
 
             self.accounting_helper.reset()
 
             # Использование итератора для вывода каждой пары час-минута
             for dt in self.data_handler.get_hour_minute_pairs(date_from, date_to):
-                if not bot.continue_trading:
+                if not bot.continue_trading():
                     break
 
                 # задаем время
@@ -155,6 +158,14 @@ class TestAlgorithm:
                 operations_not_closed_cnt += 1
 
             balance_change = round(self.accounting_helper.sum, 2)
+
+            # хак для учета откупленных/проданных в этой итерации акций
+            current_price = bot.get_current_price()
+            while balance_change < - .5 * current_price:
+                balance_change += current_price
+            while balance_change > .5 * current_price:
+                balance_change -= current_price
+
             balance = round(balance + balance_change, 2)
 
             if balance_change > 0:

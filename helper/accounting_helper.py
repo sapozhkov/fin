@@ -54,6 +54,10 @@ class AbstractAccountingHelper(ABC):
     def add_deal(self, deal_type, price, commission, total):
         pass
 
+    @abstractmethod
+    def get_instrument_count(self):
+        pass
+
     def reset(self):
         self.sum = 0
 
@@ -79,3 +83,6 @@ class AccountingHelper(AbstractAccountingHelper):
         ''', (self.db_alg_name, deal_type, self.client.ticker, datetime_with_tz, price, commission, total))
         conn.commit()
         conn.close()
+
+    def get_instrument_count(self):
+        self.client.get_instruments_count()

@@ -63,3 +63,6 @@ class AccountingTestEnvHelper(AbstractAccountingHelper):
             self.client.quotation_to_float(order.initial_order_price),
             'test_alg'
         ))
+
+    def get_instrument_count(self):
+        return self.num
