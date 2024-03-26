@@ -34,10 +34,10 @@ class ScalpingBot:
             quit_on_balance_down_percent=1,
 
             sleep_trading=5 * 60,
-            sleep_no_trade=300,
+            sleep_no_trade=60,
 
             max_shares=5,
-            base_shares=3,
+            base_shares=None,
             threshold_to_cancel_buy_steps=4,
             step_size=.5,
             step_cnt=3,
@@ -62,7 +62,7 @@ class ScalpingBot:
         self.step_cnt = step_cnt
 
         # количество акций на начало дня и на конец
-        self.base_shares = base_shares if base_shares else round(self.max_shares / 2)
+        self.base_shares = base_shares if base_shares is not None else round(self.max_shares / 2)
 
         # конфигурация
         self.commission = 0.05 / 100

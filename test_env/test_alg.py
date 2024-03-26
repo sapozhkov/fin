@@ -45,6 +45,7 @@ class TestAlgorithm:
 
             shares_count=0,
             max_shares=5,
+            base_shares=3,
             threshold_to_cancel_buy_steps=5,
             step_size=.5,
             step_cnt=3,
@@ -87,6 +88,7 @@ class TestAlgorithm:
                 quit_on_balance_down_percent=quit_on_balance_down_percent,
 
                 max_shares=max_shares,
+                base_shares=base_shares,
                 threshold_to_cancel_buy_steps=threshold_to_cancel_buy_steps,
                 step_size=step_size,
                 step_cnt=step_cnt,
