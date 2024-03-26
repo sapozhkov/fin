@@ -38,7 +38,7 @@ class ScalpingBot:
 
             max_shares=5,
             base_shares=3,
-            threshold_to_cancel_buy_steps=5,
+            threshold_to_cancel_buy_steps=4,
             step_size=.5,
             step_cnt=3,
 
@@ -99,12 +99,11 @@ class ScalpingBot:
         start_hour_str, start_min_str = self.start_time.split(':')
         end_hour_str, end_min_str = self.end_time.split(':')
 
-        # Проверка, что текущее время в заданном торговом диапазоне
-        if now.time() < datetime_time(int(start_hour_str), int(start_min_str)):
-            return False
+        start_time = datetime_time(int(start_hour_str), int(start_min_str))
+        end_time = datetime_time(int(end_hour_str), int(end_min_str))
 
-        if now.time() >= datetime_time(int(end_hour_str), int(end_min_str)):
-            self.stop()
+        # Проверка, что текущее время в заданном торговом диапазоне
+        if not start_time <= now.time() <= end_time:
             return False
 
         # Проверка доступности рыночной торговли через API
@@ -123,15 +122,15 @@ class ScalpingBot:
         self.current_shares += 1
         self.accounting.add_deal_by_order(order)
         self.log(f"BUY MARKET executed, price {self.client.quotation_to_float(order.executed_order_price)}"
-                 f" n={self.accounting.num}")
+                 f" (n={self.accounting.num}/{self.current_shares})")
         return order
 
     def sell(self, lots: int = 1, price: float | None = None):
         order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL, price)
-        self.current_shares += 1
+        self.current_shares -= 1
         self.accounting.add_deal_by_order(order)
         self.log(f"SELL MARKET executed, price {self.client.quotation_to_float(order.executed_order_price)}"
-                 f" n={self.accounting.num}")
+                 f" (n={self.accounting.num}/{self.current_shares})")
         return order
 
     def sell_limit(self, price, lots=1):
@@ -192,10 +191,16 @@ class ScalpingBot:
         is_executed, order_state = self.client.order_is_executed(order)
 
         if is_executed:
-            type_text = 'BUY' if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY else 'SELL'
+            if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY:
+                type_text = 'BUY'
+                self.current_shares += 1
+            else:
+                type_text = 'SELL'
+                self.current_shares -= 1
+
             self.accounting.add_deal_by_order(order_state)
             self.log(f"{type_text} order executed, price {self.client.quotation_to_float(order.executed_order_price)}"
-                     f" n={self.accounting.num}")
+                     f" (n={self.accounting.num}/{self.current_shares})")
 
         self._remove_order_from_active_list(order)
 
@@ -308,7 +313,7 @@ class ScalpingBot:
             self.place_sell_orders(need_to_buy)
 
     def run_iteration(self):
-        if not self.continue_trading():
+        if self.check_stop():
             return
 
         if not self.can_trade():
@@ -332,6 +337,19 @@ class ScalpingBot:
 
         # self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_trading}")
         self.time.sleep(self.sleep_trading)
+
+    def check_stop(self) -> bool:
+        if not self.continue_trading():
+            return False
+
+        now = self.time.now()
+        end_hour_str, end_min_str = self.end_time.split(':')
+
+        if now.time() >= datetime_time(int(end_hour_str), int(end_min_str)):
+            self.stop()
+            return True
+
+        return False
 
     def stop(self):
         if self.state == self.STATE_FINISHED:
