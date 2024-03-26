@@ -61,8 +61,6 @@ class ScalpingBot:
         self.step_size = step_size
         self.step_cnt = step_cnt
 
-        self.current_shares = 0
-
         # количество акций на начало дня и на конец
         self.base_shares = base_shares if base_shares else round(self.max_shares / 2)
 
@@ -82,7 +80,6 @@ class ScalpingBot:
 
         self.log(f"INIT \n"
                  f"     figi - {self.client.figi} ({self.client.ticker})\n"
-                 f"     stop_loss_percent - {stop_loss_percent} %\n"
                  f"     commission - {self.commission * 100} %\n"
                  )
 
@@ -119,18 +116,17 @@ class ScalpingBot:
 
     def buy(self, lots: int = 1, price: float | None = None):
         order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_BUY, price)
-        self.current_shares += 1
         self.accounting.add_deal_by_order(order)
         self.log(f"BUY MARKET executed, price {self.client.quotation_to_float(order.executed_order_price)}"
-                 f" (n={self.accounting.num}/{self.current_shares})")
+                 f" (n={self.accounting.num})")
         return order
 
     def sell(self, lots: int = 1, price: float | None = None):
         order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL, price)
-        self.current_shares -= 1
         self.accounting.add_deal_by_order(order)
         self.log(f"SELL MARKET executed, price {self.client.quotation_to_float(order.executed_order_price)}"
-                 f" (n={self.accounting.num}/{self.current_shares})")
+                 f" (n={self.accounting.num})")
+
         return order
 
     def sell_limit(self, price, lots=1):
@@ -191,16 +187,10 @@ class ScalpingBot:
         is_executed, order_state = self.client.order_is_executed(order)
 
         if is_executed:
-            if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY:
-                type_text = 'BUY'
-                self.current_shares += 1
-            else:
-                type_text = 'SELL'
-                self.current_shares -= 1
-
+            type_text = 'BUY' if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY else 'SELL'
             self.accounting.add_deal_by_order(order_state)
             self.log(f"{type_text} order executed, price {self.client.quotation_to_float(order.executed_order_price)}"
-                     f" (n={self.accounting.num}/{self.current_shares})")
+                     f" (n={self.accounting.num})")
 
         self._remove_order_from_active_list(order)
 
@@ -301,10 +291,10 @@ class ScalpingBot:
         self.state = self.STATE_WORKING
 
         # получаем текущее число акций
-        self.current_shares = self.accounting.get_instrument_count()
+        self.accounting.num = self.accounting.get_instrument_count()
 
         # должно быть минимум
-        need_to_buy = self.base_shares - self.current_shares
+        need_to_buy = self.base_shares - self.accounting.num
 
         # докупаем недостающие по рыночной цене
         if need_to_buy > 0:
@@ -361,7 +351,7 @@ class ScalpingBot:
         self.cancel_active_orders()
 
         # продать откупленные инструменты
-        need_to_sell = self.current_shares - self.base_shares
+        need_to_sell = self.accounting.num - self.base_shares
 
         if need_to_sell > 0:
             for _ in range(need_to_sell):
