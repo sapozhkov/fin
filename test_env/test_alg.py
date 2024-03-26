@@ -46,7 +46,8 @@ class TestAlgorithm:
             shares_count=0,
             max_shares=5,
             base_shares=3,
-            threshold_to_cancel_buy_steps=5,
+            threshold_buy_steps=5,
+            threshold_sell_steps=10,
             step_size=.5,
             step_cnt=3,
     ):
@@ -89,7 +90,8 @@ class TestAlgorithm:
 
                 max_shares=max_shares,
                 base_shares=base_shares,
-                threshold_to_cancel_buy_steps=threshold_to_cancel_buy_steps,
+                threshold_buy_steps=threshold_buy_steps,
+                threshold_sell_steps=threshold_sell_steps,
                 step_size=step_size,
                 step_cnt=step_cnt,
 
@@ -152,11 +154,11 @@ class TestAlgorithm:
             balance_change = round(self.accounting_helper.sum, 2)
 
             # хак для учета откупленных/проданных в этой итерации акций
-            current_price = bot.get_current_price()
-            while balance_change < - .5 * current_price:
-                balance_change += current_price
-            while balance_change > .5 * current_price:
-                balance_change -= current_price
+            # current_price = bot.get_current_price()
+            # while balance_change < - .5 * current_price:
+            #     balance_change += current_price
+            # while balance_change > .5 * current_price:
+            #     balance_change -= current_price
 
             balance = round(balance + balance_change, 2)
 
@@ -168,8 +170,13 @@ class TestAlgorithm:
 
             balance_change_list.append(balance_change)
 
+        balance = round(balance + self.accounting_helper.num * self.client_helper.current_price, 2)
+
         return {
             'balance': balance,
+            'sum': self.accounting_helper.sum,
+            'num': self.accounting_helper.num,
+            'sum_': round(self.accounting_helper.sum + self.accounting_helper.num * self.client_helper.current_price),
             'balance_change_avg': round(sum(balance_change_list) / test_days_num, 2),
 
             'days': test_days_num,
@@ -182,7 +189,8 @@ class TestAlgorithm:
             # 'quit_on_balance_down_percent': quit_on_balance_down_percent,
 
             'max_shares': max_shares,
-            'threshold_to_cancel_buy_steps': threshold_to_cancel_buy_steps,
+            'threshold_buy_steps': threshold_buy_steps,
+            'threshold_sell_steps': threshold_sell_steps,
             'step_size': step_size,
             'step_cnt': step_cnt,
 
