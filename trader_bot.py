@@ -188,7 +188,7 @@ class ScalpingBot:
         price += self.step_size  # вот с этим параметром можно поиграть
         self.sell_limit(price)
 
-    def check_apply_order_execution(self, order: OrderState | PostOrderResponse) -> bool:
+    def check_and_apply_order_execution(self, order: OrderState | PostOrderResponse) -> bool:
         is_executed, order_state = self.client.order_is_executed(order)
 
         if is_executed:
@@ -197,33 +197,26 @@ class ScalpingBot:
             self.log(f"{type_text} order executed, price {self.client.quotation_to_float(order.executed_order_price)}"
                      f" n={self.accounting.num}")
 
+        self._remove_order_from_active_list(order)
+
         return is_executed
 
     def update_orders(self):
         active_order_ids = [order.order_id for order in self.client.get_active_orders()]
 
-        # todo перевести всё на copy x2
-
         # Обновление заявок на продажу
-        actual_buy_orders = {}
-        for order_id, order in self.active_buy_orders.items():
-            if order_id in active_order_ids:
-                actual_buy_orders[order_id] = order
-            elif self.check_apply_order_execution(order):
-                self.set_sell_order_by_buy_order(order)
-        self.active_buy_orders = actual_buy_orders
+        for order_id, order in self.active_buy_orders.copy().items():
+            if order_id not in active_order_ids:
+                if self.check_and_apply_order_execution(order):
+                    self.set_sell_order_by_buy_order(order)
 
         # обновляем список активных, так как список меняется в блоке выше
         active_order_ids = [order.order_id for order in self.client.get_active_orders()]
 
         # Аналогично для заявок на покупку
-        actual_sell_orders = {}
-        for order_id, order in self.active_sell_orders.items():
-            if order_id in active_order_ids:
-                actual_sell_orders[order_id] = order
-            else:
-                self.check_apply_order_execution(order)
-        self.active_sell_orders = actual_sell_orders
+        for order_id, order in self.active_sell_orders.copy().items():
+            if order_id not in active_order_ids:
+                self.check_and_apply_order_execution(order)
 
     def get_current_price(self) -> float:
         return self.client.current_price
@@ -264,16 +257,15 @@ class ScalpingBot:
         for order_id, order in self.active_sell_orders.copy().items():
             self.cancel_order(order)
 
-    def cancel_order(self, order: PostOrderResponse):
-
+    def _remove_order_from_active_list(self, order: PostOrderResponse):
         if order.order_id in self.active_buy_orders:
             del self.active_buy_orders[order.order_id]
-
         if order.order_id in self.active_sell_orders:
             del self.active_sell_orders[order.order_id]
 
+    def cancel_order(self, order: PostOrderResponse):
+        self._remove_order_from_active_list(order)
         self.client.cancel_order(order)
-
         self.accounting.del_order(order)
 
     def cancel_orders_by_limits(self):
@@ -349,7 +341,6 @@ class ScalpingBot:
 
         self.log("Остановка бота...")
         self.cancel_active_orders()
-        # todo постмотреть в конце всегда закрывается куча заяво на покупку, они уже давно должны были схлопнуться
 
         # продать откупленные инструменты
         need_to_sell = self.current_shares - self.base_shares
