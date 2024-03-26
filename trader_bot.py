@@ -135,20 +135,24 @@ class ScalpingBot:
         return order
 
     def sell_limit(self, price, lots=1):
-        return self.place_order(
+        order = self.place_order(
             lots,
             OrderDirection.ORDER_DIRECTION_SELL,
             price=price,
             order_type=OrderType.ORDER_TYPE_LIMIT
         )
+        self.active_sell_orders[order.order_id] = order
+        return order
 
     def buy_limit(self, price, lots=1):
-        return self.place_order(
+        order = self.place_order(
             lots,
             OrderDirection.ORDER_DIRECTION_BUY,
             price=price,
             order_type=OrderType.ORDER_TYPE_LIMIT
         )
+        self.active_buy_orders[order.order_id] = order
+        return order
 
     def forecast_next_candle(self, candles):
         if len(candles.candles) < 2:
@@ -182,8 +186,7 @@ class ScalpingBot:
     def set_sell_order_by_buy_order(self, order: PostOrderResponse):
         price = self.client.quotation_to_float(order.executed_order_price)
         price += self.step_size  # вот с этим параметром можно поиграть
-        order = self.sell_limit(price)
-        self.active_sell_orders[order.order_id] = order
+        self.sell_limit(price)
 
     def check_apply_order_execution(self, order: OrderState | PostOrderResponse) -> bool:
         is_executed, order_state = self.client.order_is_executed(order)
@@ -226,25 +229,22 @@ class ScalpingBot:
         return self.client.current_price
 
     def place_buy_orders(self):
-        current_price = self.get_current_price()
-
         current_buy_orders_cnt = len(self.active_buy_orders)
+        current_price = math.floor(self.get_current_price() / self.step_size) * self.step_size
 
-        current_price = math.floor(current_price / self.step_size) * self.step_size
-
-        target_prices = {current_price - i * self.step_size for i in range(1, self.step_cnt + 1)}
+        target_prices = [current_price - i * self.step_size for i in range(1, self.step_cnt + 1)]
 
         # Исключаем цены, по которым уже выставлены заявки на покупку
-        order_buy_prices = {self.client.quotation_to_float(order.initial_order_price)
-                            for order_id, order in self.active_buy_orders.items()}
-        target_prices = target_prices - order_buy_prices
+        existing_order_prices = [self.client.quotation_to_float(order.initial_order_price)
+                                 for order_id, order in self.active_buy_orders.items()]
 
         # Ставим заявки на покупку
-        for price in sorted(list(target_prices), reverse=True):
+        for price in target_prices:
             if current_buy_orders_cnt >= self.max_shares:
                 break
-            order = self.buy_limit(price)
-            self.active_buy_orders[order.order_id] = order
+            if price in existing_order_prices:
+                continue
+            self.buy_limit(price)
             current_buy_orders_cnt += 1
 
     def place_sell_orders(self, count_to_sell):
@@ -254,8 +254,7 @@ class ScalpingBot:
 
         # Ставим заявки на продажу
         for price in sorted(list(target_prices), reverse=True):
-            order = self.sell_limit(price)
-            self.active_sell_orders[order.order_id] = order
+            self.sell_limit(price)
 
     def cancel_active_orders(self):
         """Отменяет все активные заявки."""
@@ -279,12 +278,14 @@ class ScalpingBot:
 
     def cancel_orders_by_limits(self):
         # берем текущую цену + сдвиг
-        threshold_price = self.get_current_price() - self.client.step_size * self.threshold_to_cancel_buy_steps
+        # todo вот тут можно тоже округлить до ближайшего целого
+        threshold_price = (self.get_current_price()
+                           - self.step_size * self.threshold_to_cancel_buy_steps)
 
         # перебираем активные заявки на покупку и закрываем всё, что ниже
         for order_id, order in self.active_buy_orders.copy().items():
             order_price = self.client.quotation_to_float(order.initial_order_price)
-            if order_price >= threshold_price:
+            if order_price <= threshold_price:
                 self.cancel_order(order)
 
     def continue_trading(self):
