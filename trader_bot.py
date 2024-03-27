@@ -39,7 +39,7 @@ class ScalpingBot:
             max_shares=3,
             base_shares=None,
             threshold_buy_steps=3,
-            threshold_sell_steps=8,
+            threshold_sell_steps=0,
             step_size=1,
             step_cnt=3,
 
@@ -311,16 +311,16 @@ class ScalpingBot:
             if order_price <= threshold_price:
                 self.cancel_order(order)
 
-        threshold_price = (self.get_current_price()
-                           + self.step_size * self.threshold_sell_steps)
+        if self.threshold_sell_steps:
+            threshold_price = (self.get_current_price()
+                               + self.step_size * self.threshold_sell_steps)
 
-        # перебираем активные заявки на продажу и закрываем всё, что ниже
-        for order_id, order in self.active_sell_orders.copy().items():
-            order_price = self.client.quotation_to_float(order.initial_order_price)
-            if order_price >= threshold_price:
-                self.cancel_order(order)
-                # todo тест. вместе с отменой заявки продаем по текущей цене
-                self.sell()
+            # перебираем активные заявки на продажу и закрываем всё, что ниже
+            for order_id, order in self.active_sell_orders.copy().items():
+                order_price = self.client.quotation_to_float(order.initial_order_price)
+                if order_price >= threshold_price:
+                    self.cancel_order(order)
+                    self.sell()
 
     def continue_trading(self):
         return self.state != self.STATE_FINISHED
