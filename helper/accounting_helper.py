@@ -85,4 +85,4 @@ class AccountingHelper(AbstractAccountingHelper):
         conn.close()
 
     def get_instrument_count(self):
-        self.client.get_instruments_count()
+        return self.client.get_instruments_count()

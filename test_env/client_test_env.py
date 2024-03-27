@@ -41,6 +41,9 @@ class ClientTestEnvHelper(AbstractProxyClient):
         self.orders: dict[str, PostOrderResponse] = {}
         self.executed_orders_ids = []
 
+    def get_current_price(self):
+        return self.current_price
+
     def set_candles_list(self, candles: GetCandlesResponse):
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
         self.total_completed_orders = 0
@@ -84,8 +87,8 @@ class ClientTestEnvHelper(AbstractProxyClient):
         self.order_next_index += 1
         return str(self.order_next_index)
 
-    def place_order(self, lots: int, operation,
-                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
+    def place_order(self, lots: int, direction, price: float | None,
+                    order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
 
         # покупка по рыночной цене
         if order_type == OrderType.ORDER_TYPE_MARKET:
@@ -93,7 +96,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
             return PostOrderResponse(
                 order_id=self.get_new_order_id(),
                 order_type=order_type,
-                direction=operation,
+                direction=direction,
                 initial_order_price=self.float_to_money_value(self.current_price),
                 executed_order_price=self.float_to_money_value(self.current_price),
                 initial_commission=self.float_to_money_value(self.current_price * self.commission),
@@ -106,7 +109,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
             order = PostOrderResponse(
                 order_id=self.get_new_order_id(),
                 order_type=order_type,
-                direction=operation,
+                direction=direction,
                 initial_order_price=self.float_to_money_value(price),
                 executed_order_price=self.float_to_money_value(0),
                 initial_commission=self.float_to_money_value(price * self.commission),

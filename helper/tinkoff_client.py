@@ -25,6 +25,7 @@ class AbstractProxyClient(ABC):
         self.ticker = ''
         self.figi = ''
         self.currency = ''
+        # todo вынести? в текущем виде не работает, так как свечи не запрашиваются
         self.current_price = 0.0
         self.time: AbstractTimeHelper | None = None
         # todo перевести все на self.client = Client(self.token)
@@ -53,8 +54,8 @@ class AbstractProxyClient(ABC):
         #     return aligned_price
 
     @abstractmethod
-    def place_order(self, lots: int, operation,
-                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
+    def place_order(self, lots: int, direction, price: float | None,
+                    order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
         pass
 
     # Базовая функция для загрузки данных последних свечей
@@ -90,6 +91,10 @@ class AbstractProxyClient(ABC):
 
     @abstractmethod
     def get_active_orders(self):
+        pass
+
+    @abstractmethod
+    def get_current_price(self):
         pass
 
 
@@ -131,6 +136,23 @@ class TinkoffProxyClient(AbstractProxyClient):
                     return
         raise Exception("No figi found")
 
+    def get_current_price(self):
+        """
+        Получает текущую цену инструмента по его FIGI.
+
+        :return: Текущая цена инструмента или None, если цена не может быть получена.
+        """
+        with Client(self.token) as client:
+            try:
+                # Запрос последних сделок по инструменту
+                order_book = client.market_data.get_order_book(figi=self.figi, depth=1)
+                if order_book and order_book.last_price:
+                    # Возвращаем последнюю цену из стакана
+                    return self.quotation_to_float(order_book.last_price)
+            except RequestError as e:
+                self.logger.error(f"Ошибка при запросе текущей цены для FIGI {self.figi}: {e}")
+        return None
+
     def can_trade(self):
         try:
             with Client(self.token) as client:
@@ -143,8 +165,8 @@ class TinkoffProxyClient(AbstractProxyClient):
             return False
         return True
 
-    def place_order(self, lots: int, operation,
-                    price: float | None, order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
+    def place_order(self, lots: int, direction, price: float | None,
+                    order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
         try:
             price_quotation = self.float_to_quotation(price=price) if price else None
             with Client(self.token) as client:
@@ -152,13 +174,13 @@ class TinkoffProxyClient(AbstractProxyClient):
                     order_id=str(datetime.now(timezone.utc)),
                     figi=self.figi,
                     quantity=lots,
-                    direction=operation,
+                    direction=direction,
                     account_id=self.account_id,
                     order_type=order_type,
                     price=price_quotation
                 )
         except RequestError as e:
-            self.logger.error(f"Ошибка при выставлении заявки, operation={operation}"
+            self.logger.error(f"Ошибка при выставлении заявки, direction={direction}"
                               f" price={price}, order_type= {order_type}. ({e})")
             return None
 
@@ -189,7 +211,7 @@ class TinkoffProxyClient(AbstractProxyClient):
             portfolio = client.operations.get_portfolio(account_id=self.account_id)
             for position in portfolio.positions:
                 if position.figi == self.figi:
-                    return position.quantity.units
+                    return position.quantity.units - position.blocked_lots.units
             return 0
 
     def cancel_order(self, order):

@@ -162,8 +162,8 @@ class TestAlgorithm:
 
             balance = round(balance + balance_change, 2)
 
-            if balance_change < 0:
-                print(f"{test_date} - {balance_change}")
+            # if balance_change < 0:
+            #     print(f"{test_date} - {balance_change}")
 
             if balance_change > 0:
                 success_days += 1

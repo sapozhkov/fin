@@ -36,11 +36,11 @@ class ScalpingBot:
             sleep_trading=5 * 60,
             sleep_no_trade=60,
 
-            max_shares=5,
+            max_shares=7,
             base_shares=None,
             threshold_buy_steps=4,
             threshold_sell_steps=8,
-            step_size=.5,
+            step_size=.7,
             step_cnt=3,
 
             time_helper: AbstractTimeHelper | None = None,
@@ -53,6 +53,9 @@ class ScalpingBot:
         self.logger = logger_helper or LoggerHelper(__name__)
         self.client = client_helper or TinkoffProxyClient(token, ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
+
+        # todo можно занимать. подумать над настройкой для параллельного запуска
+        self.accounting.num = self.accounting.get_instrument_count()
 
         self.start_time = start_time
         self.end_time = end_time
@@ -83,6 +86,13 @@ class ScalpingBot:
         self.log(f"INIT \n"
                  f"     figi - {self.client.figi} ({self.client.ticker})\n"
                  f"     commission - {self.commission * 100} %\n"
+                 f"     max_shares - {self.max_shares}\n"
+                 f"     base_shares - {self.base_shares}\n"
+                 f"     step_size - {self.step_size} {self.client.currency}\n"
+                 f"     step_cnt - {self.step_cnt}\n"
+                 f"     threshold_buy_steps - {self.threshold_buy_steps}\n"
+                 f"     threshold_sell_steps - {self.threshold_sell_steps}\n"
+                 f"     cur_used_cnt - {self.accounting.num}\n"
                  )
 
     def log(self, message, repeat=False):
@@ -111,43 +121,51 @@ class ScalpingBot:
 
         return True
 
-    def place_order(self, lots: int, operation, price: float | None = None, order_type=OrderType.ORDER_TYPE_MARKET):
-        order = self.client.place_order(lots, operation, price, order_type)
+    def place_order(self, lots: int, direction, price: float | None = None, order_type=OrderType.ORDER_TYPE_MARKET):
+        order = self.client.place_order(lots, direction, price, order_type)
         self.accounting.add_order(order)
+
+        count = self.accounting.num
+        if order_type == OrderType.ORDER_TYPE_MARKET:
+            price = self.client.quotation_to_float(order.executed_order_price)
+            if direction == OrderDirection.ORDER_DIRECTION_BUY:
+                prefix = "BUY MARKET executed"
+                count += 1  # todo это хак из-за несвоевременного вызова. можно утащить в логгер это всё и
+                #               вставить прямо в методах
+                price = -price
+            else:
+                prefix = "SELL MARKET executed"
+                count -= 1
+        else:
+            price = self.client.quotation_to_float(order.initial_order_price)
+            if direction == OrderDirection.ORDER_DIRECTION_BUY:
+                prefix = "Buy order set"
+                price = -price
+            else:
+                prefix = "Sell order set"
+        self.log(f"{prefix}, price {price} n={count})")
+
         return order
 
     def buy(self, lots: int = 1, price: float | None = None):
         order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_BUY, price)
         self.accounting.add_deal_by_order(order)
-        self.log(f"BUY MARKET executed, price {self.client.quotation_to_float(order.executed_order_price)}"
-                 f" (n={self.accounting.num})")
         return order
 
     def sell(self, lots: int = 1, price: float | None = None):
         order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL, price)
         self.accounting.add_deal_by_order(order)
-        self.log(f"SELL MARKET executed, price {self.client.quotation_to_float(order.executed_order_price)}"
-                 f" (n={self.accounting.num})")
-
         return order
 
     def sell_limit(self, price, lots=1):
-        order = self.place_order(
-            lots,
-            OrderDirection.ORDER_DIRECTION_SELL,
-            price=price,
-            order_type=OrderType.ORDER_TYPE_LIMIT
-        )
+        order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL, price=price,
+                                 order_type=OrderType.ORDER_TYPE_LIMIT)
         self.active_sell_orders[order.order_id] = order
         return order
 
     def buy_limit(self, price, lots=1):
-        order = self.place_order(
-            lots,
-            OrderDirection.ORDER_DIRECTION_BUY,
-            price=price,
-            order_type=OrderType.ORDER_TYPE_LIMIT
-        )
+        order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_BUY, price=price,
+                                 order_type=OrderType.ORDER_TYPE_LIMIT)
         self.active_buy_orders[order.order_id] = order
         return order
 
@@ -216,7 +234,7 @@ class ScalpingBot:
                 self.check_and_apply_order_execution(order)
 
     def get_current_price(self) -> float:
-        return self.client.current_price
+        return self.client.get_current_price()
 
     def place_buy_orders(self):
         current_buy_orders_cnt = len(self.active_buy_orders)
@@ -266,6 +284,10 @@ class ScalpingBot:
         self.client.cancel_order(order)
         self.accounting.del_order(order)
 
+        prefix = "Buy" if order.direction == OrderDirection.ORDER_DIRECTION_BUY else "Sell"
+        price = self.client.quotation_to_float(order.initial_order_price)
+        self.log(f"{prefix} order canceled, price {price} n={self.accounting.num})")
+
     def cancel_orders_by_limits(self):
         # берем текущую цену + сдвиг
         # todo вот тут можно тоже округлить до ближайшего целого
@@ -293,7 +315,7 @@ class ScalpingBot:
         return self.state != self.STATE_FINISHED
 
     def run(self):
-        while True:
+        while self.continue_trading():
             self.run_iteration()
 
     def start(self):
@@ -303,9 +325,6 @@ class ScalpingBot:
             return
 
         self.state = self.STATE_WORKING
-
-        # получаем текущее число акций
-        self.accounting.num = self.accounting.get_instrument_count()
 
         # должно быть минимум
         need_to_buy = self.base_shares - self.accounting.num
@@ -371,7 +390,7 @@ class ScalpingBot:
                 self.sell()
 
         self.log(f"Итог {round(self.accounting.sum, 2)} {self.client.currency} "
-                 f"({round(100 * self.accounting.sum / (self.client.current_price * self.max_shares), 2)}%)")
+                 f"({round(100 * self.accounting.sum / (self.get_current_price() * self.max_shares), 2)}%)")
 
 
 if __name__ == '__main__':
@@ -386,4 +405,8 @@ if __name__ == '__main__':
     for sig in (SIGABRT, SIGILL, SIGINT, SIGSEGV, SIGTERM):
         signal(sig, clean)
 
-    bot.run()
+    try:
+        bot.run()
+    except Exception as e:
+        bot.logger.error(f"Не перехваченное исключение: {e}")
+        bot.stop()
