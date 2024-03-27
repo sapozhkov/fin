@@ -33,11 +33,11 @@ class ScalpingBot:
             quit_on_balance_up_percent=2,
             quit_on_balance_down_percent=1,
 
-            sleep_trading=5 * 60,
+            sleep_trading=1 * 60,
             sleep_no_trade=60,
 
-            max_shares=7,
-            base_shares=None,
+            max_shares=3,
+            base_shares=2,
             threshold_buy_steps=4,
             threshold_sell_steps=8,
             step_size=.7,
@@ -55,7 +55,7 @@ class ScalpingBot:
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
         # todo можно занимать. подумать над настройкой для параллельного запуска
-        self.accounting.num = self.accounting.get_instrument_count()
+        self.accounting.num = 0  # self.accounting.get_instrument_count()
 
         self.start_time = start_time
         self.end_time = end_time
@@ -233,8 +233,20 @@ class ScalpingBot:
             if order_id not in active_order_ids:
                 self.check_and_apply_order_execution(order)
 
+        self.log(f"Orders: "
+                 f"buy {self.get_existing_buy_order_prices()}, "
+                 f"sell {self.get_existing_sell_order_prices()} ")
+
     def get_current_price(self) -> float:
         return self.client.get_current_price()
+
+    def get_existing_buy_order_prices(self) -> list[float]:
+        return [self.client.quotation_to_float(order.initial_order_price)
+                for order_id, order in self.active_buy_orders.items()]
+
+    def get_existing_sell_order_prices(self) -> list[float]:
+        return [self.client.quotation_to_float(order.initial_order_price)
+                for order_id, order in self.active_sell_orders.items()]
 
     def place_buy_orders(self):
         current_buy_orders_cnt = len(self.active_buy_orders)
@@ -244,8 +256,7 @@ class ScalpingBot:
         target_prices = [current_price - i * self.step_size for i in range(1, self.step_cnt + 1)]
 
         # Исключаем цены, по которым уже выставлены заявки на покупку
-        existing_order_prices = [self.client.quotation_to_float(order.initial_order_price)
-                                 for order_id, order in self.active_buy_orders.items()]
+        existing_order_prices = self.get_existing_buy_order_prices()
 
         # Ставим заявки на покупку
         for price in target_prices:

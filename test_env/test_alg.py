@@ -55,7 +55,6 @@ class TestAlgorithm:
         success_days = 0
         balance_change_list = []
         operations_cnt = 0
-        operations_not_closed_cnt = 0
         operations_cnt_list = []
 
         days_list = self.data_handler.get_days_list(last_test_date, test_days_num)
@@ -148,8 +147,6 @@ class TestAlgorithm:
             operations = len(self.accounting_helper.get_deals())
             operations_cnt += operations
             operations_cnt_list.append(operations)
-            if self.client_helper.sell_order_executed % 2 == 1:
-                operations_not_closed_cnt += 1
 
             balance_change = round(self.accounting_helper.sum, 2)
 
@@ -173,10 +170,10 @@ class TestAlgorithm:
         balance = round(balance + self.accounting_helper.num * self.client_helper.current_price, 2)
 
         return {
+            'sum_': round(self.accounting_helper.sum + self.accounting_helper.num * self.client_helper.current_price, 2),
+            'sum': round(self.accounting_helper.sum, 2),
+            'num': f"{self.accounting_helper.num} x {self.client_helper.current_price}",
             'balance': balance,
-            'sum': self.accounting_helper.sum,
-            'num': self.accounting_helper.num,
-            'sum_': round(self.accounting_helper.sum + self.accounting_helper.num * self.client_helper.current_price),
             'balance_change_avg': round(sum(balance_change_list) / test_days_num, 2),
 
             'days': test_days_num,
@@ -196,8 +193,6 @@ class TestAlgorithm:
 
             'operations_cnt': operations_cnt,
             'operations_avg': round(sum(operations_cnt_list) / test_days_num, 2),
-            'op_not_closed': operations_not_closed_cnt,
-            'op_not_closed_avg': round(operations_not_closed_cnt / test_days_num, 2),
         }
 
     @staticmethod

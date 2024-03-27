@@ -22,16 +22,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         if candles_1_min:
             self.set_candles_list(candles_1_min)
 
-        self.buy_order = None
-        self.buy_order_executed = False
-        self.buy_order_executed_on_border = False
-
-        self.sell_order = None
-        self.sell_order_executed = False
-        self.sell_order_executed_on_border = False
-
         self.total_completed_orders = 0
-        self.total_completed_orders_on_border = 0
 
         self.current_candle: HistoricCandle | None = None
         self.current_price: float = 0
@@ -46,11 +37,6 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
     def set_candles_list(self, candles: GetCandlesResponse):
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
-        self.total_completed_orders = 0
-        self.total_completed_orders_on_border = 0
-        self.sell_order = None  # ???
-        self.sell_order_executed = False
-        self.sell_order_executed_on_border = False
         self.orders = {}
         self.executed_orders_ids = []
 
@@ -237,8 +223,6 @@ class ClientTestEnvHelper(AbstractProxyClient):
                     order.executed_commission = self.float_to_money_value(self.current_price * self.commission)
 
                     self.total_completed_orders += 1
-                    if self.buy_order_executed_on_border:
-                        self.total_completed_orders_on_border += 1
 
             elif order.direction == OrderDirection.ORDER_DIRECTION_SELL:
                 if order.order_id in self.executed_orders_ids:
@@ -247,8 +231,6 @@ class ClientTestEnvHelper(AbstractProxyClient):
                     order.executed_commission = self.float_to_money_value(self.current_price * self.commission)
 
                     self.total_completed_orders += 1
-                    if self.sell_order_executed_on_border:
-                        self.total_completed_orders_on_border += 1
 
             return (
                 res,
