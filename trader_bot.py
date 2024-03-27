@@ -37,10 +37,10 @@ class ScalpingBot:
             sleep_no_trade=60,
 
             max_shares=3,
-            base_shares=2,
-            threshold_buy_steps=4,
+            base_shares=None,
+            threshold_buy_steps=3,
             threshold_sell_steps=8,
-            step_size=.7,
+            step_size=1,
             step_cnt=3,
 
             time_helper: AbstractTimeHelper | None = None,
