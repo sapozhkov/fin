@@ -148,7 +148,7 @@ class TestAlgorithm:
             operations_cnt += operations
             operations_cnt_list.append(operations)
 
-            balance_change = round(self.accounting_helper.sum, 2)
+            balance_change = self.accounting_helper.sum
 
             # хак для учета откупленных/проданных в этой итерации акций
             # current_price = bot.get_current_price()
@@ -159,6 +159,8 @@ class TestAlgorithm:
 
             balance = round(balance + balance_change, 2)
 
+            # print(f"{test_date} - s {round(balance_change, 2)} - b {balance}")
+
             # if balance_change < 0:
             #     print(f"{test_date} - {balance_change}")
 
@@ -168,12 +170,11 @@ class TestAlgorithm:
             balance_change_list.append(balance_change)
 
         balance = round(balance + self.accounting_helper.num * self.client_helper.current_price, 2)
+        profit = balance / (self.client_helper.current_price * max_shares)
 
         return {
-            'sum_': round(self.accounting_helper.sum + self.accounting_helper.num * self.client_helper.current_price, 2),
-            'sum': round(self.accounting_helper.sum, 2),
-            'num': f"{self.accounting_helper.num} x {self.client_helper.current_price}",
             'balance': balance,
+            'profit_p': f"{round(profit, 2)}",
             'balance_change_avg': round(sum(balance_change_list) / test_days_num, 2),
 
             'days': test_days_num,

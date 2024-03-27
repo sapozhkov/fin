@@ -55,7 +55,7 @@ class ScalpingBot:
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
         # todo можно занимать. подумать над настройкой для параллельного запуска
-        self.accounting.num = 0  # self.accounting.get_instrument_count()
+        self.accounting.num = self.accounting.get_instrument_count()
 
         self.start_time = start_time
         self.end_time = end_time
@@ -344,7 +344,8 @@ class ScalpingBot:
         if need_to_buy > 0:
             for _ in range(need_to_buy):
                 self.buy()  # в дальнейшем можно перевести на работу с лотами
-            self.place_sell_orders(need_to_buy)
+
+        self.place_sell_orders(self.base_shares)
 
     def run_iteration(self):
         if self.check_stop():
