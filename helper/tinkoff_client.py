@@ -228,9 +228,8 @@ class TinkoffProxyClient(AbstractProxyClient):
         with Client(self.token) as client:
             try:
                 all_orders = client.orders.get_orders(account_id=self.account_id)
-                # todo вот это чекнуть в проде
                 active_orders = [order for order in all_orders.orders if order.execution_report_status
-                                 == OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL]
+                                 != OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL]
                 return active_orders
             except Exception as e:
                 self.logger.error(f"Ошибка при получении активных заявок: {e}", True)
