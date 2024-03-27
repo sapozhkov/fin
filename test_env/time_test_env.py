@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 
-from helper.time_helper import AbstractTimeHelper
+from prod_env.time_helper import AbstractTimeHelper
 
 
 class TimeTestEnvHelper(AbstractTimeHelper):

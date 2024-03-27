@@ -7,10 +7,10 @@ from signal import *
 from dotenv import load_dotenv
 from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, OrderState, PostOrderResponse
 
-from helper.accounting_helper import AbstractAccountingHelper, AccountingHelper
-from helper.logger_helper import LoggerHelper, AbstractLoggerHelper
-from helper.time_helper import TimeHelper, AbstractTimeHelper
-from helper.tinkoff_client import TinkoffProxyClient, AbstractProxyClient
+from prod_env.accounting_helper import AbstractAccountingHelper, AccountingHelper
+from prod_env.logger_helper import LoggerHelper, AbstractLoggerHelper
+from prod_env.time_helper import TimeHelper, AbstractTimeHelper
+from prod_env.tinkoff_client import TinkoffProxyClient, AbstractProxyClient
 
 load_dotenv()
 

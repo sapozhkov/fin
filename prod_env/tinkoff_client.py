@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus, \
     CandleInterval, PostOrderResponse, MoneyValue, OrderState
 
-from helper.time_helper import AbstractTimeHelper
+from prod_env.time_helper import AbstractTimeHelper
 
 
 class AbstractProxyClient(ABC):

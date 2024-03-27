@@ -3,7 +3,7 @@ from datetime import time as datetime_time, datetime, timedelta
 from tinkoff.invest import OrderType, PostOrderResponse, OrderDirection, MoneyValue, HistoricCandle, \
     GetCandlesResponse, OrderState, OrderExecutionReportStatus
 
-from helper.tinkoff_client import AbstractProxyClient
+from prod_env.tinkoff_client import AbstractProxyClient
 from test_env.time_test_env import TimeTestEnvHelper
 
 

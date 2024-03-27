@@ -6,7 +6,7 @@ from pathlib import Path
 import pytz
 from tinkoff.invest import OrderDirection, PostOrderResponse
 
-from helper.tinkoff_client import AbstractProxyClient
+from prod_env.tinkoff_client import AbstractProxyClient
 
 
 class AbstractAccountingHelper(ABC):
