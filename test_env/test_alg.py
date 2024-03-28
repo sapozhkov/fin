@@ -187,6 +187,7 @@ class TestAlgorithm:
             # 'quit_on_balance_down_percent': quit_on_balance_down_percent,
 
             'max_shares': max_shares,
+            'base_shares': base_shares,
             'threshold_buy_steps': threshold_buy_steps,
             'threshold_sell_steps': threshold_sell_steps,
             'step_size': step_size,

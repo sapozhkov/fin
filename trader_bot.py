@@ -1,6 +1,7 @@
 import math
 import os
 import sys
+import traceback
 from datetime import time as datetime_time
 from signal import *
 
@@ -26,8 +27,8 @@ class ScalpingBot:
     def __init__(
             self, token, ticker,
 
-            start_time='07:45',  # 10:45
-            end_time='15:15',  # 18:15
+            start_time='07:00',  # 10:00
+            end_time='15:29',  # 18:29
 
             stop_loss_percent=0.3,
             quit_on_balance_up_percent=2,
@@ -207,9 +208,10 @@ class ScalpingBot:
         is_executed, order_state = self.client.order_is_executed(order)
 
         if is_executed:
+            price = self.client.quotation_to_float(order_state.executed_order_price)
             type_text = 'BUY' if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY else 'SELL'
             self.accounting.add_deal_by_order(order_state)
-            self.log(f"{type_text} order executed, price {self.client.quotation_to_float(order.executed_order_price)}"
+            self.log(f"{type_text} order executed, price {price}"
                      f" (n={self.accounting.num})")
 
         self._remove_order_from_active_list(order)
@@ -420,5 +422,6 @@ if __name__ == '__main__':
     try:
         bot.run()
     except Exception as e:
-        bot.logger.error(f"Не перехваченное исключение: {e}")
+        traceback_str = ''.join(traceback.format_exception(None, e, e.__traceback__))
+        bot.logger.error(f"Не перехваченное исключение: {e}\nТрассировка:\n{traceback_str}")
         bot.stop()
