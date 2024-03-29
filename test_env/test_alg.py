@@ -44,9 +44,9 @@ class TestAlgorithm:
             end_time='15:15',  # 18:15
 
             shares_count=0,
-            max_shares=3,
-            base_shares=None,
-            threshold_buy_steps=3,
+            max_shares=5,
+            base_shares=3,
+            threshold_buy_steps=5,
             threshold_sell_steps=0,
             step_size=.5,
             step_cnt=3,
