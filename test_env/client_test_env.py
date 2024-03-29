@@ -201,7 +201,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
             is_complete=is_complete,
         )
 
-    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState):
+    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState | None):
 
         # покупка по рыночной цене
         if order.order_type == OrderType.ORDER_TYPE_MARKET:

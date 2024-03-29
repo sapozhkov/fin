@@ -233,7 +233,7 @@ class ScalpingBot:
         for order_id, order in self.active_buy_orders.copy().items():
             if order_id not in active_order_ids:
                 is_executed, order_state = self.client.order_is_executed(order)
-                if is_executed:
+                if is_executed and order_state:
                     self.apply_order_execution(order_state)
                     self.set_sell_order_by_buy_order(order_state)
                 self._remove_order_from_active_list(order)
@@ -245,7 +245,7 @@ class ScalpingBot:
         for order_id, order in self.active_sell_orders.copy().items():
             if order_id not in active_order_ids:
                 is_executed, order_state = self.client.order_is_executed(order)
-                if is_executed:
+                if is_executed and order_state:
                     self.apply_order_execution(order_state)
                 self._remove_order_from_active_list(order)
 

@@ -78,7 +78,7 @@ class AbstractProxyClient(ABC):
         pass
 
     @abstractmethod
-    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState):
+    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState | None):
         pass
 
     @abstractmethod
@@ -198,9 +198,13 @@ class TinkoffProxyClient(AbstractProxyClient):
                 self.logger.error(f"Ошибка при запросе свечей: {e}")
                 return GetCandlesResponse([])
 
-    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState):
+    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState | None):
         with Client(self.token) as client:
-            order_state = client.orders.get_order_state(account_id=self.account_id, order_id=order.order_id)
+            try:
+                order_state = client.orders.get_order_state(account_id=self.account_id, order_id=order.order_id)
+            except RequestError as e:
+                self.logger.error(f"Ошибка при запросе статуса заявки: {e}")
+                return False, None
             return (
                 order_state.execution_report_status == OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL,
                 order_state
@@ -208,7 +212,11 @@ class TinkoffProxyClient(AbstractProxyClient):
 
     def get_instruments_count(self):
         with Client(self.token) as client:
-            portfolio = client.operations.get_portfolio(account_id=self.account_id)
+            try:
+                portfolio = client.operations.get_portfolio(account_id=self.account_id)
+            except RequestError as e:
+                self.logger.error(f"Ошибка при запросе портфеля: {e}")
+                return 0
             for position in portfolio.positions:
                 if position.figi == self.figi:
                     return position.quantity.units - position.blocked_lots.units
