@@ -213,23 +213,16 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
         # иначе лимитная заявка
         elif order.order_type == OrderType.ORDER_TYPE_LIMIT:
-            order_price = self.quotation_to_float(order.initial_order_price)
             res = False
 
             if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
                 if order.order_id in self.executed_orders_ids:
                     res = True
-                    order.executed_order_price = self.float_to_money_value(order_price)
-                    order.executed_commission = self.float_to_money_value(self.current_price * self.commission)
-
                     self.total_completed_orders += 1
 
             elif order.direction == OrderDirection.ORDER_DIRECTION_SELL:
                 if order.order_id in self.executed_orders_ids:
                     res = True
-                    order.executed_order_price = self.float_to_money_value(order_price)
-                    order.executed_commission = self.float_to_money_value(self.current_price * self.commission)
-
                     self.total_completed_orders += 1
 
             return (
@@ -253,14 +246,16 @@ class ClientTestEnvHelper(AbstractProxyClient):
         return [order for order_id, order in self.orders.items() if order_id not in self.executed_orders_ids]
 
     def get_order_state(self, order: PostOrderResponse) -> OrderState:
+        is_executed = order.order_id in self.executed_orders_ids
+        price_0 = self.float_to_quotation(0)
         return OrderState(
             order_id=order.order_id,
             order_type=order.order_type,
             direction=order.direction,
             initial_order_price=order.initial_order_price,
-            executed_order_price=order.executed_order_price,
+            executed_order_price=order.initial_order_price if is_executed else price_0,
             initial_commission=order.initial_commission,
-            executed_commission=order.executed_commission,
+            executed_commission=order.initial_commission if is_executed else price_0,
             execution_report_status=OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL
-            if order.order_id in self.executed_orders_ids else OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_NEW,
+            if is_executed else OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_NEW,
         )
