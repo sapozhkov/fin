@@ -30,7 +30,6 @@ class ScalpingBot:
             start_time='07:00',  # 10:00
             end_time='15:29',  # 18:29
 
-            stop_loss_percent=0.3,
             quit_on_balance_up_percent=2,
             quit_on_balance_down_percent=1,
 
@@ -184,30 +183,6 @@ class ScalpingBot:
         if order:
             self.active_buy_orders[order.order_id] = order
         return order
-
-    def forecast_next_candle(self, candles):
-        if len(candles.candles) < 2:
-            return None, None
-
-        # Извлекаем значения high и low из свечей
-        high_prices = [candle.high.units + candle.high.nano * 1e-9 for candle in candles.candles]
-        low_prices = [candle.low.units + candle.low.nano * 1e-9 for candle in candles.candles]
-
-        # Рассчитываем процентное изменение для high и low
-        high_changes = [(high_prices[i] - high_prices[i - 1]) / high_prices[i - 1]
-                        if high_prices[i - 1] else 0 for i in range(1, len(high_prices))]
-        low_changes = [(low_prices[i] - low_prices[i - 1]) / low_prices[i - 1]
-                       if low_prices[i - 1] else 0 for i in range(1, len(low_prices))]
-
-        # Среднее процентное изменение
-        avg_high_change = sum(high_changes) / len(high_changes)
-        avg_low_change = sum(low_changes) / len(low_changes)
-
-        # Применяем среднее процентное изменение к последним high и low для прогноза
-        forecast_high = self.client.round(high_prices[-1] * (1 + avg_high_change))
-        forecast_low = self.client.round(low_prices[-1] * (1 + avg_low_change))
-
-        return forecast_low, forecast_high
 
     def equivalent_prices(self, quotation_price: Quotation | MoneyValue, float_price: float) -> bool:
         rounded_quotation_price = self.client.quotation_to_float(quotation_price)
