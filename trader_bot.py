@@ -130,8 +130,11 @@ class ScalpingBot:
 
         return True
 
-    def place_order(self, lots: int, direction, price: float | None = None, order_type=OrderType.ORDER_TYPE_MARKET):
+    def place_order(self, lots: int, direction, price: float | None = None, order_type=OrderType.ORDER_TYPE_MARKET) \
+            -> PostOrderResponse | None:
         order = self.client.place_order(lots, direction, price, order_type)
+        if not order:
+            return None
         self.accounting.add_order(order)
 
         count = self.accounting.num
@@ -156,26 +159,30 @@ class ScalpingBot:
 
         return order
 
-    def buy(self, lots: int = 1, price: float | None = None):
+    def buy(self, lots: int = 1, price: float | None = None) -> PostOrderResponse | None:
         order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_BUY, price)
-        self.accounting.add_deal_by_order(order)
+        if order:
+            self.accounting.add_deal_by_order(order)
         return order
 
-    def sell(self, lots: int = 1, price: float | None = None):
+    def sell(self, lots: int = 1, price: float | None = None) -> PostOrderResponse | None:
         order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL, price)
-        self.accounting.add_deal_by_order(order)
+        if order:
+            self.accounting.add_deal_by_order(order)
         return order
 
-    def sell_limit(self, price, lots=1):
+    def sell_limit(self, price, lots=1) -> PostOrderResponse | None:
         order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL, price=price,
                                  order_type=OrderType.ORDER_TYPE_LIMIT)
-        self.active_sell_orders[order.order_id] = order
+        if order:
+            self.active_sell_orders[order.order_id] = order
         return order
 
-    def buy_limit(self, price, lots=1):
+    def buy_limit(self, price, lots=1) -> PostOrderResponse | None:
         order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_BUY, price=price,
                                  order_type=OrderType.ORDER_TYPE_LIMIT)
-        self.active_buy_orders[order.order_id] = order
+        if order:
+            self.active_buy_orders[order.order_id] = order
         return order
 
     def forecast_next_candle(self, candles):
@@ -209,7 +216,7 @@ class ScalpingBot:
 
     def set_sell_order_by_buy_order(self, order: OrderState):
         price = self.client.quotation_to_float(order.executed_order_price)
-        price += self.step_size  # вот с этим параметром можно поиграть
+        price += self.step_size  # todo вот с этим параметром можно поиграть
         self.sell_limit(price)
 
     def apply_order_execution(self, order: OrderState):
@@ -354,7 +361,7 @@ class ScalpingBot:
             for _ in range(need_to_buy):
                 self.buy()  # в дальнейшем можно перевести на работу с лотами
 
-        self.place_sell_orders(self.base_shares)
+        self.place_sell_orders(self.accounting.num)
 
         self.start_price = self.get_current_price()
 
