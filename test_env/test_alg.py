@@ -36,22 +36,22 @@ class TestAlgorithm:
             self,
             last_test_date='2024-03-15',
             test_days_num=1,
-            sleep_trading=5 * 60,
-            sleep_no_trade=300,
+            sleep_trading=1 * 60,
+            sleep_no_trade=60,
             quit_on_balance_up_percent=2,
             quit_on_balance_down_percent=1,
-            start_time='07:45',  # 10:45
-            end_time='15:15',  # 18:15
+            start_time='07:00',  # 10:00
+            end_time='15:29',  # 18:29
 
             shares_count=0,
             max_shares=5,
-            base_shares=3,
-            threshold_buy_steps=5,
+            base_shares=5,
+            threshold_buy_steps=6,
             threshold_sell_steps=0,
-            step_size=.5,
-            step_cnt=3,
+            step_size=1.4,
+            step_cnt=2,
     ):
-        balance = 0
+        profit = 0
         success_days = 0
         balance_change_list = []
         operations_cnt = 0
@@ -60,6 +60,11 @@ class TestAlgorithm:
         days_list = self.data_handler.get_days_list(last_test_date, test_days_num)
 
         self.accounting_helper.num = shares_count
+
+        # для расчета прибыли за весь период. купил в начале, в конце продал
+        started_t = False
+        start_price_t = 0
+        end_price_t = 0
 
         # закручиваем цикл по датам
         for test_date in days_list:
@@ -100,6 +105,7 @@ class TestAlgorithm:
                 accounting_helper=self.accounting_helper,
             )
 
+            # хак. могут быть пересчитаны в боте
             base_shares = bot.base_shares
             threshold_buy_steps = bot.threshold_buy_steps
 
@@ -116,12 +122,6 @@ class TestAlgorithm:
                 if not bot.continue_trading():
                     break
 
-                # при первом запуске
-                if not started:
-                    started = True
-                    start_price = self.client_helper.get_current_price()
-                    start_cnt = self.accounting_helper.num
-
                 # задаем время
                 self.time_helper.set_time(dt)
 
@@ -132,6 +132,16 @@ class TestAlgorithm:
 
                 # задаем текущее значение свечи
                 self.client_helper.set_current_candle(candle)
+
+                # при первом запуске
+                if not started:
+                    started = True
+                    start_price = self.client_helper.get_current_price()
+                    start_cnt = self.accounting_helper.num
+
+                    if not started_t:
+                        started_t = True
+                        start_price_t = start_price
 
                 for order_id, order in self.client_helper.orders.items():
                     if order_id in self.client_helper.executed_orders_ids:
@@ -170,9 +180,11 @@ class TestAlgorithm:
                     + end_price * end_cnt
             )
 
-            balance = round(balance + balance_change, 2)
+            end_price_t = end_price
 
-            # print(f"{test_date} - s {round(balance_change, 2)} - b {balance}")
+            profit = round(profit + balance_change, 2)
+
+            # print(f"{test_date} - s {round(balance_change, 2)} - b {profit}")
 
             # #51 для перебирания дат с потерями
             # if balance_change < 0:
@@ -183,12 +195,20 @@ class TestAlgorithm:
 
             balance_change_list.append(balance_change)
 
-        profit = balance / (self.client_helper.current_price * max_shares)
+        profit_p = round(profit / (start_price_t * max_shares), 2) if start_price_t else 0
+
+        # это для обычной торговли. купил в начале, в конце продал
+        potential_profit = round((end_price_t - start_price_t) * max_shares, 2)
+        # сколько от обычной торговли в процентах ты сделал
+        potential_profit_p = round(profit / potential_profit, 2) if potential_profit > 0 else 0
 
         return {
-            'balance': balance,
-            'profit_p': f"{round(profit, 2)}",
-            'balance_change_avg': round(sum(balance_change_list) / test_days_num, 2),
+            'profit': profit,
+            'profit_p': f"{profit_p}",
+            'profit_change_avg': round(sum(balance_change_list) / test_days_num, 2),
+
+            'pot_profit': potential_profit,
+            'pot_profit_p': potential_profit_p,
 
             'days': test_days_num,
             'success_days': success_days,

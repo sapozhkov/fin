@@ -37,12 +37,12 @@ class ScalpingBot:
             sleep_trading=1 * 60,
             sleep_no_trade=60,
 
-            max_shares=6,
-            base_shares=None,
-            threshold_buy_steps=3,
+            max_shares=5,
+            base_shares=5,
+            threshold_buy_steps=6,
             threshold_sell_steps=0,
-            step_size=.7,
-            step_cnt=3,
+            step_size=1.4,
+            step_cnt=2,
 
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
@@ -80,6 +80,7 @@ class ScalpingBot:
 
         # внутренние переменные
         self.state = self.STATE_NEW
+        self.start_price = 0
 
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
@@ -355,6 +356,8 @@ class ScalpingBot:
 
         self.place_sell_orders(self.base_shares)
 
+        self.start_price = self.get_current_price()
+
     def run_iteration(self):
         if self.check_stop():
             return
@@ -409,8 +412,10 @@ class ScalpingBot:
             for _ in range(need_to_sell):
                 self.sell()
 
-        self.log(f"Итог {round(self.accounting.sum, 2)} {self.client.currency} "
-                 f"({round(100 * self.accounting.sum / (self.get_current_price() * self.max_shares), 2)}%)")
+        max_start_total = self.start_price * self.max_shares
+        if max_start_total:
+            self.log(f"Итог {round(self.accounting.sum, 2)} {self.client.currency} "
+                     f"({round(100 * self.accounting.sum / max_start_total, 2)}%)")
 
 
 if __name__ == '__main__':
