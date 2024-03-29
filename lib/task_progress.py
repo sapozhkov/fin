@@ -30,7 +30,7 @@ class TaskProgress:
         print('\r', end='')
         print(f'[{bar}] {percent_complete:.0f}% ({self.current_iteration}/{self.total_iterations}), '
               f'закончим через {self.get_remaining_time_text(remaining_time)} '
-              f'в {estimated_end_time.strftime("%H:%M")}', end='')
+              f'в {estimated_end_time.strftime("%H:%M")}', end=' ' * 10)
 
         if self.current_iteration == self.total_iterations:
             print('\r' + ' ' * 100, end='\r')
@@ -51,4 +51,4 @@ class TaskProgress:
             parts.append(f"{int(minutes):02}м")
         parts.append(f"{int(seconds):02}с")
 
-        return " ".join(parts[:2]) + ' ' * 10
+        return " ".join(parts[:2])
