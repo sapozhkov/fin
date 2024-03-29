@@ -107,10 +107,20 @@ class TestAlgorithm:
 
             self.accounting_helper.reset()
 
+            started = False
+            start_price = 0
+            start_cnt = 0
+
             # Использование итератора для вывода каждой пары час-минута
             for dt in self.data_handler.get_hour_minute_pairs(date_from, date_to):
                 if not bot.continue_trading():
                     break
+
+                # при первом запуске
+                if not started:
+                    started = True
+                    start_price = self.client_helper.get_current_price()
+                    start_cnt = self.accounting_helper.num
 
                 # задаем время
                 self.time_helper.set_time(dt)
@@ -151,28 +161,28 @@ class TestAlgorithm:
             operations_cnt += operations
             operations_cnt_list.append(operations)
 
-            balance_change = self.accounting_helper.sum
+            end_price = self.client_helper.get_current_price()
+            end_cnt = self.accounting_helper.num
 
-            # хак для учета откупленных/проданных в этой итерации акций
-            # current_price = bot.get_current_price()
-            # while balance_change < - .5 * current_price:
-            #     balance_change += current_price
-            # while balance_change > .5 * current_price:
-            #     balance_change -= current_price
+            balance_change = (
+                    - start_price * start_cnt
+                    + self.accounting_helper.sum
+                    + end_price * end_cnt
+            )
 
             balance = round(balance + balance_change, 2)
 
             # print(f"{test_date} - s {round(balance_change, 2)} - b {balance}")
 
+            # #51 для перебирания дат с потерями
             # if balance_change < 0:
-            #     print(f"{test_date} - {balance_change}")
+            #     print(f"{test_date} - {round(balance_change, 2)}")
 
             if balance_change > 0:
                 success_days += 1
 
             balance_change_list.append(balance_change)
 
-        balance = round(balance + self.accounting_helper.num * self.client_helper.current_price, 2)
         profit = balance / (self.client_helper.current_price * max_shares)
 
         return {
