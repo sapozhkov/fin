@@ -84,6 +84,13 @@ class ScalpingBot:
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
 
+        # корректировка параметров
+        if self.base_shares > self.max_shares:
+            self.base_shares = self.max_shares
+
+        if self.threshold_buy_steps <= self.step_cnt:
+            self.threshold_buy_steps = self.step_cnt + 1
+
         self.log(f"INIT \n"
                  f"     figi - {self.client.figi} ({self.client.ticker})\n"
                  f"     commission - {self.commission * 100} %\n"

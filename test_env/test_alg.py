@@ -100,6 +100,9 @@ class TestAlgorithm:
                 accounting_helper=self.accounting_helper,
             )
 
+            base_shares = bot.base_shares
+            threshold_buy_steps = bot.threshold_buy_steps
+
             self.client_helper.set_candles_list(self.data_handler.get_candles(test_date))
 
             self.accounting_helper.reset()
