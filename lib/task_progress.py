@@ -29,7 +29,7 @@ class TaskProgress:
         # Очистка текущей строки в консоли и вывод прогресс-бара
         print('\r', end='')
         print(f'[{bar}] {percent_complete:.0f}% ({self.current_iteration}/{self.total_iterations}), '
-              f'закончим через {self.get_remaining_time_text(remaining_time)} '
+              f'закончим через "{self.get_remaining_time_text(remaining_time)}" '
               f'в {estimated_end_time.strftime("%H:%M")}', end=' ' * 10)
 
         if self.current_iteration == self.total_iterations:
