@@ -80,6 +80,7 @@ class ScalpingBot:
         # внутренние переменные
         self.state = self.STATE_NEW
         self.start_price = 0
+        self.start_count = 0
 
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
@@ -100,7 +101,7 @@ class ScalpingBot:
                  f"     step_cnt - {self.step_cnt}\n"
                  f"     threshold_buy_steps - {self.threshold_buy_steps}\n"
                  f"     threshold_sell_steps - {self.threshold_sell_steps}\n"
-                 f"     cur_used_cnt - {self.accounting.num}\n"
+                 f"     cur_used_cnt - {self.get_current_count()}\n"
                  )
 
     def log(self, message, repeat=False):
@@ -136,7 +137,7 @@ class ScalpingBot:
             return None
         self.accounting.add_order(order)
 
-        count = self.accounting.num
+        count = self.get_current_count()
         if order_type == OrderType.ORDER_TYPE_MARKET:
             price = self.client.quotation_to_float(order.executed_order_price)
             if direction == OrderDirection.ORDER_DIRECTION_BUY:
@@ -199,7 +200,7 @@ class ScalpingBot:
         type_text = 'BUY' if order.direction == OrderDirection.ORDER_DIRECTION_BUY else 'SELL'
         self.accounting.add_deal_by_order(order)
         self.log(f"{type_text} order executed, price {price}"
-                 f" (n={self.accounting.num})")
+                 f" (n={self.get_current_count()})")
 
     def update_orders_status(self):
         active_order_ids = [order.order_id for order in self.client.get_active_orders()]
@@ -231,6 +232,9 @@ class ScalpingBot:
     def get_current_price(self) -> float:
         return self.client.get_current_price()
 
+    def get_current_count(self) -> int:
+        return self.accounting.num
+
     def get_existing_buy_order_prices(self) -> list[float]:
         return [self.client.quotation_to_float(order.initial_order_price)
                 for order_id, order in self.active_buy_orders.items()]
@@ -241,7 +245,7 @@ class ScalpingBot:
 
     def place_buy_orders(self):
         current_buy_orders_cnt = len(self.active_buy_orders)
-        current_shares_cnt = self.accounting.num
+        current_shares_cnt = self.get_current_count()
         current_price = math.floor(self.get_current_price() / self.step_size) * self.step_size
 
         target_prices = [current_price - i * self.step_size for i in range(1, self.step_cnt + 1)]
@@ -288,7 +292,7 @@ class ScalpingBot:
 
         prefix = "Buy" if order.direction == OrderDirection.ORDER_DIRECTION_BUY else "Sell"
         price = self.client.quotation_to_float(order.initial_order_price)
-        self.log(f"{prefix} order canceled, price {price} n={self.accounting.num})")
+        self.log(f"{prefix} order canceled, price {price} n={self.get_current_count()})")
 
     def cancel_orders_by_limits(self):
         # берем текущую цену + сдвиг
@@ -328,17 +332,18 @@ class ScalpingBot:
 
         self.state = self.STATE_WORKING
 
+        self.start_price = self.get_current_price()
+        self.start_count = self.get_current_count()
+
         # должно быть минимум
-        need_to_buy = self.base_shares - self.accounting.num
+        need_to_buy = self.base_shares - self.start_count
 
         # докупаем недостающие по рыночной цене
         if need_to_buy > 0:
             for _ in range(need_to_buy):
-                self.buy()  # в дальнейшем можно перевести на работу с лотами
+                self.buy()
 
-        self.place_sell_orders(self.accounting.num)
-
-        self.start_price = self.get_current_price()
+        self.place_sell_orders(self.get_current_count())
 
     def run_iteration(self):
         if self.check_stop():
@@ -388,16 +393,22 @@ class ScalpingBot:
         self.cancel_active_orders()
 
         # продать откупленные инструменты
-        need_to_sell = self.accounting.num - self.base_shares
+        need_to_sell = self.get_current_count() - self.base_shares
 
         if need_to_sell > 0:
             for _ in range(need_to_sell):
                 self.sell()
 
+        change = (
+            - self.start_price * self.start_count
+            + self.accounting.sum
+            + self.get_current_price() * self.get_current_count()
+        )
+
         max_start_total = self.start_price * self.max_shares
         if max_start_total:
-            self.log(f"Итог {round(self.accounting.sum, 2)} {self.client.currency} "
-                     f"({round(100 * self.accounting.sum / max_start_total, 2)}%)")
+            self.log(f"Итог {round(change, 2)} {self.client.currency} "
+                     f"({round(100 * change / max_start_total, 2)}%)")
 
 
 if __name__ == '__main__':
