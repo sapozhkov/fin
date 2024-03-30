@@ -134,60 +134,49 @@ class ScalpingBot:
 
         return True
 
-    def place_order(self, lots: int, direction, price: float | None = None, order_type=OrderType.ORDER_TYPE_MARKET) \
+    def place_order(self, order_type: int, direction: int, lots: int, price: float | None = None) \
             -> PostOrderResponse | None:
+
         order = self.client.place_order(lots, direction, price, order_type)
-        if not order:
+        if order is None:
             return None
+
         self.accounting.add_order(order)
 
-        count = self.get_current_count()
         if order_type == OrderType.ORDER_TYPE_MARKET:
+            self.accounting.add_deal_by_order(order)
             price = self.client.quotation_to_float(order.executed_order_price)
             if direction == OrderDirection.ORDER_DIRECTION_BUY:
                 prefix = "BUY MARKET executed"
-                count += 1  # todo это хак из-за несвоевременного вызова. можно утащить в логгер это всё и
-                #               вставить прямо в методах
                 price = -price
             else:
                 prefix = "SELL MARKET executed"
-                count -= 1
+
         else:
             price = self.client.quotation_to_float(order.initial_order_price)
             if direction == OrderDirection.ORDER_DIRECTION_BUY:
+                self.active_buy_orders[order.order_id] = order
                 prefix = "Buy order set"
                 price = -price
             else:
+                self.active_sell_orders[order.order_id] = order
                 prefix = "Sell order set"
-        self.log(f"{prefix}, price {price} n={count})")
+
+        self.log(f"{prefix}, price {price} n={self.get_current_count()}---)")
 
         return order
 
-    def buy(self, lots: int = 1, price: float | None = None) -> PostOrderResponse | None:
-        order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_BUY, price)
-        if order:
-            self.accounting.add_deal_by_order(order)
-        return order
+    def buy(self, lots: int = 1) -> PostOrderResponse | None:
+        return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_BUY, lots, None)
 
-    def sell(self, lots: int = 1, price: float | None = None) -> PostOrderResponse | None:
-        order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL, price)
-        if order:
-            self.accounting.add_deal_by_order(order)
-        return order
+    def sell(self, lots: int = 1) -> PostOrderResponse | None:
+        return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_SELL, lots, None)
 
-    def sell_limit(self, price, lots=1) -> PostOrderResponse | None:
-        order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL, price=price,
-                                 order_type=OrderType.ORDER_TYPE_LIMIT)
-        if order:
-            self.active_sell_orders[order.order_id] = order
-        return order
+    def sell_limit(self, price: float, lots: int =1) -> PostOrderResponse | None:
+        return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_SELL, lots, price)
 
-    def buy_limit(self, price, lots=1) -> PostOrderResponse | None:
-        order = self.place_order(lots, OrderDirection.ORDER_DIRECTION_BUY, price=price,
-                                 order_type=OrderType.ORDER_TYPE_LIMIT)
-        if order:
-            self.active_buy_orders[order.order_id] = order
-        return order
+    def buy_limit(self, price: float, lots: int =1) -> PostOrderResponse | None:
+        return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_BUY, lots, price)
 
     def equivalent_prices(self, quotation_price: Quotation | MoneyValue, float_price: float) -> bool:
         rounded_quotation_price = self.client.quotation_to_float(quotation_price)
