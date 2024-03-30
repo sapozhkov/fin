@@ -365,8 +365,6 @@ class ScalpingBot:
         # Выставляем заявки на покупку
         self.place_buy_orders()
 
-        # todo также надо срезать заявки на продажу слишком высоко и выставлять новые по своей логике
-
         # self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_trading}")
         self.time.sleep(self.sleep_trading)
 
