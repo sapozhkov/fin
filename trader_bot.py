@@ -196,7 +196,7 @@ class ScalpingBot:
 
     def set_sell_order_by_buy_order(self, order: OrderState):
         price = self.client.quotation_to_float(order.executed_order_price)
-        price += self.step_size  # todo вот с этим параметром можно поиграть
+        price += self.step_size
         self.sell_limit(price)
 
     def apply_order_execution(self, order: OrderState):
