@@ -50,6 +50,9 @@ class TestAlgorithm:
             threshold_sell_steps=0,
             step_size=1.4,
             step_cnt=2,
+
+            pretest_days=None,
+            pretest_base_shares=None,
     ):
         profit = 0
         success_days = 0
@@ -68,6 +71,32 @@ class TestAlgorithm:
 
         # закручиваем цикл по датам
         for test_date in days_list:
+
+            if pretest_days:
+                test_alg_ = TestAlgorithm(self.token, self.ticker, self.figi, False)
+                base_shares = test_alg_.pretest(
+                    last_test_date=test_date,
+                    test_days_num=test_days_num,
+                    sleep_trading=sleep_trading,
+                    sleep_no_trade=sleep_no_trade,
+                    quit_on_balance_up_percent=quit_on_balance_up_percent,
+                    quit_on_balance_down_percent=quit_on_balance_down_percent,
+                    start_time=start_time,
+                    end_time=end_time,
+
+                    shares_count=shares_count,
+                    max_shares=max_shares,
+                    base_shares=base_shares,
+                    threshold_buy_steps=threshold_buy_steps,
+                    threshold_sell_steps=threshold_sell_steps,
+                    step_size=step_size,
+                    step_cnt=step_cnt,
+
+                    pretest_days=pretest_days,
+                    pretest_base_shares=pretest_base_shares,
+                )
+                # print(f"{test_date} - best base_shares for {pretest_days} days is {base_shares}")
+
             # дальше текущего времени не убегаем
             end_time = self.get_end_time(test_date, end_time)
 
@@ -247,3 +276,78 @@ class TestAlgorithm:
         min_time = min(current_time, end_time_dt)
 
         return min_time.strftime("%H:%M")
+
+    # todo params dto
+    def pretest(
+            self,
+            last_test_date='2024-03-15',
+            test_days_num=1,
+            sleep_trading=1 * 60,
+            sleep_no_trade=60,
+            quit_on_balance_up_percent=2,
+            quit_on_balance_down_percent=1,
+            start_time='07:00',  # 10:00
+            end_time='15:29',  # 18:29
+
+            shares_count=0,
+            max_shares=5,
+            base_shares=5,
+            threshold_buy_steps=6,
+            threshold_sell_steps=0,
+            step_size=1.4,
+            step_cnt=2,
+
+            pretest_days=None,
+            pretest_base_shares=None,
+    ):
+        if pretest_days is None:
+            raise Exception('Циклический проброс None в pretest_days')
+
+        if pretest_base_shares is None:
+            pretest_base_shares = [0, round(max_shares / 2), max_shares]
+
+        # todo еще вопрос с каким количеством акций входить в тесты
+        #   но выходить явно надо с текущим, которые есть
+
+        results = []
+
+        test_date = self.get_prev_test_date(last_test_date)
+
+        for _base_shares_ in pretest_base_shares:
+            result = self.test(
+                last_test_date=test_date,
+                test_days_num=pretest_days,
+                sleep_trading=sleep_trading,
+                sleep_no_trade=sleep_no_trade,
+                quit_on_balance_up_percent=quit_on_balance_up_percent,
+                quit_on_balance_down_percent=quit_on_balance_down_percent,
+                start_time=start_time,
+                end_time=end_time,
+
+                shares_count=shares_count,
+                max_shares=max_shares,
+                base_shares=_base_shares_,  # вот это тестируем
+                threshold_buy_steps=threshold_buy_steps,
+                threshold_sell_steps=threshold_sell_steps,
+                step_size=step_size,
+                step_cnt=step_cnt,
+
+                # вот это всегда None, иначе в рекурсию уйдет
+                pretest_days=None,
+                pretest_base_shares=None,
+            )
+            results.append(result)
+
+        # сортируем по прибыльности все
+        sorted_results = sorted(results, key=lambda x: x['profit'])
+        # print(f"all {sorted_results}")
+
+        # выбираем самую прибыльную настройку и выдаем её системе
+        best = sorted_results.pop()
+        # print(f"best {best}")
+
+        return best['base_shares']
+
+    def get_prev_test_date(self, last_test_date):
+        days = self.data_handler.get_days_list(last_test_date, 1)
+        return days.pop()
