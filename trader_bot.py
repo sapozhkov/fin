@@ -43,6 +43,9 @@ class ScalpingBot:
             step_size=1.4,
             step_cnt=2,
 
+            # ограничитель количества используемых акций из откупленных. полезно при || запуске на 1 инструмент
+            use_shares=None,
+
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
             client_helper: AbstractProxyClient | None = None,
@@ -54,8 +57,9 @@ class ScalpingBot:
         self.client = client_helper or TinkoffProxyClient(token, ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
-        # todo можно занимать. подумать над настройкой для параллельного запуска
         self.accounting.num = self.accounting.get_instrument_count()
+        if use_shares is not None:
+            self.accounting.num = min(self.accounting.num, use_shares)
 
         self.start_time = start_time
         self.end_time = end_time
