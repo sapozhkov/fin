@@ -26,7 +26,6 @@ class AbstractProxyClient(ABC):
         self.figi = ''
         self.currency = ''
         self.time: AbstractTimeHelper | None = None
-        # todo перевести все на self.client = Client(self.token)
 
     @abstractmethod
     def can_trade(self):
