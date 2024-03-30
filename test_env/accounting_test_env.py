@@ -38,7 +38,7 @@ class AccountingTestEnvHelper(AbstractAccountingHelper):
 
     def add_order(self, order: PostOrderResponse):
         if order.order_type == OrderType.ORDER_TYPE_MARKET:
-            price = self.client.current_price
+            price = self.client.get_current_price()
             type_ = OrderHelper.OPEN_BUY_MARKET if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
                 else OrderHelper.OPEN_SELL_MARKET
         else:

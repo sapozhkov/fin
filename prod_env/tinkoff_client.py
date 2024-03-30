@@ -25,8 +25,6 @@ class AbstractProxyClient(ABC):
         self.ticker = ''
         self.figi = ''
         self.currency = ''
-        # todo вынести? в текущем виде не работает, так как свечи не запрашиваются
-        self.current_price = 0.0
         self.time: AbstractTimeHelper | None = None
         # todo перевести все на self.client = Client(self.token)
 
@@ -63,15 +61,7 @@ class AbstractProxyClient(ABC):
         to_date = self.time.now()
         minutes_per_candle = self.interval_duration_minutes[interval]
         from_date = to_date - timedelta(minutes=minutes_per_candle * candles_count)
-
-        candles = self.get_candles(from_date, to_date, interval)
-
-        # обновляем текущую цену инструмента
-        if candles.candles:
-            last_candle = candles.candles[-1]
-            self.current_price = self.quotation_to_float(last_candle.close)
-
-        return candles
+        return self.get_candles(from_date, to_date, interval)
 
     @abstractmethod
     def get_candles(self, from_date, to_date, interval):
