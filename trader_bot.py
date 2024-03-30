@@ -300,7 +300,6 @@ class ScalpingBot:
 
     def cancel_orders_by_limits(self):
         # берем текущую цену + сдвиг
-        # todo вот тут можно тоже округлить до ближайшего целого
         threshold_price = (self.get_current_price()
                            - self.step_size * self.threshold_buy_steps)
 
