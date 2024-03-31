@@ -42,10 +42,6 @@ class TestAlgorithm:
             last_test_date,
             test_days_num,
             shares_count=0,
-
-            # todo это в конфиг должно уехать
-            pretest_days=None,
-            pretest_base_shares=None,
     ):
         profit = 0
         success_days = 0
@@ -64,20 +60,6 @@ class TestAlgorithm:
 
         # закручиваем цикл по датам
         for test_date in days_list:
-
-            if pretest_days:
-                test_alg = TestAlgorithm(self.token, self.ticker, self.figi, False)
-                config = test_alg.pretest(
-                    last_test_date=test_date,
-
-                    shares_count=shares_count,
-
-                    config=config,
-
-                    pretest_days=pretest_days,
-                    pretest_base_shares=pretest_base_shares,
-                )
-                # print(f"{test_date} - best base_shares for {pretest_days} days is {base_shares}")
 
             # дальше текущего времени не убегаем
             config.end_time = self.get_end_time(test_date, config.end_time)
@@ -241,7 +223,8 @@ class TestAlgorithm:
 
         return min_time.strftime("%H:%M")
 
-    def pretest(
+    # пока не используется, но сохраним код на будущее
+    def pretest_and_get_config(
             self,
             config: ConfigDTO,
 
@@ -249,36 +232,29 @@ class TestAlgorithm:
             shares_count=0,
 
             pretest_days=None,
-            pretest_base_shares=None,
     ):
         if pretest_days is None:
             raise Exception('Циклический проброс None в pretest_days')
 
-        # todo вот это надо будет рассмотреть. может тестироваться множество параметров
-        if pretest_base_shares is None:
-            pretest_base_shares = [0, round(config.max_shares / 2), config.max_shares]
-
-        # todo еще вопрос с каким количеством акций входить в тесты
-        #   но выходить явно надо с текущим, которые есть
+        pretest_base_shares = [0, round(config.max_shares / 2), config.max_shares]
 
         results = []
-
-        test_date = self.get_prev_test_date(last_test_date)
-
         for _base_shares_ in pretest_base_shares:
             tmp_config = copy.copy(config)
             tmp_config.base_shares = _base_shares_
+            tmp_config.pretest_days = None
+
+            prev_date = self.get_prev_date(last_test_date)
+
+            # print(f"Рассчитываем дату {last_test_date}")
+            # print(f"    для этого анализируем дату {prev_date}")
 
             result = self.test(
-                last_test_date=test_date,
+                last_test_date=prev_date,
                 test_days_num=pretest_days,
                 config=tmp_config,
 
                 shares_count=shares_count,
-
-                # вот это всегда None, иначе в рекурсию уйдет
-                pretest_days=None,
-                pretest_base_shares=None,
             )
             results.append(result)
 
@@ -297,6 +273,7 @@ class TestAlgorithm:
         else:
             return config
 
-    def get_prev_test_date(self, last_test_date):
-        days = self.data_handler.get_days_list(last_test_date, 1)
+    def get_prev_date(self, last_test_date):
+        days = self.data_handler.get_days_list(last_test_date, 2)
+        days.reverse()
         return days.pop()

@@ -11,6 +11,10 @@ class AbstractTimeHelper(ABC):
     def now(self):
         pass
 
+    def get_current_date(self) -> str:
+        """отдает текущую дату в формате 'ГГГГ-ММ-ДД'"""
+        return self.now().strftime('%Y-%m-%d')
+
     @abstractmethod
     def sleep(self, seconds):
         pass
