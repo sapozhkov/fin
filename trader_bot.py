@@ -8,6 +8,7 @@ from signal import *
 from dotenv import load_dotenv
 from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, OrderState, PostOrderResponse
 
+from dto.config_dto import ConfigDTO
 from prod_env.accounting_helper import AbstractAccountingHelper, AccountingHelper
 from prod_env.logger_helper import LoggerHelper, AbstractLoggerHelper
 from prod_env.time_helper import TimeHelper, AbstractTimeHelper
@@ -27,59 +28,22 @@ class ScalpingBot:
     def __init__(
             self, token, ticker,
 
-            start_time='07:00',  # 10:00
-            end_time='15:29',  # 18:29
-
-            quit_on_balance_up_percent=2,
-            quit_on_balance_down_percent=1,
-
-            sleep_trading=1 * 60,
-            sleep_no_trade=60,
-
-            max_shares=5,
-            base_shares=5,
-            threshold_buy_steps=6,
-            threshold_sell_steps=0,
-            step_size=1.4,
-            step_cnt=2,
-
-            # ограничитель количества используемых акций из откупленных. полезно при || запуске на 1 инструмент
-            use_shares=None,
-
+            config: ConfigDTO | None = None,
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
             client_helper: AbstractProxyClient | None = None,
             accounting_helper: AbstractAccountingHelper | None = None,
     ):
         # хелперы
+        self.config = config or ConfigDTO()
         self.time = time_helper or TimeHelper()
         self.logger = logger_helper or LoggerHelper(__name__)
         self.client = client_helper or TinkoffProxyClient(token, ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
         self.accounting.num = self.accounting.get_instrument_count()
-        if use_shares is not None:
-            self.accounting.num = min(self.accounting.num, use_shares)
-
-        self.start_time = start_time
-        self.end_time = end_time
-
-        self.max_shares = max_shares
-        self.threshold_buy_steps = threshold_buy_steps
-        self.threshold_sell_steps = threshold_sell_steps
-        self.step_size = step_size
-        self.step_cnt = step_cnt
-
-        # количество акций на начало дня и на конец
-        self.base_shares = base_shares if base_shares is not None else round(self.max_shares / 2)
-
-        # конфигурация
-        self.commission = 0.05 / 100
-        # self.quit_on_balance_up_percent = quit_on_balance_up_percent / 100
-        # self.quit_on_balance_down_percent = quit_on_balance_down_percent / 100
-
-        self.sleep_trading = sleep_trading
-        self.sleep_no_trade = sleep_no_trade
+        if self.config.use_shares is not None:
+            self.accounting.num = min(self.accounting.num, self.config.use_shares)
 
         # внутренние переменные
         self.state = self.STATE_NEW
@@ -89,22 +53,15 @@ class ScalpingBot:
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
 
-        # корректировка параметров
-        if self.base_shares > self.max_shares:
-            self.base_shares = self.max_shares
-
-        if self.threshold_buy_steps <= self.step_cnt:
-            self.threshold_buy_steps = self.step_cnt + 1
-
+        # todo пересмотреть состав. может сделать генерацию на основе конфига
         self.log(f"INIT \n"
                  f"     figi - {self.client.figi} ({self.client.ticker})\n"
-                 f"     commission - {self.commission * 100} %\n"
-                 f"     max_shares - {self.max_shares}\n"
-                 f"     base_shares - {self.base_shares}\n"
-                 f"     step_size - {self.step_size} {self.client.currency}\n"
-                 f"     step_cnt - {self.step_cnt}\n"
-                 f"     threshold_buy_steps - {self.threshold_buy_steps}\n"
-                 f"     threshold_sell_steps - {self.threshold_sell_steps}\n"
+                 f"     max_shares - {self.config.max_shares}\n"
+                 f"     base_shares - {self.config.base_shares}\n"
+                 f"     step_size - {self.config.step_size} {self.client.currency}\n"
+                 f"     step_cnt - {self.config.step_cnt}\n"
+                 f"     threshold_buy_steps - {self.config.threshold_buy_steps}\n"
+                 f"     threshold_sell_steps - {self.config.threshold_sell_steps}\n"
                  f"     cur_used_cnt - {self.get_current_count()}\n"
                  )
 
@@ -118,8 +75,8 @@ class ScalpingBot:
         if now.weekday() >= 5:
             return False
 
-        start_hour_str, start_min_str = self.start_time.split(':')
-        end_hour_str, end_min_str = self.end_time.split(':')
+        start_hour_str, start_min_str = self.config.start_time.split(':')
+        end_hour_str, end_min_str = self.config.end_time.split(':')
 
         start_time = datetime_time(int(start_hour_str), int(start_min_str))
         end_time = datetime_time(int(end_hour_str), int(end_min_str))
@@ -172,10 +129,10 @@ class ScalpingBot:
     def sell(self, lots: int = 1) -> PostOrderResponse | None:
         return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_SELL, lots, None)
 
-    def sell_limit(self, price: float, lots: int =1) -> PostOrderResponse | None:
+    def sell_limit(self, price: float, lots: int = 1) -> PostOrderResponse | None:
         return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_SELL, lots, price)
 
-    def buy_limit(self, price: float, lots: int =1) -> PostOrderResponse | None:
+    def buy_limit(self, price: float, lots: int = 1) -> PostOrderResponse | None:
         return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_BUY, lots, price)
 
     def equivalent_prices(self, quotation_price: Quotation | MoneyValue, float_price: float) -> bool:
@@ -185,7 +142,7 @@ class ScalpingBot:
 
     def set_sell_order_by_buy_order(self, order: OrderState):
         price = self.client.quotation_to_float(order.executed_order_price)
-        price += self.step_size
+        price += self.config.step_size
         self.sell_limit(price)
 
     def apply_order_execution(self, order: OrderState):
@@ -239,16 +196,16 @@ class ScalpingBot:
     def place_buy_orders(self):
         current_buy_orders_cnt = len(self.active_buy_orders)
         current_shares_cnt = self.get_current_count()
-        current_price = math.floor(self.get_current_price() / self.step_size) * self.step_size
+        current_price = math.floor(self.get_current_price() / self.config.step_size) * self.config.step_size
 
-        target_prices = [current_price - i * self.step_size for i in range(1, self.step_cnt + 1)]
+        target_prices = [current_price - i * self.config.step_size for i in range(1, self.config.step_cnt + 1)]
 
         # Исключаем цены, по которым уже выставлены заявки на покупку
         existing_order_prices = self.get_existing_buy_order_prices()
 
         # Ставим заявки на покупку
         for price in target_prices:
-            if current_buy_orders_cnt + current_shares_cnt >= self.max_shares:
+            if current_buy_orders_cnt + current_shares_cnt >= self.config.max_shares:
                 break
             if price in existing_order_prices:
                 continue
@@ -256,9 +213,9 @@ class ScalpingBot:
             current_buy_orders_cnt += 1
 
     def place_sell_orders(self, count_to_sell):
-        current_price = math.ceil(self.get_current_price() / self.step_size) * self.step_size
+        current_price = math.ceil(self.get_current_price() / self.config.step_size) * self.config.step_size
 
-        target_prices = [current_price + i * self.step_size for i in range(1, count_to_sell + 1)]
+        target_prices = [current_price + i * self.config.step_size for i in range(1, count_to_sell + 1)]
 
         # Ставим заявки на продажу
         for price in sorted(list(target_prices), reverse=True):
@@ -290,7 +247,7 @@ class ScalpingBot:
     def cancel_orders_by_limits(self):
         # берем текущую цену + сдвиг
         threshold_price = (self.get_current_price()
-                           - self.step_size * self.threshold_buy_steps)
+                           - self.config.step_size * self.config.threshold_buy_steps)
 
         # перебираем активные заявки на покупку и закрываем всё, что ниже
         for order_id, order in self.active_buy_orders.copy().items():
@@ -298,9 +255,9 @@ class ScalpingBot:
             if order_price <= threshold_price:
                 self.cancel_order(order)
 
-        if self.threshold_sell_steps:
+        if self.config.threshold_sell_steps:
             threshold_price = (self.get_current_price()
-                               + self.step_size * self.threshold_sell_steps)
+                               + self.config.step_size * self.config.threshold_sell_steps)
 
             # перебираем активные заявки на продажу и закрываем всё, что ниже
             for order_id, order in self.active_sell_orders.copy().items():
@@ -328,7 +285,7 @@ class ScalpingBot:
         self.start_count = self.get_current_count()
 
         # должно быть минимум
-        need_to_buy = self.base_shares - self.start_count
+        need_to_buy = self.config.base_shares - self.start_count
 
         # докупаем недостающие по рыночной цене
         if need_to_buy > 0:
@@ -342,8 +299,9 @@ class ScalpingBot:
             return
 
         if not self.can_trade():
-            self.log(f"can not trade, sleep {self.sleep_no_trade}")
-            self.time.sleep(self.sleep_no_trade)  # Спим, если торговать нельзя
+            # todo время сна до старта можно сделать адаптивным
+            self.log(f"can not trade, sleep {self.config.sleep_no_trade}")
+            self.time.sleep(self.config.sleep_no_trade)  # Спим, если торговать нельзя
             return
 
         self.start()
@@ -357,15 +315,15 @@ class ScalpingBot:
         # Выставляем заявки на покупку
         self.place_buy_orders()
 
-        # self.logger.debug(f"Ждем следующего цикла, sleep {self.sleep_trading}")
-        self.time.sleep(self.sleep_trading)
+        # self.logger.debug(f"Ждем следующего цикла, sleep {self.config.sleep_trading}")
+        self.time.sleep(self.config.sleep_trading)
 
     def check_stop(self) -> bool:
         if not self.continue_trading():
             return False
 
         now = self.time.now()
-        end_hour_str, end_min_str = self.end_time.split(':')
+        end_hour_str, end_min_str = self.config.end_time.split(':')
 
         if now.time() >= datetime_time(int(end_hour_str), int(end_min_str)):
             self.stop()
@@ -383,19 +341,19 @@ class ScalpingBot:
         self.cancel_active_orders()
 
         # продать откупленные инструменты
-        need_to_sell = self.get_current_count() - self.base_shares
+        need_to_sell = self.get_current_count() - self.config.base_shares
 
         if need_to_sell > 0:
             for _ in range(need_to_sell):
                 self.sell()
 
         change = (
-            - self.start_price * self.start_count
-            + self.accounting.sum
-            + self.get_current_price() * self.get_current_count()
+                - self.start_price * self.start_count
+                + self.accounting.sum
+                + self.get_current_price() * self.get_current_count()
         )
 
-        max_start_total = self.start_price * self.max_shares
+        max_start_total = self.start_price * self.config.max_shares
         if max_start_total:
             self.log(f"Итог {round(change, 2)} {self.client.currency} "
                      f"({round(100 * change / max_start_total, 2)}%)")
@@ -404,11 +362,9 @@ class ScalpingBot:
 if __name__ == '__main__':
     bot = ScalpingBot(TOKEN, TICKER)
 
-
     def clean(*_args):
         bot.stop()
         sys.exit(0)
-
 
     for sig in (SIGABRT, SIGILL, SIGINT, SIGSEGV, SIGTERM):
         signal(sig, clean)

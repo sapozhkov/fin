@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime, timezone
 
 from tinkoff.invest import OrderDirection
@@ -8,6 +9,7 @@ from test_env.time_test_env import TimeTestEnvHelper
 from test_env.accounting_test_env import AccountingTestEnvHelper
 
 from trader_bot import ScalpingBot
+from dto.config_dto import ConfigDTO
 from lib.historical_candles import HistoricalCandles
 
 
@@ -34,23 +36,14 @@ class TestAlgorithm:
 
     def test(
             self,
-            last_test_date='2024-03-15',
-            test_days_num=1,
-            sleep_trading=1 * 60,
-            sleep_no_trade=60,
-            quit_on_balance_up_percent=2,
-            quit_on_balance_down_percent=1,
-            start_time='07:00',  # 10:00
-            end_time='15:29',  # 18:29
 
+            config: ConfigDTO,
+
+            last_test_date,
+            test_days_num,
             shares_count=0,
-            max_shares=5,
-            base_shares=5,
-            threshold_buy_steps=6,
-            threshold_sell_steps=0,
-            step_size=1.4,
-            step_cnt=2,
 
+            # todo это в конфиг должно уехать
             pretest_days=None,
             pretest_base_shares=None,
     ):
@@ -73,24 +66,13 @@ class TestAlgorithm:
         for test_date in days_list:
 
             if pretest_days:
-                test_alg_ = TestAlgorithm(self.token, self.ticker, self.figi, False)
-                base_shares = test_alg_.pretest(
+                test_alg = TestAlgorithm(self.token, self.ticker, self.figi, False)
+                config = test_alg.pretest(
                     last_test_date=test_date,
-                    test_days_num=test_days_num,
-                    sleep_trading=sleep_trading,
-                    sleep_no_trade=sleep_no_trade,
-                    quit_on_balance_up_percent=quit_on_balance_up_percent,
-                    quit_on_balance_down_percent=quit_on_balance_down_percent,
-                    start_time=start_time,
-                    end_time=end_time,
 
                     shares_count=shares_count,
-                    max_shares=max_shares,
-                    base_shares=base_shares,
-                    threshold_buy_steps=threshold_buy_steps,
-                    threshold_sell_steps=threshold_sell_steps,
-                    step_size=step_size,
-                    step_cnt=step_cnt,
+
+                    config=config,
 
                     pretest_days=pretest_days,
                     pretest_base_shares=pretest_base_shares,
@@ -98,11 +80,11 @@ class TestAlgorithm:
                 # print(f"{test_date} - best base_shares for {pretest_days} days is {base_shares}")
 
             # дальше текущего времени не убегаем
-            end_time = self.get_end_time(test_date, end_time)
+            config.end_time = self.get_end_time(test_date, config.end_time)
 
             # прогоняем по дню (-3 часа для компенсации часового сдвига)
-            date_from = datetime.strptime(test_date + ' ' + start_time, "%Y-%m-%d %H:%M")
-            date_to = datetime.strptime(test_date + ' ' + end_time, "%Y-%m-%d %H:%M")
+            date_from = datetime.strptime(test_date + ' ' + config.start_time, "%Y-%m-%d %H:%M")
+            date_to = datetime.strptime(test_date + ' ' + config.end_time, "%Y-%m-%d %H:%M")
 
             # задаем параметры дня
             self.time_helper.set_current_time(date_from)
@@ -112,31 +94,12 @@ class TestAlgorithm:
                 self.token,
                 self.ticker,
 
-                start_time=start_time,
-                end_time=end_time,
-
-                sleep_trading=sleep_trading,
-                sleep_no_trade=sleep_no_trade,
-
-                quit_on_balance_up_percent=quit_on_balance_up_percent,
-                quit_on_balance_down_percent=quit_on_balance_down_percent,
-
-                max_shares=max_shares,
-                base_shares=base_shares,
-                threshold_buy_steps=threshold_buy_steps,
-                threshold_sell_steps=threshold_sell_steps,
-                step_size=step_size,
-                step_cnt=step_cnt,
-
+                config=config,
                 time_helper=self.time_helper,
                 logger_helper=self.logger_helper,
                 client_helper=self.client_helper,
                 accounting_helper=self.accounting_helper,
             )
-
-            # хак. могут быть пересчитаны в боте
-            base_shares = bot.base_shares
-            threshold_buy_steps = bot.threshold_buy_steps
 
             self.client_helper.set_candles_list(self.data_handler.get_candles(test_date))
 
@@ -224,13 +187,14 @@ class TestAlgorithm:
 
             balance_change_list.append(balance_change)
 
-        profit_p = round(profit / (start_price_t * max_shares), 2) if start_price_t else 0
+        profit_p = round(profit / (start_price_t * config.max_shares), 2) if start_price_t else 0
 
         # это для обычной торговли. купил в начале, в конце продал
-        potential_profit = round((end_price_t - start_price_t) * max_shares, 2)
+        potential_profit = round((end_price_t - start_price_t) * config.max_shares, 2)
         # сколько от обычной торговли в процентах ты сделал
         potential_profit_p = round(profit / potential_profit, 2) if potential_profit > 0 else 0
 
+        # todo это надо превратить в формализованную выдачу в классе
         return {
             'profit': profit,
             'profit_p': f"{profit_p}",
@@ -243,17 +207,17 @@ class TestAlgorithm:
             'success_days': success_days,
             'success_p': round(success_days / test_days_num, 2),
 
-            'sleep_trading': sleep_trading,
+            'sleep_trading': config.sleep_trading,
 
             # 'quit_on_balance_up_percent': quit_on_balance_up_percent,
             # 'quit_on_balance_down_percent': quit_on_balance_down_percent,
 
-            'max_shares': max_shares,
-            'base_shares': base_shares,
-            'threshold_buy_steps': threshold_buy_steps,
-            'threshold_sell_steps': threshold_sell_steps,
-            'step_size': step_size,
-            'step_cnt': step_cnt,
+            'max_shares': config.max_shares,
+            'base_shares': config.base_shares,
+            'threshold_buy_steps': config.threshold_buy_steps,
+            'threshold_sell_steps': config.threshold_sell_steps,
+            'step_size': config.step_size,
+            'step_cnt': config.step_cnt,
 
             'operations_cnt': operations_cnt,
             'operations_avg': round(sum(operations_cnt_list) / test_days_num, 2),
@@ -277,25 +241,12 @@ class TestAlgorithm:
 
         return min_time.strftime("%H:%M")
 
-    # todo params dto
     def pretest(
             self,
-            last_test_date='2024-03-15',
-            test_days_num=1,
-            sleep_trading=1 * 60,
-            sleep_no_trade=60,
-            quit_on_balance_up_percent=2,
-            quit_on_balance_down_percent=1,
-            start_time='07:00',  # 10:00
-            end_time='15:29',  # 18:29
+            config: ConfigDTO,
 
+            last_test_date,  # '2024-03-15'
             shares_count=0,
-            max_shares=5,
-            base_shares=5,
-            threshold_buy_steps=6,
-            threshold_sell_steps=0,
-            step_size=1.4,
-            step_cnt=2,
 
             pretest_days=None,
             pretest_base_shares=None,
@@ -303,8 +254,9 @@ class TestAlgorithm:
         if pretest_days is None:
             raise Exception('Циклический проброс None в pretest_days')
 
+        # todo вот это надо будет рассмотреть. может тестироваться множество параметров
         if pretest_base_shares is None:
-            pretest_base_shares = [0, round(max_shares / 2), max_shares]
+            pretest_base_shares = [0, round(config.max_shares / 2), config.max_shares]
 
         # todo еще вопрос с каким количеством акций входить в тесты
         #   но выходить явно надо с текущим, которые есть
@@ -314,23 +266,15 @@ class TestAlgorithm:
         test_date = self.get_prev_test_date(last_test_date)
 
         for _base_shares_ in pretest_base_shares:
+            tmp_config = copy.copy(config)
+            tmp_config.base_shares = _base_shares_
+
             result = self.test(
                 last_test_date=test_date,
                 test_days_num=pretest_days,
-                sleep_trading=sleep_trading,
-                sleep_no_trade=sleep_no_trade,
-                quit_on_balance_up_percent=quit_on_balance_up_percent,
-                quit_on_balance_down_percent=quit_on_balance_down_percent,
-                start_time=start_time,
-                end_time=end_time,
+                config=tmp_config,
 
                 shares_count=shares_count,
-                max_shares=max_shares,
-                base_shares=_base_shares_,  # вот это тестируем
-                threshold_buy_steps=threshold_buy_steps,
-                threshold_sell_steps=threshold_sell_steps,
-                step_size=step_size,
-                step_cnt=step_cnt,
 
                 # вот это всегда None, иначе в рекурсию уйдет
                 pretest_days=None,
@@ -346,7 +290,12 @@ class TestAlgorithm:
         best = sorted_results.pop()
         # print(f"best {best}")
 
-        return best['base_shares']
+        if config.base_shares != best['base_shares']:
+            new_config = copy.copy(config)
+            new_config.base_shares = best['base_shares']
+            return new_config
+        else:
+            return config
 
     def get_prev_test_date(self, last_test_date):
         days = self.data_handler.get_days_list(last_test_date, 1)
