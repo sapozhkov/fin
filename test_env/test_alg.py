@@ -1,7 +1,9 @@
 import copy
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from time import sleep
 
-from tinkoff.invest import OrderDirection
+import pandas as pd
+from tinkoff.invest import OrderDirection, Client, CandleInterval
 
 from test_env.client_test_env import ClientTestEnvHelper
 from test_env.logger_test_env import LoggerTestEnvHelper
@@ -64,14 +66,14 @@ class TestAlgorithm:
         # закручиваем цикл по датам
         for test_date in days_list:
 
-            if pretest_days:
-                config = self.pretest_and_get_config(
-                    config=base_config,
-                    current_date=test_date,
-                    shares_count=shares_count,
-                    test_days_num=pretest_days,
-                    prev_config=config
-                )
+            # if pretest_days:
+            #     config = self.pretest_and_get_config(
+            #         config=base_config,
+            #         current_date=test_date,
+            #         shares_count=shares_count,
+            #         test_days_num=pretest_days,
+            #         prev_config=config
+            #     )
 
             # дальше текущего времени не убегаем
             config.end_time = self.get_end_time(test_date, config.end_time)
@@ -82,6 +84,11 @@ class TestAlgorithm:
 
             # задаем параметры дня
             self.time_helper.set_current_time(date_from)
+
+            trend_val = self.calculate_rsi_trend(pretest_days)
+            trend_val_norm = max(0, min(1, 0.5 + (trend_val - 0.5) * 5 / 3))
+            config.base_shares = round(config.max_shares * trend_val_norm)
+            # print(f"{test_date} - tv {round(trend_val, 2)} / {round(trend_val_norm, 2)} - b {config.base_shares}")
 
             # создаем бота с настройками
             bot = ScalpingBot(
@@ -190,6 +197,7 @@ class TestAlgorithm:
 
         # todo это надо превратить в формализованную выдачу в классе
         return {
+            'pretest_days': pretest_days,
             'profit': profit,
             'profit_p': f"{profit_p}",
             'config': config,
@@ -206,6 +214,35 @@ class TestAlgorithm:
             'op_cnt': operations_cnt,
             'op_avg': round(sum(operations_cnt_list) / test_days_num, 2),
         }
+
+    def calculate_rsi_trend(self, period=10):
+        with Client(self.token) as client:
+            to_date = self.time_helper.now() - timedelta(days=1)
+            from_date = to_date - timedelta(days=period * 2 - 1)  # Удваиваем период для точности RSI
+
+            candles = client.market_data.get_candles(
+                figi=self.figi,
+                from_=from_date,
+                to=to_date,
+                interval=CandleInterval.CANDLE_INTERVAL_DAY
+            )
+
+            closing_prices = pd.Series([candle.close.units + candle.close.nano * 1e-9 for candle in candles.candles])
+            delta = closing_prices.diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+
+            rs = gain / loss
+            rsi = 100 - (100 / (1 + rs))
+
+            # Нормализуем RSI для получения значения от 0 до 1
+            try:
+                normalized_rsi = rsi / 100
+                current_trend = normalized_rsi.iloc[-1]
+            except Exception:
+                return 0
+
+            return current_trend
 
     @staticmethod
     def get_end_time(test_date, end_time):
