@@ -218,7 +218,7 @@ class TestAlgorithm:
     def calculate_rsi_trend(self, period=10):
         with Client(self.token) as client:
             to_date = self.time_helper.now() - timedelta(days=1)
-            from_date = to_date - timedelta(days=period * 2 - 1)  # Удваиваем период для точности RSI
+            from_date = to_date - timedelta(days=period * 2 + 1)  # Удваиваем период для точности RSI
 
             candles = client.market_data.get_candles(
                 figi=self.figi,
