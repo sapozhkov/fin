@@ -85,10 +85,9 @@ class TestAlgorithm:
             # задаем параметры дня
             self.time_helper.set_current_time(date_from)
 
-            trend_val = self.calculate_rsi_trend(pretest_days)
-            trend_val_norm = max(0, min(1, 0.5 + (trend_val - 0.5) * 5 / 3))
-            config.base_shares = round(config.max_shares * trend_val_norm)
-            # print(f"{test_date} - tv {round(trend_val, 2)} / {round(trend_val_norm, 2)} - b {config.base_shares}")
+            trend_val = self.calculate_rsi_trend()
+            config.base_shares = config.max_shares if trend_val >= .5 else 0
+            # print(f"{test_date} - tv {round(trend_val, 2)} - b {config.base_shares}")
 
             # создаем бота с настройками
             bot = ScalpingBot(
@@ -195,9 +194,7 @@ class TestAlgorithm:
         # сколько от обычной торговли в процентах ты сделал
         potential_profit_p = round(profit / potential_profit, 2) if potential_profit > 0 else 0
 
-        # todo это надо превратить в формализованную выдачу в классе
         return {
-            'pretest_days': pretest_days,
             'profit': profit,
             'profit_p': f"{profit_p}",
             'config': config,
@@ -236,11 +233,8 @@ class TestAlgorithm:
             rsi = 100 - (100 / (1 + rs))
 
             # Нормализуем RSI для получения значения от 0 до 1
-            try:
-                normalized_rsi = rsi / 100
-                current_trend = normalized_rsi.iloc[-1]
-            except Exception:
-                return 0
+            normalized_rsi = rsi / 100
+            current_trend = normalized_rsi.iloc[-1]
 
             return current_trend
 
