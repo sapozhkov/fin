@@ -36,7 +36,8 @@ class ConfigDTO:
         self.use_shares = use_shares
 
         # предустановленные значения
-        self.base_shares = base_shares if base_shares is not None else round(self.max_shares / 2)
+        if self.base_shares is None:
+            self.base_shares = round(self.max_shares / 2)
 
         # корректировки параметров
         if self.base_shares > self.max_shares:
@@ -47,3 +48,41 @@ class ConfigDTO:
 
         if self.threshold_sell_steps and self.threshold_sell_steps <= self.step_cnt:
             self.threshold_sell_steps = self.step_cnt + 1
+
+    def __repr__(self):
+        return (f"step {self.max_shares}/{self.base_shares}({self.step_cnt}) x {self.step_size} rub, "
+                f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}|")
+
+    # 'sleep_trading': config.sleep_trading,
+    #
+    # # 'quit_on_balance_up_percent': quit_on_balance_up_percent,
+    # # 'quit_on_balance_down_percent': quit_on_balance_down_percent,
+    #
+    # 'threshold_buy_steps': config.threshold_buy_steps,
+    # 'threshold_sell_steps': config.threshold_sell_steps,
+
+    def __eq__(self, other):
+        if not isinstance(other, ConfigDTO):
+            return NotImplemented
+        return (
+            self.start_time == other.start_time and
+            self.end_time == other.end_time and
+            self.sleep_trading == other.sleep_trading and
+            self.sleep_no_trade == other.sleep_no_trade and
+            self.max_shares == other.max_shares and
+            self.base_shares == other.base_shares and
+            self.threshold_buy_steps == other.threshold_buy_steps and
+            self.threshold_sell_steps == other.threshold_sell_steps and
+            self.step_size == other.step_size and
+            self.step_cnt == other.step_cnt and
+            self.use_shares == other.use_shares
+        )
+
+    def __hash__(self):
+        return hash((
+            self.start_time, self.end_time,
+            self.sleep_trading, self.sleep_no_trade,
+            self.max_shares, self.base_shares,
+            self.threshold_buy_steps, self.threshold_sell_steps,
+            self.step_size, self.step_cnt, self.use_shares
+        ))
