@@ -3,6 +3,7 @@ from datetime import time as datetime_time, datetime, timedelta
 from tinkoff.invest import OrderType, PostOrderResponse, OrderDirection, MoneyValue, HistoricCandle, \
     GetCandlesResponse, OrderState, OrderExecutionReportStatus
 
+from lib.historical_candles import HistoricalCandles
 from prod_env.tinkoff_client import AbstractProxyClient
 from test_env.time_test_env import TimeTestEnvHelper
 
@@ -12,16 +13,15 @@ class ClientTestEnvHelper(AbstractProxyClient):
                  ticker,
                  logger,
                  time_helper: TimeTestEnvHelper,
-                 candles_1_min: GetCandlesResponse | None = None
+                 data_handler: HistoricalCandles,
                  ):
         super().__init__()
         self.ticker = ticker
         self.logger = logger
         self.time = time_helper
-        self.candles_1_min_dict: dict = {}
-        if candles_1_min:
-            self.set_candles_list(candles_1_min)
+        self.data_handler = data_handler
 
+        self.candles_1_min_dict: dict = {}
         self.total_completed_orders = 0
 
         self.current_candle: HistoricCandle | None = None
@@ -35,7 +35,8 @@ class ClientTestEnvHelper(AbstractProxyClient):
     def get_current_price(self):
         return self.current_price
 
-    def set_candles_list(self, candles: GetCandlesResponse):
+    def set_candles_list_by_date(self, date):
+        candles = self.data_handler.get_candles(date)
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
         self.orders = {}
         self.executed_orders_ids = []
@@ -109,13 +110,16 @@ class ClientTestEnvHelper(AbstractProxyClient):
         else:
             raise f"Unknown order_type: {order_type}"
 
-    def get_candles(self, from_date, to_date, interval):
+    def get_candles(self, from_date, to_date, interval) -> GetCandlesResponse:
         interval_min = self.interval_duration_minutes[interval]
         ask_time_list = self.get_interval_time_list(from_date, to_date, interval_min)
         candles = []
         for hour, minute in ask_time_list:
             candles.append(self.get_calculated_candle(hour, minute, interval_min))
         return GetCandlesResponse(candles)
+
+    def get_day_candles(self, from_date, to_date) -> GetCandlesResponse:
+        return self.data_handler.get_day_candles(from_date, to_date)
 
     @staticmethod
     def get_interval_time_list(from_date, to_date, interval):
@@ -165,13 +169,21 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
         return given_datetime > current_datetime
 
-    def get_calculated_candle(self, hour, minute, n=5):
+    def get_calculated_candle(self, hour, minute, n=5) -> HistoricCandle:
+        """
+        Отдает свечи, рассчитанные на основе минутных, но только нва текущий день
+        (данные собираются из массива self.candles_1_min_dict)
+        :param hour: час
+        :param minute: минута
+        :param n: интервал (минут)
+        :return: HistoricCandle
+        """
         previous_minutes = self.get_n_minutes(hour, minute, n)
 
         open_ = None
         high = 0
         low = 1000000000
-        close = 0
+        close = self.float_to_quotation(0)
         volume = 0
         is_complete = True
 
@@ -190,6 +202,9 @@ class ClientTestEnvHelper(AbstractProxyClient):
             low = min(low, self.quotation_to_float(t1.low))
             close = t1.close
             volume += t1.volume
+
+        if open_ is None:
+            open_ = self.float_to_quotation(0)
 
         return HistoricCandle(
             high=self.float_to_quotation(high),

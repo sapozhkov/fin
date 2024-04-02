@@ -42,10 +42,10 @@ class Visualize:
             if deal.type == HistoricalTrade.TYPE_BUY:
                 # Добавляем метку только если она еще не была добавлена
                 label = 'Buy' if deal.type not in labels_added else ""
-                plt.scatter(deal.datetime, abs(deal.price), color='blue', marker='^', alpha=1, s=50, label=label)
+                plt.scatter(deal.datetime, abs(deal.price), color='blue', marker='^', alpha=.5, s=50, label=label)
             elif deal.type == HistoricalTrade.TYPE_SELL:
                 label = 'Sell' if deal.type not in labels_added else ""
-                plt.scatter(deal.datetime, abs(deal.price), color='orange', marker='v', alpha=1, s=50, label=label)
+                plt.scatter(deal.datetime, abs(deal.price), color='orange', marker='v', alpha=.5, s=50, label=label)
 
             # Помечаем метку как добавленную
             labels_added.add(deal.type)

@@ -14,6 +14,7 @@ class HistoricalCandles:
     def create_database(self):
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
+
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS candles (
             date DATETIME PRIMARY KEY,
@@ -25,6 +26,19 @@ class HistoricalCandles:
         )
         ''')
         conn.commit()
+
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS candles_day (
+            date DATE PRIMARY KEY,
+            open REAL,
+            high REAL,
+            low REAL,
+            close REAL,
+            volume INTEGER
+        )
+        ''')
+        conn.commit()
+
         conn.close()
 
     def clear_candles_table(self):
@@ -152,3 +166,61 @@ class HistoricalCandles:
                 conn.close()
 
             return candles
+
+    def get_day_candles(self, from_date, to_date) -> GetCandlesResponse:
+        conn = sqlite3.connect(self.db_file)
+        cursor = conn.cursor()
+
+        dates_needed = [from_date + timedelta(days=x) for x in range((to_date - from_date).days + 1)]
+        candles = []
+
+        for date_needed in dates_needed:
+            cursor.execute('SELECT * FROM candles_day WHERE date = ?', (date_needed.strftime('%Y-%m-%d'),))
+            row = cursor.fetchone()
+            if row:
+                date, open_, high, low, close, volume = row
+                if open_ > 0:
+                    candle = HistoricCandle(
+                        time=datetime.strptime(date, "%Y-%m-%d"),
+                        open=self.f2q(open_),
+                        high=self.f2q(high),
+                        low=self.f2q(low),
+                        close=self.f2q(close),
+                        volume=volume,
+                        is_complete=True
+                    )
+                    candles.append(candle)
+            else:
+                # Если данных нет в базе, запросить из API и сохранить
+                with Client(self.token) as client:
+                    api_candles = client.market_data.get_candles(
+                        figi=self.figi,
+                        from_=date_needed.replace(hour=0, minute=0, second=0),
+                        to=date_needed.replace(hour=23, minute=59, second=59),
+                        interval=CandleInterval.CANDLE_INTERVAL_DAY
+                    )
+                    if api_candles.candles:
+                        for candle in api_candles.candles:
+                            candles.append(candle)
+                            cursor.execute(
+                                'INSERT OR IGNORE INTO candles_day (date, open, high, low, close, volume) '
+                                'VALUES (?, ?, ?, ?, ?, ?)',
+                                (
+                                    candle.time.date(),
+                                    self.q2f(candle.open),
+                                    self.q2f(candle.high),
+                                    self.q2f(candle.low),
+                                    self.q2f(candle.close),
+                                    candle.volume
+                                ))
+                            conn.commit()
+
+                    # хак. если в эту дату нет данных, то возвращается предыдущая и в нужную не пишется ничего
+                    cursor.execute('''
+                    INSERT OR IGNORE INTO candles_day (date, open, high, low, close, volume)
+                    VALUES (?, 0, 0, 0, 0, 0)
+                    ''', (date_needed.date(),))
+                    conn.commit()
+
+        conn.close()
+        return GetCandlesResponse(candles=candles)

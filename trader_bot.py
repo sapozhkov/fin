@@ -5,6 +5,7 @@ import traceback
 from datetime import time as datetime_time
 from signal import *
 
+import pandas as pd
 from dotenv import load_dotenv
 from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, OrderState, PostOrderResponse
 
@@ -27,7 +28,6 @@ class ScalpingBot:
 
     def __init__(
             self, token, ticker,
-
             config: ConfigDTO | None = None,
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
@@ -53,6 +53,9 @@ class ScalpingBot:
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
 
+        # вот тут проводим переустановку base
+        self.pretest_and_modify_config()
+
         # todo пересмотреть состав. может сделать генерацию на основе конфига
         self.log(f"INIT \n"
                  f"     figi - {self.client.figi} ({self.client.ticker})\n"
@@ -64,6 +67,34 @@ class ScalpingBot:
                  f"     threshold_sell_steps - {self.config.threshold_sell_steps}\n"
                  f"     cur_used_cnt - {self.get_current_count()}\n"
                  )
+
+    def pretest_and_modify_config(self, period=10):
+        to_date = self.time.get_delta_days_date(days=1)
+        from_date = self.time.get_delta_days_date(days=period * 2, from_date=to_date)  # Удваиваем период для точности
+
+        candles = self.client.get_day_candles(from_date, to_date)
+
+        closing_prices = pd.Series([self.client.quotation_to_float(candle.close) for candle in candles.candles])
+
+        delta = closing_prices.diff()
+        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+
+        rs = gain / loss
+        rsi = 1 - (1 / (1 + rs))
+        try:
+            current_trend = rsi.iloc[-1]
+        except IndexError as err:
+            self.logger.error(f'Error while counting RSI: {err}')
+            return
+
+        self.log(f"Current RSI trend is {round(current_trend, 2)}")
+        new_base_shapes = self.config.max_shares if current_trend >= .5 else 0
+        if self.config.base_shares != new_base_shapes:
+            self.config.base_shares = new_base_shapes
+            self.log(f"Change base_shapes to {self.config.base_shares}")
+        else:
+            self.log('No changes to config')
 
     def log(self, message, repeat=False):
         self.logger.log(message, repeat)

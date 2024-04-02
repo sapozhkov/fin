@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import time
 
 
@@ -11,13 +11,18 @@ class AbstractTimeHelper(ABC):
     def now(self):
         pass
 
-    def get_current_date(self) -> str:
-        """отдает текущую дату в формате 'ГГГГ-ММ-ДД'"""
-        return self.now().strftime('%Y-%m-%d')
-
     @abstractmethod
     def sleep(self, seconds):
         pass
+
+    def get_delta_days_date(self, days: int, from_date: datetime | None = None) -> datetime:
+        """
+        Отдает дату за days дней до указанной (или текущей)
+        ! в датах сохраняется текущее время
+        """
+        if from_date is None:
+            from_date = self.now()
+        return from_date - timedelta(days=days)
 
 
 class TimeHelper(AbstractTimeHelper):

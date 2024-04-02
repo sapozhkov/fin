@@ -63,7 +63,11 @@ class AbstractProxyClient(ABC):
         return self.get_candles(from_date, to_date, interval)
 
     @abstractmethod
-    def get_candles(self, from_date, to_date, interval):
+    def get_candles(self, from_date, to_date, interval) -> GetCandlesResponse:
+        pass
+
+    @abstractmethod
+    def get_day_candles(self, from_date, to_date) -> GetCandlesResponse:
         pass
 
     @abstractmethod
@@ -173,7 +177,7 @@ class TinkoffProxyClient(AbstractProxyClient):
                               f" price={price}, order_type= {order_type}. ({e})")
             return None
 
-    def get_candles(self, from_date, to_date, interval):
+    def get_candles(self, from_date, to_date, interval) -> GetCandlesResponse:
         with Client(self.token) as client:
             try:
                 candles = client.market_data.get_candles(
@@ -186,6 +190,9 @@ class TinkoffProxyClient(AbstractProxyClient):
             except RequestError as e:
                 self.logger.error(f"Ошибка при запросе свечей: {e}")
                 return GetCandlesResponse([])
+
+    def get_day_candles(self, from_date, to_date) -> GetCandlesResponse:
+        return self.get_candles(from_date, to_date, interval=CandleInterval.CANDLE_INTERVAL_DAY)
 
     def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState | None):
         with Client(self.token) as client:

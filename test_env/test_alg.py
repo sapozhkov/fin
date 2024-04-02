@@ -1,6 +1,5 @@
 import copy
 from datetime import datetime, timezone, timedelta
-from time import sleep
 
 import pandas as pd
 from tinkoff.invest import OrderDirection, Client, CandleInterval
@@ -31,7 +30,7 @@ class TestAlgorithm:
         self.time_helper = TimeTestEnvHelper()
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
 
-        self.client_helper = ClientTestEnvHelper(self.ticker, self.logger_helper, self.time_helper)
+        self.client_helper = ClientTestEnvHelper(self.ticker, self.logger_helper, self.time_helper, self.data_handler)
         self.client_helper.set_ticker_params(1, 0.1, self.figi, 'RUR')
 
         self.accounting_helper = AccountingTestEnvHelper(self.client_helper)
@@ -44,7 +43,6 @@ class TestAlgorithm:
             last_test_date,
             test_days_num,
             shares_count=0,
-            pretest_days=0,
     ):
         profit = 0
         success_days = 0
@@ -61,19 +59,8 @@ class TestAlgorithm:
         start_price_t = 0
         end_price_t = 0
 
-        base_config = copy.copy(config)
-
         # закручиваем цикл по датам
         for test_date in days_list:
-
-            # if pretest_days:
-            #     config = self.pretest_and_get_config(
-            #         config=base_config,
-            #         current_date=test_date,
-            #         shares_count=shares_count,
-            #         test_days_num=pretest_days,
-            #         prev_config=config
-            #     )
 
             # дальше текущего времени не убегаем
             config.end_time = self.get_end_time(test_date, config.end_time)
@@ -84,10 +71,6 @@ class TestAlgorithm:
 
             # задаем параметры дня
             self.time_helper.set_current_time(date_from)
-
-            trend_val = self.calculate_rsi_trend()
-            config.base_shares = config.max_shares if trend_val >= .5 else 0
-            # print(f"{test_date} - tv {round(trend_val, 2)} - b {config.base_shares}")
 
             # создаем бота с настройками
             bot = ScalpingBot(
@@ -101,7 +84,7 @@ class TestAlgorithm:
                 accounting_helper=self.accounting_helper,
             )
 
-            self.client_helper.set_candles_list(self.data_handler.get_candles(test_date))
+            self.client_helper.set_candles_list_by_date(test_date)
 
             self.accounting_helper.reset()
 
@@ -255,66 +238,3 @@ class TestAlgorithm:
         min_time = min(current_time, end_time_dt)
 
         return min_time.strftime("%H:%M")
-
-    # пока не используется, но сохраним код на будущее
-    def pretest_and_get_config(
-            self,
-            config: ConfigDTO,
-            current_date,
-            shares_count=0,
-            test_days_num=None,
-            prev_config: ConfigDTO | None = None,
-    ):
-        configs = [
-            (max_shares, step_size)
-            for max_shares in [config.max_shares]
-            # for max_shares in [config.max_shares-1, config.max_shares, config.max_shares+1]
-            for step_size in [config.step_size-.1, config.step_size, config.step_size+.1]
-        ]
-
-        if prev_config is not None:
-            configs += [
-                (max_shares, step_size)
-                for max_shares in [prev_config.max_shares]
-                # for max_shares in [prev_config.max_shares-1, prev_config.max_shares, prev_config.max_shares+1]
-                for step_size in [prev_config.step_size-.1, prev_config.step_size, prev_config.step_size+.1]
-            ]
-
-            # Используем set для получения уникальных объектов
-            configs = list(set(configs))
-
-        results = []
-        for (max_shares, step_size) in configs:
-            tmp_config = copy.copy(config)
-            tmp_config.max_shares = max_shares
-            tmp_config.step_size = step_size
-
-            prev_date = self.get_prev_date(current_date)
-            # print(f"Рассчитываем дату {current_date}")
-            # print(f"    для этого анализируем дату {prev_date}")
-
-            result = self.test(
-                last_test_date=prev_date,
-                test_days_num=test_days_num,
-                config=tmp_config,
-
-                shares_count=shares_count,
-
-                pretest_days=0,  # ! важно, чтобы тут 0 был, иначе уйдем в рекурсию
-            )
-            results.append(result)
-
-        # сортируем по прибыльности все
-        sorted_results = sorted(results, key=lambda x: float(x['profit_p']))
-        # print(f"all {sorted_results}")
-
-        # выбираем самую прибыльную настройку и выдаем её системе
-        best = sorted_results.pop()
-        # print(f"best {best['config']}")
-
-        return best['config']
-
-    def get_prev_date(self, last_test_date):
-        days = self.data_handler.get_days_list(last_test_date, 2)
-        days.reverse()
-        return days.pop()
