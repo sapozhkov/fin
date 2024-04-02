@@ -11,7 +11,8 @@ class ConfigDTO:
             sleep_no_trade=60,
 
             max_shares=5,
-            base_shares=None,
+            base_shares=5,
+            do_pretest=True,
             threshold_buy_steps=6,
             threshold_sell_steps=0,  # вот тут 0 - это важно. эффективность сильно выше. не даем заднюю
             step_size=1.4,
@@ -24,6 +25,7 @@ class ConfigDTO:
 
         self.max_shares = max_shares
         self.base_shares = base_shares
+        self.do_pretest = do_pretest
         self.threshold_buy_steps = threshold_buy_steps
         self.threshold_sell_steps = threshold_sell_steps
         self.step_size = step_size
@@ -35,8 +37,12 @@ class ConfigDTO:
         # ограничитель количества используемых акций из откупленных. полезно при || запуске на 1 инструмент
         self.use_shares = use_shares
 
+        # предустановленные значения
+        if self.base_shares is None:
+            self.base_shares = round(self.max_shares / 2)
+
         # корректировки параметров
-        if self.base_shares is not None and self.base_shares > self.max_shares:
+        if self.base_shares > self.max_shares:
             self.base_shares = self.max_shares
 
         if self.threshold_buy_steps and self.threshold_buy_steps <= self.step_cnt:
@@ -67,6 +73,7 @@ class ConfigDTO:
             self.sleep_no_trade == other.sleep_no_trade and
             self.max_shares == other.max_shares and
             self.base_shares == other.base_shares and
+            self.do_pretest == other.do_pretest and
             self.threshold_buy_steps == other.threshold_buy_steps and
             self.threshold_sell_steps == other.threshold_sell_steps and
             self.step_size == other.step_size and
@@ -78,7 +85,7 @@ class ConfigDTO:
         return hash((
             self.start_time, self.end_time,
             self.sleep_trading, self.sleep_no_trade,
-            self.max_shares, self.base_shares,
+            self.max_shares, self.base_shares, self.do_pretest,
             self.threshold_buy_steps, self.threshold_sell_steps,
             self.step_size, self.step_cnt, self.use_shares
         ))

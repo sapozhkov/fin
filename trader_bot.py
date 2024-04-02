@@ -69,7 +69,7 @@ class ScalpingBot:
                  )
 
     def pretest_and_modify_config(self, period=10):
-        if self.config.base_shares is not None:
+        if not self.config.do_pretest:
             return
 
         to_date = self.time.get_delta_days_date(days=1)
