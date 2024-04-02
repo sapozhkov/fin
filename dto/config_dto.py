@@ -53,15 +53,8 @@ class ConfigDTO:
 
     def __repr__(self):
         return (f"step {self.max_shares}/{self.base_shares}({self.step_cnt}) x {self.step_size} rub, "
-                f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}|")
-
-    # 'sleep_trading': config.sleep_trading,
-    #
-    # # 'quit_on_balance_up_percent': quit_on_balance_up_percent,
-    # # 'quit_on_balance_down_percent': quit_on_balance_down_percent,
-    #
-    # 'threshold_buy_steps': config.threshold_buy_steps,
-    # 'threshold_sell_steps': config.threshold_sell_steps,
+                f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| "
+                f"pre{'+' if self.do_pretest else '-'}")
 
     def __eq__(self, other):
         if not isinstance(other, ConfigDTO):

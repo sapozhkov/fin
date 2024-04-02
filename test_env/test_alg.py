@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime, timezone, timedelta
 
 import pandas as pd
@@ -58,8 +59,12 @@ class TestAlgorithm:
         start_price_t = 0
         end_price_t = 0
 
+        original_config = copy.copy(config)
+
         # закручиваем цикл по датам
         for test_date in days_list:
+
+            config = copy.copy(original_config)
 
             # дальше текущего времени не убегаем
             config.end_time = self.get_end_time(test_date, config.end_time)

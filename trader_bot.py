@@ -91,8 +91,13 @@ class ScalpingBot:
             self.logger.error(f'Error while counting RSI: {err}')
             return
 
-        self.config.base_shares = self.config.max_shares if current_trend >= .5 else 0
-        self.log(f"Change base_shapes to {self.config.base_shares}, rsi = {round(current_trend, 2)}")
+        if current_trend >= .5:
+            self.config.base_shares = self.config.max_shares
+        else:
+            self.config.base_shares = 0
+
+        self.log(f"Pretest. RSI = {round(current_trend, 2)}")
+        self.log(f"Change config to {self.config}")
 
     def log(self, message, repeat=False):
         self.logger.log(message, repeat)
@@ -275,18 +280,17 @@ class ScalpingBot:
 
     def cancel_orders_by_limits(self):
         # берем текущую цену + сдвиг
-        threshold_price = (self.get_current_price()
-                           - self.config.step_size * self.config.threshold_buy_steps)
+        if self.config.threshold_buy_steps:
+            threshold_price = (self.get_current_price() - self.config.step_size * self.config.threshold_buy_steps)
 
-        # перебираем активные заявки на покупку и закрываем всё, что ниже
-        for order_id, order in self.active_buy_orders.copy().items():
-            order_price = self.client.quotation_to_float(order.initial_order_price)
-            if order_price <= threshold_price:
-                self.cancel_order(order)
+            # перебираем активные заявки на покупку и закрываем всё, что ниже
+            for order_id, order in self.active_buy_orders.copy().items():
+                order_price = self.client.quotation_to_float(order.initial_order_price)
+                if order_price <= threshold_price:
+                    self.cancel_order(order)
 
         if self.config.threshold_sell_steps:
-            threshold_price = (self.get_current_price()
-                               + self.config.step_size * self.config.threshold_sell_steps)
+            threshold_price = (self.get_current_price() + self.config.step_size * self.config.threshold_sell_steps)
 
             # перебираем активные заявки на продажу и закрываем всё, что ниже
             for order_id, order in self.active_sell_orders.copy().items():
