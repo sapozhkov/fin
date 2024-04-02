@@ -69,6 +69,9 @@ class ScalpingBot:
                  )
 
     def pretest_and_modify_config(self, period=10):
+        if self.config.base_shares is not None:
+            return
+
         to_date = self.time.get_delta_days_date(days=1)
         from_date = self.time.get_delta_days_date(days=period * 2, from_date=to_date)  # Удваиваем период для точности
 
@@ -88,13 +91,8 @@ class ScalpingBot:
             self.logger.error(f'Error while counting RSI: {err}')
             return
 
-        self.log(f"Current RSI trend is {round(current_trend, 2)}")
-        new_base_shapes = self.config.max_shares if current_trend >= .5 else 0
-        if self.config.base_shares != new_base_shapes:
-            self.config.base_shares = new_base_shapes
-            self.log(f"Change base_shapes to {self.config.base_shares}")
-        else:
-            self.log('No changes to config')
+        self.config.base_shares = self.config.max_shares if current_trend >= .5 else 0
+        self.log(f"Change base_shapes to {self.config.base_shares}, rsi = {round(current_trend, 2)}")
 
     def log(self, message, repeat=False):
         self.logger.log(message, repeat)

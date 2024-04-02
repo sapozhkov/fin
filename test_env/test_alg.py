@@ -1,4 +1,3 @@
-import copy
 from datetime import datetime, timezone, timedelta
 
 import pandas as pd

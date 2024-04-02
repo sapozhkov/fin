@@ -11,7 +11,7 @@ class ConfigDTO:
             sleep_no_trade=60,
 
             max_shares=5,
-            base_shares=5,
+            base_shares=None,
             threshold_buy_steps=6,
             threshold_sell_steps=0,  # вот тут 0 - это важно. эффективность сильно выше. не даем заднюю
             step_size=1.4,
@@ -35,12 +35,8 @@ class ConfigDTO:
         # ограничитель количества используемых акций из откупленных. полезно при || запуске на 1 инструмент
         self.use_shares = use_shares
 
-        # предустановленные значения
-        if self.base_shares is None:
-            self.base_shares = round(self.max_shares / 2)
-
         # корректировки параметров
-        if self.base_shares > self.max_shares:
+        if self.base_shares is not None and self.base_shares > self.max_shares:
             self.base_shares = self.max_shares
 
         if self.threshold_buy_steps and self.threshold_buy_steps <= self.step_cnt:
