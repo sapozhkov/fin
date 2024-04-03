@@ -41,7 +41,7 @@ class ScalpingBot:
         self.client = client_helper or TinkoffProxyClient(token, ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
-        self.accounting.num = self.accounting.get_instrument_count()
+        self.accounting.num = min(self.accounting.get_instrument_count(), self.config.max_shares)
         if self.config.use_shares is not None:
             self.accounting.num = min(self.accounting.num, self.config.use_shares)
 
@@ -407,5 +407,5 @@ if __name__ == '__main__':
         bot.run()
     except Exception as e:
         traceback_str = ''.join(traceback.format_exception(None, e, e.__traceback__))
-        bot.logger.error(f"Не перехваченное исключение: {e}\nТрассировка:\n{traceback_str}")
+        bot.logger.error(f"Не перехваченное исключение: {e}\nТрассировка: \n{traceback_str}")
         bot.stop()
