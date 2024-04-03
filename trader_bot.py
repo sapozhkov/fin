@@ -122,11 +122,11 @@ class ScalpingBot:
         end_time = datetime_time(int(end_hour_str), int(end_min_str))
 
         # ко времени запуска приближаемся шагами в половину оставшегося времени
-        if now_time <= start_time:
+        if now_time < start_time:
             now_sec = now_time.hour * 3600 + now_time.minute * 60 + now_time.second
             start_sec = start_time.hour * 3600 + start_time.minute * 60 + start_time.second
             delta_seconds = start_sec - now_sec
-            return False, max(1, round(delta_seconds / 2))
+            return False, max(2, round(delta_seconds / 2))
 
         if now_time >= end_time:
             self.stop()
