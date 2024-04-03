@@ -24,6 +24,22 @@ class AbstractTimeHelper(ABC):
             from_date = self.now()
         return from_date - timedelta(days=days)
 
+    @staticmethod
+    def get_remaining_time_text(remaining_time):
+        # Преобразуем секунды в часы, минуты и секунды
+        hours, remainder = divmod(remaining_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        # Формируем строку для вывода с учетом наличия часов
+        parts = []
+        if hours > 0:
+            parts.append(f"{int(hours):02}h")
+        if minutes > 0 or hours > 0:  # Выводим минуты, если есть часы или минуты
+            parts.append(f"{int(minutes):02}m")
+        parts.append(f"{int(seconds):02}s")
+
+        return " ".join(parts[:2])
+
 
 class TimeHelper(AbstractTimeHelper):
     def now(self):

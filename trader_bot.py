@@ -102,12 +102,18 @@ class ScalpingBot:
     def log(self, message, repeat=False):
         self.logger.log(message, repeat)
 
-    def can_trade(self):
+    def can_trade(self) -> (bool, int):
+        """
+        Проверяет доступна ли торговля.
+        Отдает статус "можно торговать" и количество секунд для задержки, если нет
+        :return: (bool, int)
+        """
         now = self.time.now()
+        now_time = now.time()
 
         # Проверка, что сейчас будний день (0 - понедельник, 6 - воскресенье)
         if now.weekday() >= 5:
-            return False
+            return False, self.config.sleep_no_trade
 
         start_hour_str, start_min_str = self.config.start_time.split(':')
         end_hour_str, end_min_str = self.config.end_time.split(':')
@@ -115,15 +121,22 @@ class ScalpingBot:
         start_time = datetime_time(int(start_hour_str), int(start_min_str))
         end_time = datetime_time(int(end_hour_str), int(end_min_str))
 
-        # Проверка, что текущее время в заданном торговом диапазоне
-        if not start_time <= now.time() <= end_time:
-            return False
+        # ко времени запуска приближаемся шагами в половину оставшегося времени
+        if now_time <= start_time:
+            now_sec = now_time.hour * 3600 + now_time.minute * 60 + now_time.second
+            start_sec = start_time.hour * 3600 + start_time.minute * 60 + start_time.second
+            delta_seconds = start_sec - now_sec
+            return False, max(1, round(delta_seconds / 2))
+
+        if now_time >= end_time:
+            self.stop()
+            return False, 0
 
         # Проверка доступности рыночной торговли через API
         if not self.client.can_trade():
-            return False
+            return False, self.config.sleep_no_trade
 
-        return True
+        return True, 0
 
     def place_order(self, order_type: int, direction: int, lots: int, price: float | None = None) \
             -> PostOrderResponse | None:
@@ -328,13 +341,10 @@ class ScalpingBot:
         self.place_sell_orders(self.get_current_count())
 
     def run_iteration(self):
-        if self.check_stop():
-            return
-
-        if not self.can_trade():
-            # todo время сна до старта можно сделать адаптивным
-            self.log(f"can not trade, sleep {self.config.sleep_no_trade}")
-            self.time.sleep(self.config.sleep_no_trade)  # Спим, если торговать нельзя
+        can_trade, sleep_sec = self.can_trade()
+        if not can_trade:
+            self.log(f"can not trade, sleep {self.time.get_remaining_time_text(sleep_sec)}")
+            self.time.sleep(sleep_sec)
             return
 
         self.start()
@@ -350,19 +360,6 @@ class ScalpingBot:
 
         # self.logger.debug(f"Ждем следующего цикла, sleep {self.config.sleep_trading}")
         self.time.sleep(self.config.sleep_trading)
-
-    def check_stop(self) -> bool:
-        if not self.continue_trading():
-            return False
-
-        now = self.time.now()
-        end_hour_str, end_min_str = self.config.end_time.split(':')
-
-        if now.time() >= datetime_time(int(end_hour_str), int(end_min_str)):
-            self.stop()
-            return True
-
-        return False
 
     def stop(self):
         if self.state == self.STATE_FINISHED:
@@ -393,7 +390,9 @@ class ScalpingBot:
 
 
 if __name__ == '__main__':
-    bot = ScalpingBot(TOKEN, TICKER)
+    bot = ScalpingBot(TOKEN, TICKER, ConfigDTO(
+
+    ))
 
     def clean(*_args):
         bot.stop()
