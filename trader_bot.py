@@ -343,7 +343,7 @@ class ScalpingBot:
     def run_iteration(self):
         can_trade, sleep_sec = self.can_trade()
         if not can_trade:
-            self.log(f"can not trade, sleep {self.time.get_remaining_time_text(sleep_sec)}")
+            self.log(f"can not trade, sleep {TimeHelper.get_remaining_time_text(sleep_sec)}")
             self.time.sleep(sleep_sec)
             return
 
