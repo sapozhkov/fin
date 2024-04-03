@@ -318,6 +318,7 @@ class ScalpingBot:
     def run(self):
         while self.continue_trading():
             self.run_iteration()
+        self.log('END')
 
     def start(self):
         """Начало работы скрипта. первый старт"""
@@ -343,8 +344,9 @@ class ScalpingBot:
     def run_iteration(self):
         can_trade, sleep_sec = self.can_trade()
         if not can_trade:
-            self.log(f"can not trade, sleep {TimeHelper.get_remaining_time_text(sleep_sec)}")
-            self.time.sleep(sleep_sec)
+            if sleep_sec:
+                self.log(f"can not trade, sleep {TimeHelper.get_remaining_time_text(sleep_sec)}")
+                self.time.sleep(sleep_sec)
             return
 
         self.start()
