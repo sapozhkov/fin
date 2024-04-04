@@ -251,7 +251,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
     def get_instruments_count(self):
         raise 'Not implemented'
 
-    def cancel_order(self, order):
+    def cancel_order(self, order) -> bool:
         if order.order_id in self.orders:
             del self.orders[order.order_id]
             return True

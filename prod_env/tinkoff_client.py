@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 from datetime import datetime, timezone, timedelta
 
 from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus, \
-    CandleInterval, PostOrderResponse, MoneyValue, OrderState
+    CandleInterval, PostOrderResponse, MoneyValue, OrderState, OrderDirection
 
 from prod_env.time_helper import AbstractTimeHelper
 
@@ -79,7 +79,7 @@ class AbstractProxyClient(ABC):
         pass
 
     @abstractmethod
-    def cancel_order(self, order):
+    def cancel_order(self, order) -> bool:
         pass
 
     @abstractmethod
@@ -129,7 +129,7 @@ class TinkoffProxyClient(AbstractProxyClient):
                     return
         raise Exception("No figi found")
 
-    def get_current_price(self):
+    def get_current_price(self) -> float | None:
         """
         Получает текущую цену инструмента по его FIGI.
 
@@ -173,8 +173,10 @@ class TinkoffProxyClient(AbstractProxyClient):
                     price=price_quotation
                 )
         except RequestError as e:
-            self.logger.error(f"Ошибка при выставлении заявки, direction={direction}"
-                              f" price={price}, order_type= {order_type}. ({e})")
+            self.logger.error(f"Не выставлена заявка: "
+                              f"order_type: {'market' if order_type == OrderType.ORDER_TYPE_MARKET else 'limit'}, "
+                              f"direction: {'buy' if direction == OrderDirection.ORDER_DIRECTION_BUY else 'sell'}, "
+                              f"lots: {lots}, price: {price}, Error: {e}")
             return None
 
     def get_candles(self, from_date, to_date, interval) -> GetCandlesResponse:
@@ -218,12 +220,13 @@ class TinkoffProxyClient(AbstractProxyClient):
                     return position.quantity.units - position.blocked_lots.units
             return 0
 
-    def cancel_order(self, order):
+    def cancel_order(self, order) -> bool:
         if not order:
             return False
         with Client(self.token) as client:
             try:
-                return client.orders.cancel_order(account_id=self.account_id, order_id=order.order_id)
+                client.orders.cancel_order(account_id=self.account_id, order_id=order.order_id)
+                return True
             except RequestError as e:
                 self.logger.error(f"Ошибка при закрытии заявки на покупку: {e}")
         return False
@@ -236,5 +239,5 @@ class TinkoffProxyClient(AbstractProxyClient):
                                  != OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL]
                 return active_orders
             except Exception as e:
-                self.logger.error(f"Ошибка при получении активных заявок: {e}", True)
+                self.logger.error(f"Ошибка при получении активных заявок: {e}")
                 return []  # Возвращаем пустой список в случае ошибки

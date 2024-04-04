@@ -226,7 +226,7 @@ class ScalpingBot:
                  f"buy {self.get_existing_buy_order_prices()}, "
                  f"sell {self.get_existing_sell_order_prices()} ")
 
-    def get_current_price(self) -> float:
+    def get_current_price(self) -> float | None:
         return self.client.get_current_price()
 
     def get_current_count(self) -> int:
@@ -241,9 +241,14 @@ class ScalpingBot:
                 for order_id, order in self.active_sell_orders.items()]
 
     def place_buy_orders(self):
+        current_price = self.get_current_price()
+        if not current_price:
+            self.logger.error("Не могу выставить заявки на покупку, нулевая цена")
+            return
+
         current_buy_orders_cnt = len(self.active_buy_orders)
         current_shares_cnt = self.get_current_count()
-        current_price = math.floor(self.get_current_price() / self.config.step_size) * self.config.step_size
+        current_price = math.floor(current_price / self.config.step_size) * self.config.step_size
 
         target_prices = [current_price - i * self.config.step_size for i in range(1, self.config.step_cnt + 1)]
 
@@ -260,7 +265,12 @@ class ScalpingBot:
             current_buy_orders_cnt += 1
 
     def place_sell_orders(self, count_to_sell):
-        current_price = math.ceil(self.get_current_price() / self.config.step_size) * self.config.step_size
+        current_price = self.get_current_price()
+        if not current_price:
+            self.logger.error("Не могу выставить заявки на продажу, нулевая цена")
+            return
+
+        current_price = math.ceil(current_price / self.config.step_size) * self.config.step_size
 
         target_prices = [current_price + i * self.config.step_size for i in range(1, count_to_sell + 1)]
 
@@ -284,17 +294,23 @@ class ScalpingBot:
 
     def cancel_order(self, order: PostOrderResponse):
         self._remove_order_from_active_list(order)
-        self.client.cancel_order(order)
+        res = self.client.cancel_order(order)
         self.accounting.del_order(order)
 
-        prefix = "Buy" if order.direction == OrderDirection.ORDER_DIRECTION_BUY else "Sell"
-        price = self.client.quotation_to_float(order.initial_order_price)
-        self.log(f"{prefix} order canceled, price {price} n={self.get_current_count()})")
+        if res:
+            prefix = "Buy" if order.direction == OrderDirection.ORDER_DIRECTION_BUY else "Sell"
+            price = self.client.quotation_to_float(order.initial_order_price)
+            self.log(f"{prefix} order canceled, price {price} n={self.get_current_count()})")
 
     def cancel_orders_by_limits(self):
+        current_price = self.get_current_price()
+        if not current_price:
+            self.logger.error("Не могу закрыть заявки, нулевая цена")
+            return
+
         # берем текущую цену + сдвиг
         if self.config.threshold_buy_steps:
-            threshold_price = (self.get_current_price() - self.config.step_size * self.config.threshold_buy_steps)
+            threshold_price = (current_price - self.config.step_size * self.config.threshold_buy_steps)
 
             # перебираем активные заявки на покупку и закрываем всё, что ниже
             for order_id, order in self.active_buy_orders.copy().items():
@@ -303,7 +319,7 @@ class ScalpingBot:
                     self.cancel_order(order)
 
         if self.config.threshold_sell_steps:
-            threshold_price = (self.get_current_price() + self.config.step_size * self.config.threshold_sell_steps)
+            threshold_price = (current_price + self.config.step_size * self.config.threshold_sell_steps)
 
             # перебираем активные заявки на продажу и закрываем всё, что ниже
             for order_id, order in self.active_sell_orders.copy().items():
@@ -328,8 +344,11 @@ class ScalpingBot:
 
         self.state = self.STATE_WORKING
 
-        self.start_price = self.get_current_price()
         self.start_count = self.get_current_count()
+        self.start_price = self.get_current_price()
+        if not self.start_price:
+            self.logger.error("Ошибка первичного запроса цены. Статистика будет неверной в конце работы")
+            self.start_price = 0
 
         # должно быть минимум
         need_to_buy = self.config.base_shares - self.start_count
@@ -379,10 +398,14 @@ class ScalpingBot:
             for _ in range(need_to_sell):
                 self.sell()
 
+        current_price = self.get_current_price()
+        if not current_price:
+            self.logger.error("Нулевая цена, статистика НЕ будет верной")
+
         change = (
                 - self.start_price * self.start_count
                 + self.accounting.sum
-                + self.get_current_price() * self.get_current_count()
+                + current_price * self.get_current_count()
         )
 
         max_start_total = self.start_price * self.config.max_shares
