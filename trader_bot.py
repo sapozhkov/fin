@@ -166,7 +166,7 @@ class ScalpingBot:
                 self.active_sell_orders[order.order_id] = order
                 prefix = "Sell order set"
 
-        self.log(f"{prefix}, price {price} n={self.get_current_count()})")
+        self.log(f"{prefix}, price {price} (n={self.get_current_count()})")
 
         return order
 
