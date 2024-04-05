@@ -41,6 +41,7 @@ class ScalpingBot:
         self.client = client_helper or TinkoffProxyClient(token, ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
+        # todo #63 протестировать как работает мажоритарная торговля вручную в test.ipynb
         self.accounting.num = min(self.accounting.get_instrument_count(), self.config.max_shares)
         if self.config.use_shares is not None:
             self.accounting.num = min(self.accounting.num, self.config.use_shares)
@@ -56,15 +57,13 @@ class ScalpingBot:
         # вот тут проводим переустановку base
         self.pretest_and_modify_config()
 
-        # todo пересмотреть состав. может сделать генерацию на основе конфига
         self.log(f"INIT \n"
                  f"     figi - {self.client.figi} ({self.client.ticker})\n"
+                 f"     config - {self.config}"
                  f"     max_shares - {self.config.max_shares}\n"
                  f"     base_shares - {self.config.base_shares}\n"
                  f"     step_size - {self.config.step_size} {self.client.currency}\n"
                  f"     step_cnt - {self.config.step_cnt}\n"
-                 f"     threshold_buy_steps - {self.config.threshold_buy_steps}\n"
-                 f"     threshold_sell_steps - {self.config.threshold_sell_steps}\n"
                  f"     cur_used_cnt - {self.get_current_count()}\n"
                  )
 
@@ -94,7 +93,10 @@ class ScalpingBot:
         if current_trend >= .5:
             self.config.base_shares = self.config.max_shares
         else:
-            self.config.base_shares = 0
+            if self.config.majority_trade:
+                self.config.base_shares = -self.config.max_shares
+            else:
+                self.config.base_shares = 0
 
         self.log(f"Pretest. RSI = {round(current_trend, 2)}")
         self.log(f"Change config to {self.config}")
@@ -270,6 +272,8 @@ class ScalpingBot:
             self.logger.error("Не могу выставить заявки на продажу, нулевая цена")
             return
 
+        # todo попробовать продублировать логику из buy метода
+
         count_to_sell = self.get_current_count() - len(self.active_sell_orders)
         current_price = math.ceil(current_price / self.config.step_size) * self.config.step_size
         target_prices = [current_price + i * self.config.step_size for i in range(1, count_to_sell + 1)]
@@ -350,13 +354,17 @@ class ScalpingBot:
             self.logger.error("Ошибка первичного запроса цены. Статистика будет неверной в конце работы")
             self.start_price = 0
 
-        # должно быть минимум
-        need_to_buy = self.config.base_shares - self.start_count
+        # требуемое изменение портфеля
+        need_operations = self.config.base_shares - self.start_count
 
         # докупаем недостающие по рыночной цене
-        if need_to_buy > 0:
-            for _ in range(need_to_buy):
+        if need_operations > 0:
+            for _ in range(need_operations):
                 self.buy()
+
+        if self.config.majority_trade and need_operations < 0:
+            for _ in range(-need_operations):
+                self.sell()
 
     def run_iteration(self):
         can_trade, sleep_sec = self.can_trade()
