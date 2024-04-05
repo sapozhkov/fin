@@ -8,7 +8,7 @@ class ConfigDTO:
             # quit_on_balance_down_percent=1,
 
             sleep_trading=1 * 60,
-            sleep_no_trade=10 * 60,
+            sleep_no_trade=1 * 60,
 
             max_shares=5,
             base_shares=5,
