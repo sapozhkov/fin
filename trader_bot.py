@@ -264,14 +264,14 @@ class ScalpingBot:
             self.buy_limit(price)
             current_buy_orders_cnt += 1
 
-    def place_sell_orders(self, count_to_sell):
+    def place_sell_orders(self):
         current_price = self.get_current_price()
         if not current_price:
             self.logger.error("Не могу выставить заявки на продажу, нулевая цена")
             return
 
+        count_to_sell = self.get_current_count() - len(self.active_sell_orders)
         current_price = math.ceil(current_price / self.config.step_size) * self.config.step_size
-
         target_prices = [current_price + i * self.config.step_size for i in range(1, count_to_sell + 1)]
 
         # Ставим заявки на продажу
@@ -358,8 +358,6 @@ class ScalpingBot:
             for _ in range(need_to_buy):
                 self.buy()
 
-        self.place_sell_orders(self.get_current_count())
-
     def run_iteration(self):
         can_trade, sleep_sec = self.can_trade()
         if not can_trade:
@@ -376,8 +374,9 @@ class ScalpingBot:
         # закрываем заявки, которые не входят в лимиты
         self.cancel_orders_by_limits()
 
-        # Выставляем заявки на покупку
+        # Выставляем заявки
         self.place_buy_orders()
+        self.place_sell_orders()
 
         # self.logger.debug(f"Ждем следующего цикла, sleep {self.config.sleep_trading}")
         self.time.sleep(self.config.sleep_trading)
