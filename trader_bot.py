@@ -67,10 +67,26 @@ class ScalpingBot:
                  f"     cur_used_cnt - {self.get_current_count()}\n"
                  )
 
-    def pretest_and_modify_config(self, period=10):
-        if not self.config.do_pretest:
+    def pretest_and_modify_config(self):
+        if not self.config.pretest_period:
             return
 
+        current_trend = self.get_rsi_trend_val(self.config.pretest_period)
+        if current_trend is None:
+            return
+
+        if current_trend >= .5:
+            self.config.base_shares = self.config.max_shares
+        else:
+            if self.config.majority_trade:
+                self.config.base_shares = -self.config.max_shares
+            else:
+                self.config.base_shares = 0
+
+        self.log(f"Pretest. RSI = {round(current_trend, 2)}")
+        self.log(f"Change config to {self.config}")
+
+    def get_rsi_trend_val(self, period) -> float | None:
         to_date = self.time.get_delta_days_date(days=1)
         from_date = self.time.get_delta_days_date(days=period * 2, from_date=to_date)  # Удваиваем период для точности
 
@@ -88,18 +104,9 @@ class ScalpingBot:
             current_trend = rsi.iloc[-1]
         except IndexError as err:
             self.logger.error(f'Error while counting RSI: {err}')
-            return
+            return None
 
-        if current_trend >= .5:
-            self.config.base_shares = self.config.max_shares
-        else:
-            if self.config.majority_trade:
-                self.config.base_shares = -self.config.max_shares
-            else:
-                self.config.base_shares = 0
-
-        self.log(f"Pretest. RSI = {round(current_trend, 2)}")
-        self.log(f"Change config to {self.config}")
+        return current_trend
 
     def log(self, message, repeat=False):
         self.logger.log(message, repeat)

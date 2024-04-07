@@ -12,7 +12,7 @@ class ConfigDTO:
 
             max_shares=5,
             base_shares=5,
-            do_pretest=True,
+            pretest_period=10,
 
             majority_trade=True,
 
@@ -29,7 +29,7 @@ class ConfigDTO:
 
         self.max_shares = max_shares
         self.base_shares = base_shares
-        self.do_pretest = do_pretest
+        self.pretest_period = pretest_period
         self.majority_trade = majority_trade
         self.threshold_buy_steps = threshold_buy_steps
         self.threshold_sell_steps = threshold_sell_steps
@@ -59,33 +59,5 @@ class ConfigDTO:
     def __repr__(self):
         return (f"step {self.max_shares}/{self.base_shares}({self.step_cnt}) x {self.step_size} rub, "
                 f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| "
-                f"pre{'+' if self.do_pretest else '-'} "
+                f"pre{str(self.pretest_period) if self.pretest_period else '-'} "
                 f"maj{'+' if self.majority_trade else '-'}")
-
-    def __eq__(self, other):
-        if not isinstance(other, ConfigDTO):
-            return NotImplemented
-        return (
-            self.start_time == other.start_time and
-            self.end_time == other.end_time and
-            self.sleep_trading == other.sleep_trading and
-            self.sleep_no_trade == other.sleep_no_trade and
-            self.max_shares == other.max_shares and
-            self.base_shares == other.base_shares and
-            self.do_pretest == other.do_pretest and
-            self.majority_trade == other.majority_trade and
-            self.threshold_buy_steps == other.threshold_buy_steps and
-            self.threshold_sell_steps == other.threshold_sell_steps and
-            self.step_size == other.step_size and
-            self.step_cnt == other.step_cnt and
-            self.use_shares == other.use_shares
-        )
-
-    def __hash__(self):
-        return hash((
-            self.start_time, self.end_time,
-            self.sleep_trading, self.sleep_no_trade,
-            self.max_shares, self.base_shares, self.do_pretest, self.majority_trade,
-            self.threshold_buy_steps, self.threshold_sell_steps,
-            self.step_size, self.step_cnt, self.use_shares
-        ))

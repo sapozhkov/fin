@@ -88,6 +88,9 @@ class TestAlgorithm:
                 accounting_helper=self.accounting_helper,
             )
 
+            if bot.state == bot.STATE_FINISHED:
+                continue
+
             self.client_helper.set_candles_list_by_date(test_date)
 
             self.accounting_helper.reset()
@@ -163,7 +166,11 @@ class TestAlgorithm:
 
             profit = round(profit + balance_change, 2)
 
-            # print(f"{test_date} - s {round(balance_change, 2)} - b {profit}")
+            # rsi = round(bot.get_rsi_trend_val(), 2)
+            # print(f"{test_date} "
+            #       f"rsi - {rsi} {'^' if rsi > .5 else 'v'} "
+            #       f"s {round(balance_change, 2)} "
+            #       f"n - {bot.get_current_count()}")
 
             # #51 для перебирания дат с потерями
             # if balance_change < 0:
@@ -197,6 +204,21 @@ class TestAlgorithm:
 
             'op_cnt': operations_cnt,
             'op_avg': round(sum(operations_cnt_list) / test_days_num, 2),
+
+            # 'sleep_trading': config.sleep_trading,
+            #
+            # # 'quit_on_balance_up_percent': quit_on_balance_up_percent,
+            # # 'quit_on_balance_down_percent': quit_on_balance_down_percent,
+            #
+            # 'max_shares': config.max_shares,
+            # 'base_shares': config.base_shares,
+            # 'threshold_buy_steps': config.threshold_buy_steps,
+            # 'threshold_sell_steps': config.threshold_sell_steps,
+            # 'step_size': config.step_size,
+            # 'step_cnt': config.step_cnt,
+            #
+            # 'operations_cnt': operations_cnt,
+            # 'operations_avg': round(sum(operations_cnt_list) / test_days_num, 2),
         }
 
     def calculate_rsi_trend(self, period=10):
