@@ -89,10 +89,12 @@ class TestAlgorithm:
             )
 
             if bot.state == bot.STATE_FINISHED:
+                # print(f"{test_date} - skip, finished status on start")
                 continue
 
             normal_trade_day = self.client_helper.set_candles_list_by_date(test_date)
             if not normal_trade_day:
+                # print(f"{test_date} - skip, no candles")
                 continue
 
             self.accounting_helper.reset()
