@@ -91,7 +91,9 @@ class TestAlgorithm:
             if bot.state == bot.STATE_FINISHED:
                 continue
 
-            self.client_helper.set_candles_list_by_date(test_date)
+            normal_trade_day = self.client_helper.set_candles_list_by_date(test_date)
+            if not normal_trade_day:
+                continue
 
             self.accounting_helper.reset()
 
@@ -166,7 +168,7 @@ class TestAlgorithm:
 
             profit = round(profit + balance_change, 2)
 
-            # rsi = round(bot.get_rsi_trend_val(), 2)
+            # rsi = round(bot.get_rsi_trend_val(bot.config.pretest_period), 2)
             # print(f"{test_date} "
             #       f"rsi - {rsi} {'^' if rsi > .5 else 'v'} "
             #       f"s {round(balance_change, 2)} "

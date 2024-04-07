@@ -40,6 +40,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
         self.orders = {}
         self.executed_orders_ids = []
+        return len(candles.candles) > 400  # в реальной дате > 500. это флаг отсутствия данных
 
     def set_current_candle(self, candle: HistoricCandle):
         self.current_candle = candle
