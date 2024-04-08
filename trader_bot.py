@@ -209,7 +209,10 @@ class ScalpingBot:
                  f" (n={self.get_current_count()})")
 
     def update_orders_status(self):
-        active_order_ids = [order.order_id for order in self.client.get_active_orders()]
+        active_orders = self.client.get_active_orders()
+        if active_orders is None:
+            return
+        active_order_ids = [order.order_id for order in active_orders]
 
         # Обновление заявок на продажу
         for order_id, order in self.active_buy_orders.copy().items():
@@ -221,7 +224,10 @@ class ScalpingBot:
                 self._remove_order_from_active_list(order)
 
         # обновляем список активных, так как список меняется в блоке выше
-        active_order_ids = [order.order_id for order in self.client.get_active_orders()]
+        active_orders = self.client.get_active_orders()
+        if active_orders is None:
+            return
+        active_order_ids = [order.order_id for order in active_orders]
 
         # Аналогично для заявок на покупку
         for order_id, order in self.active_sell_orders.copy().items():

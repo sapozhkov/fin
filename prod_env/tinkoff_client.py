@@ -240,4 +240,4 @@ class TinkoffProxyClient(AbstractProxyClient):
                 return active_orders
             except Exception as e:
                 self.logger.error(f"Ошибка при получении активных заявок: {e}")
-                return []  # Возвращаем пустой список в случае ошибки
+                return None
