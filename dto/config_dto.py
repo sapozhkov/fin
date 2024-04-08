@@ -1,7 +1,7 @@
 class ConfigDTO:
     def __init__(
             self,
-            start_time='07:00:01',  # 10:00
+            start_time='07:00',  # 10:00
             end_time='15:29',  # 18:29
 
             # quit_on_balance_up_percent=2,
