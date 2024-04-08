@@ -176,7 +176,7 @@ class TinkoffProxyClient(AbstractProxyClient):
             self.logger.error(f"Не выставлена заявка: "
                               f"order_type: {'market' if order_type == OrderType.ORDER_TYPE_MARKET else 'limit'}, "
                               f"direction: {'buy' if direction == OrderDirection.ORDER_DIRECTION_BUY else 'sell'}, "
-                              f"lots: {lots}, price: {price}, Error: {e}")
+                              f"lots: {lots}, price: {self.round(price) if price is not None else 'None'}, Error: {e}")
             return None
 
     def get_candles(self, from_date, to_date, interval) -> GetCandlesResponse:
