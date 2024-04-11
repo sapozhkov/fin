@@ -41,7 +41,6 @@ class ScalpingBot:
         self.client = client_helper or TinkoffProxyClient(token, ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
-        # todo #63 протестировать как работает мажоритарная торговля вручную в test.ipynb
         self.accounting.num = min(self.accounting.get_instrument_count(), self.config.max_shares)
         if self.config.use_shares is not None:
             self.accounting.num = min(self.accounting.num, self.config.use_shares)
@@ -436,7 +435,9 @@ class ScalpingBot:
 
 if __name__ == '__main__':
     bot = ScalpingBot(TOKEN, TICKER, ConfigDTO(
-
+        max_shares=4,
+        base_shares=-4,
+        pretest_period=0,
     ))
 
     def clean(*_args):
