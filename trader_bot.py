@@ -316,7 +316,7 @@ class ScalpingBot:
         if res:
             prefix = "Buy" if order.direction == OrderDirection.ORDER_DIRECTION_BUY else "Sell"
             price = self.client.quotation_to_float(order.initial_order_price)
-            self.log(f"{prefix} order canceled, price {price} n={self.get_current_count()})")
+            self.log(f"{prefix} order canceled, price {price} (n={self.get_current_count()})")
 
     def cancel_orders_by_limits(self):
         current_price = self.get_current_price()
