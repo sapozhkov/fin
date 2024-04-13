@@ -121,7 +121,8 @@ class ScalpingBot:
 
         # Проверка, что сейчас будний день (0 - понедельник, 6 - воскресенье)
         if now.weekday() >= 5:
-            return False, self.config.sleep_no_trade
+            self.stop()
+            return False, 0
 
         start_hour_str, start_min_str = self.config.start_time.split(':')
         end_hour_str, end_min_str = self.config.end_time.split(':')
@@ -434,11 +435,16 @@ class ScalpingBot:
 
 
 if __name__ == '__main__':
-    bot = ScalpingBot(TOKEN, TICKER, ConfigDTO(
-        max_shares=4,
-        base_shares=-4,
-        pretest_period=0,
-    ))
+    if len(sys.argv) == 1:
+        config_dto = ConfigDTO(
+        )
+    else:
+        config_dto = ConfigDTO.from_string(sys.argv[1])
+
+    bot = ScalpingBot(TOKEN, TICKER, config_dto)
+
+    if len(sys.argv) > 1:
+        bot.log(f"Config string: {sys.argv[1]}")
 
     def clean(*_args):
         bot.stop()

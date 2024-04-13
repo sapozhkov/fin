@@ -27,20 +27,20 @@ class ConfigDTO:
         self.start_time = start_time
         self.end_time = end_time
 
-        self.max_shares = max_shares
-        self.base_shares = base_shares
-        self.pretest_period = pretest_period
-        self.majority_trade = majority_trade
-        self.threshold_buy_steps = threshold_buy_steps
-        self.threshold_sell_steps = threshold_sell_steps
-        self.step_size = step_size
-        self.step_cnt = step_cnt
+        self.max_shares = int(max_shares)
+        self.base_shares = int(base_shares) if base_shares is not None else None
+        self.pretest_period = int(pretest_period)
+        self.majority_trade = bool(majority_trade)
+        self.threshold_buy_steps = int(threshold_buy_steps)
+        self.threshold_sell_steps = int(threshold_sell_steps)
+        self.step_size = float(step_size)
+        self.step_cnt = int(step_cnt)
 
-        self.sleep_trading = sleep_trading
-        self.sleep_no_trade = sleep_no_trade
+        self.sleep_trading = int(sleep_trading)
+        self.sleep_no_trade = int(sleep_no_trade)
 
         # ограничитель количества используемых акций из откупленных. полезно при || запуске на 1 инструмент
-        self.use_shares = use_shares
+        self.use_shares = int(use_shares) if use_shares is not None and use_shares != '' else None
 
         # предустановленные значения
         if self.base_shares is None:
@@ -61,3 +61,26 @@ class ConfigDTO:
                 f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| "
                 f"pre{str(self.pretest_period) if self.pretest_period else '-'} "
                 f"maj{'+' if self.majority_trade else '-'}")
+
+    def to_string(self):
+        args = []
+        base_conf = ConfigDTO()
+        for key, value in self.__dict__.items():
+            if value != base_conf.__dict__[key]:
+                if value is None:
+                    value = ''
+                elif isinstance(value, bool) and not value:
+                    value = ''
+                args.append(f'{key}={value}')
+        return ','.join(args)
+
+    @classmethod
+    def from_string(cls, config_string):
+        args = config_string.split(',')
+
+        d = dict()
+        for arg_str in args:
+            key, value = arg_str.split('=')
+            d[key] = value
+
+        return cls(**d)
