@@ -20,11 +20,6 @@ async def run_command(command):
 current_dir = os.path.dirname(os.path.abspath(__file__))
 config_list = [
     ConfigDTO(
-        max_shares=5,
-        step_size=1.2,
-        step_cnt=3,
-        threshold_buy_steps=6,
-        threshold_sell_steps=6,
     ),
     # ConfigDTO(
     #     max_shares=5,

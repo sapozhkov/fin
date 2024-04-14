@@ -20,7 +20,7 @@ class ConfigDTO:
             threshold_sell_steps=0,  # вот тут 0 - это важно. эффективность сильно выше. не даем заднюю
 
             step_size=1.4,
-            step_cnt=2,
+            step_cnt=5,
 
             use_shares=None,
     ):
