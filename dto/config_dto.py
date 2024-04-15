@@ -57,9 +57,9 @@ class ConfigDTO:
             self.threshold_sell_steps = self.step_cnt + 1
 
     def __repr__(self):
-        return (f"step {self.max_shares}/{self.base_shares}({self.step_cnt}) x {self.step_size} rub, "
+        base = f"pre{self.pretest_period}" if self.pretest_period else f"{self.base_shares}"
+        return (f"step {self.max_shares}/{base}({self.step_cnt}) x {self.step_size} rub, "
                 f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| "
-                f"pre{str(self.pretest_period) if self.pretest_period else '-'} "
                 f"maj{'+' if self.majority_trade else '-'}")
 
     def to_string(self):

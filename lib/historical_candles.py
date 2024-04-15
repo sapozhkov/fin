@@ -57,21 +57,16 @@ class HistoricalCandles:
         :param days_num: Число дней для возврата.
         :return: Список строк с датами предыдущих будних дней.
         """
-        weekdays = []
+        out = []
         current_date = datetime.strptime(end_date, "%Y-%m-%d")
 
-        while len(weekdays) < days_num:
-            # Проверяем, является ли день будним (понедельник=0, воскресенье=6)
-            if current_date.weekday() < 5:  # Понедельник=0, вторник=1, ..., пятница=4
-                # Добавляем дату в список, если это будний день
-                weekdays.append(current_date.strftime("%Y-%m-%d"))
-
-            # Вычитаем один день для проверки следующего дня
+        while len(out) < days_num:
+            out.append(current_date.strftime("%Y-%m-%d"))
             current_date -= timedelta(days=1)
 
-        weekdays.reverse()
+        out.reverse()
 
-        return weekdays
+        return out
 
     @staticmethod
     def get_hour_minute_pairs(start_datetime, end_datetime):

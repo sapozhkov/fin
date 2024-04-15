@@ -60,6 +60,7 @@ class TestAlgorithm:
         end_price_t = 0
 
         original_config = copy.copy(config)
+        maj_commission = 0
 
         # закручиваем цикл по датам
         for test_date in days_list:
@@ -87,6 +88,11 @@ class TestAlgorithm:
                 client_helper=self.client_helper,
                 accounting_helper=self.accounting_helper,
             )
+
+            if self.accounting_helper.num < 0:
+                maj_commission += self.client_helper.get_current_price() * self.accounting_helper.num * 0.0012
+                # print(f"{test_date} - maj_commission {round(maj_commission, 2)} = "
+                #       f"{self.client_helper.get_current_price()} * {self.accounting_helper.num} * {0.0012}")
 
             if bot.state == bot.STATE_FINISHED:
                 # print(f"{test_date} - skip, finished status on start")
@@ -164,17 +170,27 @@ class TestAlgorithm:
                     - start_price * start_cnt
                     + self.accounting_helper.sum
                     + end_price * end_cnt
+                    + maj_commission
             )
+
+            maj_commission = 0
 
             end_price_t = end_price
 
             profit = round(profit + balance_change, 2)
 
-            # rsi = round(bot.get_rsi_trend_val(bot.config.pretest_period), 2)
+            # if bot.config.pretest_period > 0:
+            #     rsi = bot.get_rsi_trend_val(bot.config.pretest_period)
+            #     if rsi is not None:
+            #         rsi_text = f"rsi - {round(rsi, 2)} {'^' if rsi > .5 else 'v'} "
+            #     else:
+            #         rsi_text = 'no rsi '
+            # else:
+            #     rsi_text = ''
             # print(f"{test_date} "
-            #       f"rsi - {rsi} {'^' if rsi > .5 else 'v'} "
-            #       f"s {round(balance_change, 2)} "
-            #       f"n - {bot.get_current_count()}")
+            #       f"{rsi_text}"
+            #       f"change: {round(balance_change, 2)}, "
+            #       f"num: {bot.get_current_count()}")
 
             # #51 для перебирания дат с потерями
             # if balance_change < 0:
@@ -184,6 +200,9 @@ class TestAlgorithm:
                 success_days += 1
 
             balance_change_list.append(balance_change)
+
+        # последние несколько дней могут быть не рабочими, учитываем накопленную комиссию
+        profit += maj_commission
 
         profit_p = round(profit / (start_price_t * config.max_shares), 2) if start_price_t and config.max_shares else 0
 
