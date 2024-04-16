@@ -49,6 +49,7 @@ class ScalpingBot:
         self.state = self.STATE_NEW
         self.start_price = 0
         self.start_count = 0
+        self.cached_current_price: float | None = 0
 
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
@@ -256,7 +257,7 @@ class ScalpingBot:
                 for order_id, order in self.active_sell_orders.items()]
 
     def place_buy_orders(self):
-        current_price = self.get_current_price()
+        current_price = self.cached_current_price
         if not current_price:
             self.logger.error("Не могу выставить заявки на покупку, нулевая цена")
             return
@@ -266,7 +267,8 @@ class ScalpingBot:
         current_price = math.floor(current_price / self.config.step_size) * self.config.step_size
 
         target_prices = [current_price - i * self.config.step_size for i in range(1, self.config.step_cnt + 1)]
-        # target_prices = [self.client.round(current_price - i * self.config.step_size) for i in range(1, self.config.step_cnt + 1)]
+        # target_prices = [self.client.round(current_price - i * self.config.step_size) for i in range(1,
+        # self.config.step_cnt + 1)]
 
         # Исключаем цены, по которым уже выставлены заявки на покупку
         existing_order_prices = self.get_existing_buy_order_prices()
@@ -281,7 +283,7 @@ class ScalpingBot:
             current_buy_orders_cnt += 1
 
     def place_sell_orders(self):
-        current_price = self.get_current_price()
+        current_price = self.cached_current_price
         if not current_price:
             self.logger.error("Не могу выставить заявки на продажу, нулевая цена")
             return
@@ -291,7 +293,8 @@ class ScalpingBot:
         current_price = math.ceil(current_price / self.config.step_size) * self.config.step_size
 
         # target_prices = [current_price + i * self.config.step_size for i in range(1, self.config.step_cnt + 1)]
-        target_prices = [self.client.round(current_price + i * self.config.step_size) for i in range(1, self.config.step_cnt + 1)]
+        target_prices = [self.client.round(current_price + i * self.config.step_size)
+                         for i in range(1, self.config.step_cnt + 1)]
 
         # Исключаем цены, по которым уже выставлены заявки
         existing_order_prices = self.get_existing_sell_order_prices()
@@ -331,7 +334,7 @@ class ScalpingBot:
             self.log(f"{prefix} order canceled, price {price} (n={self.get_current_count()})")
 
     def cancel_orders_by_limits(self):
-        current_price = self.get_current_price()
+        current_price = self.cached_current_price
         if not current_price:
             self.logger.error("Не могу закрыть заявки, нулевая цена")
             return
@@ -364,6 +367,9 @@ class ScalpingBot:
             self.run_iteration()
         self.log('END')
 
+    def update_cached_price(self):
+        self.cached_current_price = self.get_current_price()
+
     def start(self):
         """Начало работы скрипта. первый старт"""
 
@@ -373,7 +379,7 @@ class ScalpingBot:
         self.state = self.STATE_WORKING
 
         self.start_count = self.get_current_count()
-        self.start_price = self.get_current_price()
+        self.start_price = self.cached_current_price
         if not self.start_price:
             self.logger.error("Ошибка первичного запроса цены. Статистика будет неверной в конце работы")
             self.start_price = 0
@@ -397,6 +403,8 @@ class ScalpingBot:
                 self.log(f"can not trade, sleep {TimeHelper.get_remaining_time_text(sleep_sec)}")
                 self.time.sleep(sleep_sec)
             return
+
+        self.update_cached_price()
 
         self.start()
 
