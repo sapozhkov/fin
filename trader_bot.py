@@ -58,7 +58,7 @@ class ScalpingBot:
 
         self.log(f"INIT \n"
                  f"     figi - {self.client.figi} ({self.client.ticker})\n"
-                 f"     config - {self.config}"
+                 f"     config - {self.config}\n"
                  f"     max_shares - {self.config.max_shares}\n"
                  f"     base_shares - {self.config.base_shares}\n"
                  f"     step_size - {self.config.step_size} {self.client.currency}\n"
@@ -266,6 +266,7 @@ class ScalpingBot:
         current_price = math.floor(current_price / self.config.step_size) * self.config.step_size
 
         target_prices = [current_price - i * self.config.step_size for i in range(1, self.config.step_cnt + 1)]
+        # target_prices = [self.client.round(current_price - i * self.config.step_size) for i in range(1, self.config.step_cnt + 1)]
 
         # Исключаем цены, по которым уже выставлены заявки на покупку
         existing_order_prices = self.get_existing_buy_order_prices()
@@ -285,15 +286,25 @@ class ScalpingBot:
             self.logger.error("Не могу выставить заявки на продажу, нулевая цена")
             return
 
-        # todo попробовать продублировать логику из buy метода
-
-        count_to_sell = self.get_current_count() - len(self.active_sell_orders)
+        current_sell_orders_cnt = len(self.active_sell_orders)
+        current_shares_cnt = self.get_current_count()
         current_price = math.ceil(current_price / self.config.step_size) * self.config.step_size
-        target_prices = [current_price + i * self.config.step_size for i in range(1, count_to_sell + 1)]
+
+        # target_prices = [current_price + i * self.config.step_size for i in range(1, self.config.step_cnt + 1)]
+        target_prices = [self.client.round(current_price + i * self.config.step_size) for i in range(1, self.config.step_cnt + 1)]
+
+        # Исключаем цены, по которым уже выставлены заявки
+        existing_order_prices = self.get_existing_sell_order_prices()
 
         # Ставим заявки на продажу
-        for price in sorted(list(target_prices), reverse=True):
+        for price in target_prices:
+            min_shares = -self.config.max_shares if self.config.majority_trade else 0
+            if current_shares_cnt - current_sell_orders_cnt <= min_shares:
+                break
+            if price in existing_order_prices:
+                continue
             self.sell_limit(price)
+            current_sell_orders_cnt += 1
 
     def cancel_active_orders(self):
         """Отменяет все активные заявки."""
@@ -411,12 +422,19 @@ class ScalpingBot:
         self.log("Остановка бота...")
         self.cancel_active_orders()
 
-        # продать откупленные инструменты
-        need_to_sell = self.get_current_count() - self.config.base_shares
+        # если в конце дня надо вернуться в 0 лотов на балансе
+        if self.config.maj_to_zero:
+            need_operations = self.get_current_count()
 
-        if need_to_sell > 0:
-            for _ in range(need_to_sell):
-                self.sell()
+            # продать откупленные инструменты - ухудшает результаты
+            # if need_operations > 0:
+            #     for _ in range(need_operations):
+            #         self.sell()
+
+            # и откупить перепроданные
+            if need_operations < 0:
+                for _ in range(-need_operations):
+                    self.buy()
 
         current_price = self.get_current_price()
         if not current_price:

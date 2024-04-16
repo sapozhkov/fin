@@ -61,6 +61,7 @@ class TestAlgorithm:
 
         original_config = copy.copy(config)
         maj_commission = 0
+        total_maj_commission = 0
 
         # закручиваем цикл по датам
         for test_date in days_list:
@@ -173,6 +174,7 @@ class TestAlgorithm:
                     + maj_commission
             )
 
+            total_maj_commission += maj_commission
             maj_commission = 0
 
             end_price_t = end_price
@@ -202,6 +204,7 @@ class TestAlgorithm:
             balance_change_list.append(balance_change)
 
         # последние несколько дней могут быть не рабочими, учитываем накопленную комиссию
+        total_maj_commission += maj_commission
         profit += maj_commission
 
         profit_p = round(profit / (start_price_t * config.max_shares), 2) if start_price_t and config.max_shares else 0
@@ -215,18 +218,19 @@ class TestAlgorithm:
             'profit': profit,
             'profit_p': f"{profit_p}",
             'config': config,
+            # 'maj_com': round(total_maj_commission, 2),
 
-            'profit_avg': round(sum(balance_change_list) / test_days_num, 2),
-
-            'pot_profit': potential_profit,
-            'pot_profit_p': potential_profit_p,
-
-            'days': test_days_num,
-            'success_days': success_days,
-            'success_p': round(success_days / test_days_num, 2),
-
-            'op_cnt': operations_cnt,
-            'op_avg': round(sum(operations_cnt_list) / test_days_num, 2),
+            # 'profit_avg': round(sum(balance_change_list) / test_days_num, 2),
+            #
+            # 'pot_profit': potential_profit,
+            # 'pot_profit_p': potential_profit_p,
+            #
+            # 'days': test_days_num,
+            # 'success_days': success_days,
+            # 'success_p': round(success_days / test_days_num, 2),
+            #
+            # 'op_cnt': operations_cnt,
+            # 'op_avg': round(sum(operations_cnt_list) / test_days_num, 2),
 
             # 'sleep_trading': config.sleep_trading,
             #

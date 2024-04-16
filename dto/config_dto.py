@@ -15,6 +15,7 @@ class ConfigDTO:
             pretest_period=10,
 
             majority_trade=True,
+            maj_to_zero=True,  # откупить до 0 в конце работы алгоритма (или дня)
 
             threshold_buy_steps=6,
             threshold_sell_steps=0,  # вот тут 0 - это важно. эффективность сильно выше. не даем заднюю
@@ -31,6 +32,7 @@ class ConfigDTO:
         self.base_shares = int(base_shares) if base_shares is not None else None
         self.pretest_period = int(pretest_period)
         self.majority_trade = bool(majority_trade)
+        self.maj_to_zero = bool(maj_to_zero)
         self.threshold_buy_steps = int(threshold_buy_steps)
         self.threshold_sell_steps = int(threshold_sell_steps)
         self.step_size = float(step_size)
@@ -58,9 +60,10 @@ class ConfigDTO:
 
     def __repr__(self):
         base = f"pre{self.pretest_period}" if self.pretest_period else f"{self.base_shares}"
-        return (f"step {self.max_shares}/{base}({self.step_cnt}) x {self.step_size} rub, "
+        return (f"{self.max_shares}/{base}({self.step_cnt}) x {self.step_size} rub, "
                 f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| "
-                f"maj{'+' if self.majority_trade else '-'}")
+                f"maj{'+' if self.majority_trade else '-'}z{'+' if self.maj_to_zero else '-'} "
+                )
 
     def to_string(self):
         args = []
