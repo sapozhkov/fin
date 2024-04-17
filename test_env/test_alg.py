@@ -216,7 +216,7 @@ class TestAlgorithm:
 
         return {
             'profit': profit,
-            'profit_p': f"{profit_p}",
+            'profit_p': profit_p,
             'config': config,
             # 'maj_com': round(total_maj_commission, 2),
 

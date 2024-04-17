@@ -12,7 +12,7 @@ class ConfigDTO:
 
             max_shares=5,
             base_shares=5,
-            pretest_period=10,
+            pretest_period=13,
 
             majority_trade=True,
             maj_to_zero=True,  # откупить до 0 в конце работы алгоритма (или дня)
