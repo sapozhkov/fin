@@ -84,6 +84,9 @@ class ConfigDTO:
 
     @classmethod
     def from_string(cls, config_string):
+        if config_string == '':
+            return cls()
+
         args = config_string.split(',')
 
         d = dict()
@@ -92,3 +95,36 @@ class ConfigDTO:
             d[key] = value
 
         return cls(**d)
+
+    def __eq__(self, other):
+        if not isinstance(other, ConfigDTO):
+            return NotImplemented
+        return (
+            self.start_time == other.start_time and
+            self.end_time == other.end_time and
+            self.sleep_trading == other.sleep_trading and
+            self.sleep_no_trade == other.sleep_no_trade and
+            self.max_shares == other.max_shares and
+            self.base_shares == other.base_shares and
+            self.pretest_period == other.pretest_period and
+            self.majority_trade == other.majority_trade and
+            self.maj_to_zero == other.maj_to_zero and
+            self.threshold_buy_steps == other.threshold_buy_steps and
+            self.stop_up_p == other.stop_up_p and
+            self.stop_down_p == other.stop_down_p and
+            self.threshold_sell_steps == other.threshold_sell_steps and
+            self.step_size == other.step_size and
+            self.step_cnt == other.step_cnt and
+            self.use_shares == other.use_shares
+        )
+
+    def __hash__(self):
+        return hash((
+            self.start_time, self.end_time,
+            self.sleep_trading, self.sleep_no_trade,
+            self.max_shares, self.base_shares, self.pretest_period,
+            self.majority_trade, self.maj_to_zero,
+            self.threshold_buy_steps, self.threshold_sell_steps,
+            self.stop_up_p, self.stop_down_p,
+            self.step_size, self.step_cnt, self.use_shares
+        ))
