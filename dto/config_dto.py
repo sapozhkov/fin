@@ -4,8 +4,8 @@ class ConfigDTO:
             start_time='07:00',  # 10:00
             end_time='15:29',  # 18:29
 
-            # quit_on_balance_up_percent=2,
-            # quit_on_balance_down_percent=1,
+            stop_up_p=.1,
+            stop_down_p=.1,
 
             sleep_trading=1 * 60,
             sleep_no_trade=1 * 60,
@@ -38,6 +38,10 @@ class ConfigDTO:
         self.step_size = float(step_size)
         self.step_cnt = int(step_cnt)
 
+        # проценты остановки алгоритма при достижении роста и падения
+        self.stop_up_p = float(stop_up_p)
+        self.stop_down_p = float(stop_down_p)
+
         self.sleep_trading = int(sleep_trading)
         self.sleep_no_trade = int(sleep_no_trade)
 
@@ -62,6 +66,7 @@ class ConfigDTO:
         base = f"pre{self.pretest_period}" if self.pretest_period else f"{self.base_shares}"
         return (f"{self.max_shares}/{base}({self.step_cnt}) x {self.step_size} rub, "
                 f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| "
+                f"|u{self.stop_up_p} d{self.stop_down_p}| "
                 f"maj{'+' if self.majority_trade else '-'}z{'+' if self.maj_to_zero else '-'} "
                 )
 

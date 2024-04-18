@@ -406,6 +406,9 @@ class ScalpingBot:
 
         self.update_cached_price()
 
+        if self.check_need_stop():
+            return
+
         self.start()
 
         # Обновляем список активных заявок, тут же заявки на продажу при удачной покупке
@@ -421,7 +424,25 @@ class ScalpingBot:
         # self.logger.debug(f"Ждем следующего цикла, sleep {self.config.sleep_trading}")
         self.time.sleep(self.config.sleep_trading)
 
-    def stop(self):
+    def check_need_stop(self):
+        if not self.start_price and not (self.config.stop_up_p or self.config.stop_down_p):
+            return False
+
+        profit = self.get_current_profit()
+
+        if self.config.stop_up_p and profit > self.start_price * self.config.stop_up_p:
+            self.stop(True)
+            # print('Stop by quit_up_percent')
+            return True
+
+        if self.config.stop_down_p and profit < -self.start_price * self.config.stop_down_p:
+            self.stop(True)
+            # print('Stop by quit_down_percent')
+            return True
+
+        return False
+
+    def stop(self, to_zero=False):
         if self.state == self.STATE_FINISHED:
             return
 
@@ -431,13 +452,13 @@ class ScalpingBot:
         self.cancel_active_orders()
 
         # если в конце дня надо вернуться в 0 лотов на балансе
-        if self.config.maj_to_zero:
+        if self.config.maj_to_zero or to_zero:
             need_operations = self.get_current_count()
 
-            # продать откупленные инструменты - ухудшает результаты
-            # if need_operations > 0:
-            #     for _ in range(need_operations):
-            #         self.sell()
+            # продать откупленные инструменты
+            if to_zero and need_operations > 0:
+                for _ in range(need_operations):
+                    self.sell()
 
             # и откупить перепроданные
             if need_operations < 0:
@@ -448,16 +469,25 @@ class ScalpingBot:
         if not current_price:
             self.logger.error("Нулевая цена, статистика НЕ будет верной")
 
-        change = (
-                - self.start_price * self.start_count
-                + self.accounting.sum
-                + current_price * self.get_current_count()
-        )
+        profit = self.get_current_profit(current_price)
 
         max_start_total = self.start_price * self.config.max_shares
         if max_start_total:
-            self.log(f"Итог {round(change, 2)} {self.client.currency} "
-                     f"({round(100 * change / max_start_total, 2)}%)")
+            self.log(f"Итог {round(profit, 2)} {self.client.currency} "
+                     f"({round(100 * profit / max_start_total, 2)}%)")
+
+    def get_current_profit(self, current_price=None) -> float:
+        if current_price is None:
+            current_price = self.cached_current_price
+
+        if not current_price:
+            return 0
+
+        return self.client.round(
+            - self.start_price * self.start_count
+            + self.accounting.sum
+            + current_price * self.get_current_count()
+        )
 
 
 if __name__ == '__main__':
