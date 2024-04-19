@@ -23,15 +23,15 @@ class AbstractAccountingHelper(ABC):
         if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
             self.last_buy_price = price
             price = -price
-            self.num += 1
+            self.num += order.lots_executed
         else:
             self.last_sell_price = price
-            self.num -= 1
+            self.num -= order.lots_executed
 
-        commission = self.client.quotation_to_float(order.executed_commission, 2)
+        commission = self.client.quotation_to_float(order.executed_commission)
         # хак. иногда итоговая комиссия не проставляется в нужное поле
         if commission == 0:
-            commission = self.client.quotation_to_float(order.initial_commission, 2)
+            commission = self.client.quotation_to_float(order.initial_commission)
 
         total = round(price - commission, 2)
 
@@ -39,8 +39,9 @@ class AbstractAccountingHelper(ABC):
 
         self.add_deal(
             order.direction,
-            price,
-            commission,
+            self.client.round(price / order.lots_executed),
+            order.lots_executed,
+            self.client.round(commission / order.lots_executed),
             total
         )
 
@@ -51,7 +52,7 @@ class AbstractAccountingHelper(ABC):
         pass
 
     @abstractmethod
-    def add_deal(self, deal_type, price, commission, total):
+    def add_deal(self, deal_type, price, count, commission, total):
         pass
 
     @abstractmethod
@@ -71,16 +72,16 @@ class AccountingHelper(AbstractAccountingHelper):
         self.db_alg_name = f"{file_name}"
         self.db_file_name = 'db/trading_bot.db'
 
-    def add_deal(self, deal_type, price, commission, total):
+    def add_deal(self, deal_type, price, count, commission, total):
         my_timezone = pytz.timezone('Europe/Moscow')
         datetime_with_tz = datetime.now(my_timezone).strftime('%Y-%m-%d %H:%M:%S %z')
 
         conn = sqlite3.connect(self.db_file_name)
         cursor = conn.cursor()
         cursor.execute('''
-        INSERT INTO deals (algorithm_name, type, instrument, datetime, price, commission, total)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (self.db_alg_name, deal_type, self.client.ticker, datetime_with_tz, price, commission, total))
+        INSERT INTO deals (algorithm_name, type, instrument, datetime, price, count, commission, total)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (self.db_alg_name, deal_type, self.client.ticker, datetime_with_tz, price, count, commission, total))
         conn.commit()
         conn.close()
 

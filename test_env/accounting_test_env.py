@@ -19,13 +19,14 @@ class AccountingTestEnvHelper(AbstractAccountingHelper):
         self.deals = []
         self.orders = []
 
-    def add_deal(self, deal_type, price, commission, total):
+    def add_deal(self, deal_type, price, count, commission, total):
         self.deals.append(DealDTO(
             None,
             self.client.time.now(),
             deal_type,
             'test_alg',
             price,
+            count,
             commission,
             total
         ))
@@ -37,12 +38,13 @@ class AccountingTestEnvHelper(AbstractAccountingHelper):
         return self.orders
 
     def add_order(self, order: PostOrderResponse):
+        cnt = order.lots_requested
         if order.order_type == OrderType.ORDER_TYPE_MARKET:
             price = self.client.get_current_price()
             type_ = OrderHelper.OPEN_BUY_MARKET if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
                 else OrderHelper.OPEN_SELL_MARKET
         else:
-            price = abs(self.client.quotation_to_float(order.initial_order_price))
+            price = abs(self.client.round(self.client.quotation_to_float(order.initial_order_price) / cnt))
             type_ = OrderHelper.OPEN_BUY_LIMIT if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
                 else OrderHelper.OPEN_SELL_LIMIT
 
@@ -50,17 +52,20 @@ class AccountingTestEnvHelper(AbstractAccountingHelper):
             self.client.time.now(),
             type_,
             price,
+            cnt,
             'test_alg'
         ))
 
     def del_order(self, order: PostOrderResponse):
+        cnt = order.lots_requested
         type_ = OrderHelper.CANCEL_BUY_LIMIT if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
             else OrderHelper.CANCEL_SELL_LIMIT
 
         self.orders.append(OrderDTO(
             self.client.time.now(),
             type_,
-            self.client.quotation_to_float(order.initial_order_price),
+            self.client.round(self.client.quotation_to_float(order.initial_order_price) / cnt),
+            cnt,
             'test_alg'
         ))
 

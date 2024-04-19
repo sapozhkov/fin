@@ -85,10 +85,12 @@ class ClientTestEnvHelper(AbstractProxyClient):
                 order_id=self.get_new_order_id(),
                 order_type=order_type,
                 direction=direction,
-                initial_order_price=self.float_to_money_value(self.current_price),
-                executed_order_price=self.float_to_money_value(self.current_price),
-                initial_commission=self.float_to_money_value(self.current_price * self.commission),
-                executed_commission=self.float_to_money_value(self.current_price * self.commission),
+                lots_requested=lots,
+                lots_executed=lots,
+                initial_order_price=self.float_to_money_value(lots * self.current_price),
+                executed_order_price=self.float_to_money_value(lots * self.current_price),
+                initial_commission=self.float_to_money_value(lots * self.current_price * self.commission),
+                executed_commission=self.float_to_money_value(lots * self.current_price * self.commission),
             )
 
         # иначе лимитная заявка
@@ -98,9 +100,11 @@ class ClientTestEnvHelper(AbstractProxyClient):
                 order_id=self.get_new_order_id(),
                 order_type=order_type,
                 direction=direction,
-                initial_order_price=self.float_to_money_value(price),
+                lots_requested=lots,
+                lots_executed=0,
+                initial_order_price=self.float_to_money_value(lots * price),
                 executed_order_price=self.float_to_money_value(0),
-                initial_commission=self.float_to_money_value(price * self.commission),
+                initial_commission=self.float_to_money_value(lots * price * self.commission),
                 executed_commission=self.float_to_money_value(0),
             )
 
@@ -268,6 +272,8 @@ class ClientTestEnvHelper(AbstractProxyClient):
             order_id=order.order_id,
             order_type=order.order_type,
             direction=order.direction,
+            lots_requested=order.lots_requested,
+            lots_executed=order.lots_requested if is_executed else 0,
             initial_order_price=order.initial_order_price,
             executed_order_price=order.initial_order_price if is_executed else price_0,
             initial_commission=order.initial_commission,

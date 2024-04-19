@@ -22,8 +22,8 @@ config_list = [
     ConfigDTO(
     ),
     # ConfigDTO(
-    #     max_shares=5,
-    #     base_shares=None,
+    #     step_max_cnt=5,
+    #     step_base_cnt=None,
     #     step_size=1.2,
     # ),
 ]

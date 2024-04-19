@@ -32,6 +32,7 @@ class HistoricalTrade:
             instrument TEXT NOT NULL,
             datetime DATETIME DEFAULT CURRENT_TIMESTAMP,
             price REAL NOT NULL,
+            count INTEGER NOT NULL,
             commission REAL NOT NULL,
             total REAL NOT NULL
         )
@@ -55,13 +56,13 @@ class HistoricalTrade:
 
         conn.close()
 
-    def add_deal(self, algorithm_name, type_, instrument, price, commission, total):
+    def add_deal(self, algorithm_name, type_, instrument, price, count, commission, total):
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
         cursor.execute('''
-        INSERT INTO deals (algorithm_name, type, instrument, price, commission, total)
-        VALUES (?, ?, ?, ?, ?, ?)
-        ''', (algorithm_name, type_, instrument, price, commission, total))
+        INSERT INTO deals (algorithm_name, type, instrument, price, count, commission, total)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (algorithm_name, type_, instrument, price, count, commission, total))
         conn.commit()
         conn.close()
 
@@ -191,7 +192,7 @@ class HistoricalTrade:
 
         # Выполняем запрос к базе данных
         cursor.execute("""
-            SELECT id, datetime, type, algorithm_name, price, commission, total
+            SELECT id, datetime, type, algorithm_name, price, count, commission, total
             FROM deals
             WHERE datetime LIKE ? AND algorithm_name = ?
             ORDER BY datetime
@@ -201,6 +202,6 @@ class HistoricalTrade:
         conn.close()
 
         # Преобразование результатов запроса в список объектов DealDTO
-        deals = [DealDTO(row[0], row[1], row[2], row[3], row[4], row[5], row[6]) for row in rows]
+        deals = [DealDTO(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]) for row in rows]
 
         return deals

@@ -4,14 +4,12 @@ class ConfigDTO:
             start_time='07:00',  # 10:00
             end_time='15:29',  # 18:29
 
-            stop_up_p=.1,
-            stop_down_p=.1,
+            stop_up_p=0,
+            stop_down_p=0,
 
             sleep_trading=1 * 60,
             sleep_no_trade=1 * 60,
 
-            max_shares=5,
-            base_shares=5,
             pretest_period=13,
 
             majority_trade=True,
@@ -20,23 +18,29 @@ class ConfigDTO:
             threshold_buy_steps=6,
             threshold_sell_steps=0,  # вот тут 0 - это важно. эффективность сильно выше. не даем заднюю
 
+            step_max_cnt=5,
+            step_base_cnt=5,
             step_size=1.4,
-            step_cnt=5,
+            step_set_orders_cnt=5,
+            step_lots=1,
 
             use_shares=None,
     ):
         self.start_time = start_time
         self.end_time = end_time
 
-        self.max_shares = int(max_shares)
-        self.base_shares = int(base_shares) if base_shares is not None else None
+        self.step_max_cnt = int(step_max_cnt)
+        self.step_base_cnt = int(step_base_cnt) if step_base_cnt is not None else None
+
+        self.step_size = float(step_size)
+        self.step_set_orders_cnt = int(step_set_orders_cnt)
+        self.step_lots = int(step_lots)
+
         self.pretest_period = int(pretest_period)
         self.majority_trade = bool(majority_trade)
         self.maj_to_zero = bool(maj_to_zero)
         self.threshold_buy_steps = int(threshold_buy_steps)
         self.threshold_sell_steps = int(threshold_sell_steps)
-        self.step_size = float(step_size)
-        self.step_cnt = int(step_cnt)
 
         # проценты остановки алгоритма при достижении роста и падения
         self.stop_up_p = float(stop_up_p)
@@ -49,22 +53,23 @@ class ConfigDTO:
         self.use_shares = int(use_shares) if use_shares is not None and use_shares != '' else None
 
         # предустановленные значения
-        if self.base_shares is None:
-            self.base_shares = round(self.max_shares / 2)
+        if self.step_base_cnt is None:
+            self.step_base_cnt = round(self.step_max_cnt / 2)
 
         # корректировки параметров
-        if self.base_shares > self.max_shares:
-            self.base_shares = self.max_shares
+        if self.step_base_cnt > self.step_max_cnt:
+            self.step_base_cnt = self.step_max_cnt
 
-        if self.threshold_buy_steps and self.threshold_buy_steps <= self.step_cnt:
-            self.threshold_buy_steps = self.step_cnt + 1
+        if self.threshold_buy_steps and self.threshold_buy_steps <= self.step_set_orders_cnt:
+            self.threshold_buy_steps = self.step_set_orders_cnt + 1
 
-        if self.threshold_sell_steps and self.threshold_sell_steps <= self.step_cnt:
-            self.threshold_sell_steps = self.step_cnt + 1
+        if self.threshold_sell_steps and self.threshold_sell_steps <= self.step_set_orders_cnt:
+            self.threshold_sell_steps = self.step_set_orders_cnt + 1
 
     def __repr__(self):
-        base = f"pre{self.pretest_period}" if self.pretest_period else f"{self.base_shares}"
-        return (f"{self.max_shares}/{base}({self.step_cnt}) x {self.step_size} rub, "
+        base = f"pre{self.pretest_period}" if self.pretest_period else f"{self.step_base_cnt}"
+        lots = f"x l{self.step_lots} " if self.step_lots else ''
+        return (f"{self.step_max_cnt}/{base}({self.step_set_orders_cnt}) {lots}x {self.step_size} ¤, "
                 f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| "
                 f"|u{self.stop_up_p} d{self.stop_down_p}| "
                 f"maj{'+' if self.majority_trade else '-'}z{'+' if self.maj_to_zero else '-'} "
@@ -100,31 +105,33 @@ class ConfigDTO:
         if not isinstance(other, ConfigDTO):
             return NotImplemented
         return (
-            self.start_time == other.start_time and
-            self.end_time == other.end_time and
-            self.sleep_trading == other.sleep_trading and
-            self.sleep_no_trade == other.sleep_no_trade and
-            self.max_shares == other.max_shares and
-            self.base_shares == other.base_shares and
-            self.pretest_period == other.pretest_period and
-            self.majority_trade == other.majority_trade and
-            self.maj_to_zero == other.maj_to_zero and
-            self.threshold_buy_steps == other.threshold_buy_steps and
-            self.stop_up_p == other.stop_up_p and
-            self.stop_down_p == other.stop_down_p and
-            self.threshold_sell_steps == other.threshold_sell_steps and
-            self.step_size == other.step_size and
-            self.step_cnt == other.step_cnt and
-            self.use_shares == other.use_shares
+                self.start_time == other.start_time and
+                self.end_time == other.end_time and
+                self.sleep_trading == other.sleep_trading and
+                self.sleep_no_trade == other.sleep_no_trade and
+                self.step_max_cnt == other.step_max_cnt and
+                self.step_base_cnt == other.step_base_cnt and
+                self.pretest_period == other.pretest_period and
+                self.majority_trade == other.majority_trade and
+                self.maj_to_zero == other.maj_to_zero and
+                self.threshold_buy_steps == other.threshold_buy_steps and
+                self.stop_up_p == other.stop_up_p and
+                self.stop_down_p == other.stop_down_p and
+                self.threshold_sell_steps == other.threshold_sell_steps and
+                self.step_size == other.step_size and
+                self.step_set_orders_cnt == other.step_set_orders_cnt and
+                self.step_lots == other.step_lots and
+                self.use_shares == other.use_shares
         )
 
     def __hash__(self):
         return hash((
             self.start_time, self.end_time,
             self.sleep_trading, self.sleep_no_trade,
-            self.max_shares, self.base_shares, self.pretest_period,
+            self.step_max_cnt, self.step_base_cnt, self.pretest_period,
             self.majority_trade, self.maj_to_zero,
             self.threshold_buy_steps, self.threshold_sell_steps,
             self.stop_up_p, self.stop_down_p,
-            self.step_size, self.step_cnt, self.use_shares
+            self.step_size, self.step_set_orders_cnt, self.step_lots,
+            self.use_shares
         ))

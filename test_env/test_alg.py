@@ -139,7 +139,9 @@ class TestAlgorithm:
                 for order_id, order in self.client_helper.orders.items():
                     if order_id in self.client_helper.executed_orders_ids:
                         continue
-                    price = self.client_helper.quotation_to_float(order.initial_order_price)
+                    price = self.client_helper.round(
+                        self.client_helper.quotation_to_float(order.initial_order_price) / order.lots_requested
+                    )
                     if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
                         low_buy_price = self.client_helper.quotation_to_float(candle.low)
                         order_executed = price >= low_buy_price
@@ -207,10 +209,11 @@ class TestAlgorithm:
         total_maj_commission += maj_commission
         profit += maj_commission
 
-        profit_p = round(profit / (start_price_t * config.max_shares), 2) if start_price_t and config.max_shares else 0
+        profit_p = round(profit / (start_price_t * config.step_max_cnt * config.step_lots), 2) \
+            if start_price_t and config.step_max_cnt else 0
 
         # это для обычной торговли. купил в начале, в конце продал
-        potential_profit = round((end_price_t - start_price_t) * config.max_shares, 2)
+        potential_profit = round((end_price_t - start_price_t) * config.step_max_cnt * config.step_lots, 2)
         # сколько от обычной торговли в процентах ты сделал
         potential_profit_p = round(profit / potential_profit, 2) if potential_profit > 0 else 0
 
@@ -237,12 +240,12 @@ class TestAlgorithm:
             # # 'quit_on_balance_up_percent': quit_on_balance_up_percent,
             # # 'quit_on_balance_down_percent': quit_on_balance_down_percent,
             #
-            # 'max_shares': config.max_shares,
-            # 'base_shares': config.base_shares,
+            # 'step_max_cnt': config.step_max_cnt,
+            # 'step_base_cnt': config.step_base_cnt,
             # 'threshold_buy_steps': config.threshold_buy_steps,
             # 'threshold_sell_steps': config.threshold_sell_steps,
             # 'step_size': config.step_size,
-            # 'step_cnt': config.step_cnt,
+            # 'step_set_orders_cnt': config.step_set_orders_cnt,
             #
             # 'operations_cnt': operations_cnt,
             # 'operations_avg': round(sum(operations_cnt_list) / test_days_num, 2),
