@@ -62,6 +62,15 @@ class AbstractAccountingHelper(ABC):
     def reset(self):
         self.sum = 0
 
+    def get_num(self):
+        return self.num
+
+    def set_num(self, num):
+        self.num = num
+
+    def get_sum(self):
+        return self.sum
+
 
 class AccountingHelper(AbstractAccountingHelper):
     def __init__(self, file, client):

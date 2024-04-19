@@ -52,7 +52,7 @@ class TestAlgorithm:
 
         days_list = self.data_handler.get_days_list(last_test_date, test_days_num)
 
-        self.accounting_helper.num = shares_count
+        self.accounting_helper.set_num(shares_count)
 
         # для расчета прибыли за весь период. купил в начале, в конце продал
         started_t = False
@@ -90,10 +90,10 @@ class TestAlgorithm:
                 accounting_helper=self.accounting_helper,
             )
 
-            if self.accounting_helper.num < 0:
-                maj_commission += self.client_helper.get_current_price() * self.accounting_helper.num * 0.0012
+            if self.accounting_helper.get_num() < 0:
+                maj_commission += self.client_helper.get_current_price() * self.accounting_helper.get_num() * 0.0012
                 # print(f"{test_date} - maj_commission {round(maj_commission, 2)} = "
-                #       f"{self.client_helper.get_current_price()} * {self.accounting_helper.num} * {0.0012}")
+                #       f"{self.client_helper.get_current_price()} * {self.accounting_helper.get_num()} * {0.0012}")
 
             if bot.state == bot.STATE_FINISHED:
                 # print(f"{test_date} - skip, finished status on start")
@@ -130,7 +130,7 @@ class TestAlgorithm:
                 if not started:
                     started = True
                     start_price = self.client_helper.get_current_price()
-                    start_cnt = self.accounting_helper.num
+                    start_cnt = self.accounting_helper.get_num()
 
                     if not started_t:
                         started_t = True
@@ -167,11 +167,11 @@ class TestAlgorithm:
             operations_cnt_list.append(operations)
 
             end_price = self.client_helper.get_current_price()
-            end_cnt = self.accounting_helper.num
+            end_cnt = self.accounting_helper.get_instrument_count()
 
             balance_change = (
                     - start_price * start_cnt
-                    + self.accounting_helper.sum
+                    + self.accounting_helper.get_sum()
                     + end_price * end_cnt
                     + maj_commission
             )

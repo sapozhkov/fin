@@ -41,12 +41,12 @@ class ScalpingBot:
         self.client = client_helper or TinkoffProxyClient(token, ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
-        self.accounting.num = min(
+        self.accounting.set_num(min(
             self.accounting.get_instrument_count(),
             self.config.step_max_cnt * self.config.step_lots
-        )
+        ))
         if self.config.use_shares is not None:
-            self.accounting.num = min(self.accounting.num, self.config.use_shares)
+            self.accounting.set_num(min(self.accounting.get_num(), self.config.use_shares))
 
         # внутренние переменные
         self.state = self.STATE_NEW
@@ -263,7 +263,7 @@ class ScalpingBot:
 
     # общее количество акций в портфеле
     def get_current_count(self) -> int:
-        return self.accounting.num
+        return self.accounting.get_num()
 
     # количество полных наборов лотов в портфеле
     def get_current_step_count(self) -> int:
@@ -519,7 +519,7 @@ class ScalpingBot:
 
         return self.round(
             - self.start_price * self.start_count
-            + self.accounting.sum
+            + self.accounting.get_sum()
             + current_price * self.get_current_count()
         )
 
