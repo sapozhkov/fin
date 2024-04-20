@@ -361,7 +361,7 @@ class ScalpingBot:
             if order_state.lots_executed != 0:
                 self.logger.error(f"!!!!!!!!!--------- сработала не полная продажа {order}")
                 # зарегистрировать частичное исполнение
-                self.accounting.add_deal_by_order(order)
+                self.accounting.add_deal_by_order(order_state)
                 # и откатить его
                 if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY:
                     self.sell(order_state.lots_executed)
