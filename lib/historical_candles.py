@@ -138,7 +138,7 @@ class HistoricalCandles:
                 if candles.candles:
                     for candle in candles.candles:
                         cursor.execute('''
-                        INSERT INTO candles (date, open, high, low, close, volume)
+                        INSERT OR IGNORE INTO candles (date, open, high, low, close, volume)
                         VALUES (?, ?, ?, ?, ?, ?)
                         ''', (
                             candle.time,
@@ -153,7 +153,7 @@ class HistoricalCandles:
                 else:
                     # Сохранение записи-признака отсутствия данных
                     cursor.execute('''
-                    INSERT INTO candles (date, open, high, low, close, volume)
+                    INSERT OR IGNORE INTO candles (date, open, high, low, close, volume)
                     VALUES (?, 0, 0, 0, 0, 0)
                     ''', (date + " 00:00",))
                     conn.commit()
