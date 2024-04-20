@@ -6,6 +6,7 @@ from pathlib import Path
 import pytz
 from tinkoff.invest import OrderDirection, PostOrderResponse
 
+from lib.historical_trade import HistoricalTrade
 from prod_env.tinkoff_client import AbstractProxyClient
 
 
@@ -79,20 +80,22 @@ class AccountingHelper(AbstractAccountingHelper):
         file_name = file_path.name.replace('.py', '')
 
         self.db_alg_name = f"{file_name}"
-        self.db_file_name = 'db/trading_bot.db'
+        self.historical_trade = HistoricalTrade()
 
     def add_deal(self, deal_type, price, count, commission, total):
         my_timezone = pytz.timezone('Europe/Moscow')
         datetime_with_tz = datetime.now(my_timezone).strftime('%Y-%m-%d %H:%M:%S %z')
 
-        conn = sqlite3.connect(self.db_file_name)
-        cursor = conn.cursor()
-        cursor.execute('''
-        INSERT INTO deals (algorithm_name, type, instrument, datetime, price, count, commission, total)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (self.db_alg_name, deal_type, self.client.ticker, datetime_with_tz, price, count, commission, total))
-        conn.commit()
-        conn.close()
+        self.historical_trade.add_deal(
+            self.db_alg_name,
+            deal_type,
+            self.client.ticker,
+            datetime_with_tz,
+            price,
+            count,
+            commission,
+            total
+        )
 
     def get_instrument_count(self):
         return self.client.get_instruments_count()

@@ -56,13 +56,13 @@ class HistoricalTrade:
 
         conn.close()
 
-    def add_deal(self, algorithm_name, type_, instrument, price, count, commission, total):
+    def add_deal(self, algorithm_name, type_, instrument, datetime_, price, count, commission, total):
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
         cursor.execute('''
-        INSERT INTO deals (algorithm_name, type, instrument, price, count, commission, total)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (algorithm_name, type_, instrument, price, count, commission, total))
+        INSERT INTO deals (algorithm_name, type, instrument, datetime, price, count, commission, total)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (algorithm_name, type_, instrument, datetime_, price, count, commission, total))
         conn.commit()
         conn.close()
 
