@@ -103,7 +103,7 @@ class ConfigDTO:
 
     def __eq__(self, other):
         if not isinstance(other, ConfigDTO):
-            return NotImplemented
+            raise TypeError
         return (
                 self.start_time == other.start_time and
                 self.end_time == other.end_time and

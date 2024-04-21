@@ -1,3 +1,4 @@
+import inspect
 import unittest
 
 from dto.config_dto import ConfigDTO
@@ -47,11 +48,84 @@ class MyTestCase(unittest.TestCase):
         for c in config_list:
             self.assertEqual(c, ConfigDTO.from_string(c.to_string()))
 
+    # падение с ошибкой при наличии левых параметров.
+    # пусть сразу завалится и высветит, чем будет работать не пойми как
+    def test_additional_string_parameters(self):
+        with self.assertRaises(TypeError):
+            config = ConfigDTO(
+                stop_up_p=.2,
+                stop_down_p=.34,
+            )
+
+            to_string = config.to_string()
+            ConfigDTO.from_string(to_string + ',qwe=321,a=,de=123')
+
+    def test_param_modify(self):
+
+        config_normal = ConfigDTO(
+            step_max_cnt=5,
+            step_base_cnt=2,
+        )
+        config_none = ConfigDTO(
+            step_max_cnt=5,
+            step_base_cnt=None,
+        )
+
+        self.assertEqual(config_normal, config_none)
+        self.assertEqual(str(config_normal), str(config_none))
+
+        config_max = ConfigDTO(
+            step_max_cnt=5,
+            step_base_cnt=7,
+            step_set_orders_cnt=5,
+            threshold_buy_steps=5,
+            threshold_sell_steps=5,
+
+        )
+        config_over = ConfigDTO(
+            step_max_cnt=5,
+            step_base_cnt=5,
+            step_set_orders_cnt=5,
+            threshold_buy_steps=2,
+            threshold_sell_steps=2,
+        )
+
+        self.assertEqual(config_max, config_over)
+
     def test_failing(self):
         with self.assertRaises(ValueError):
             ConfigDTO(
                 step_max_cnt='hello'
             )
+
+    def test_qe_fail(self):
+        with self.assertRaises(TypeError):
+            c = ConfigDTO()
+            a = []
+            return c == a
+
+    def test_hash(self):
+        configs = [
+            ConfigDTO(step_max_cnt=3),
+            ConfigDTO(step_max_cnt=2),
+            ConfigDTO(step_max_cnt=3),
+        ]
+        unique_configs = set(configs)
+        self.assertEqual(len(unique_configs), 2)
+
+    def test_eq_method_uses_all_fields(self):
+        method_code = ConfigDTO.__eq__.__code__
+        fields = vars(ConfigDTO())
+        for field in fields:
+            self.assertIn(field, method_code.co_names,
+                          f"Field '{field}' is not used in __eq__ method")
+
+    def test_hash_method_uses_all_fields(self):
+        method_code = ConfigDTO.__hash__.__code__
+        fields = vars(ConfigDTO())
+        for field in fields:
+            self.assertIn(field, method_code.co_names,
+                          f"Field '{field}' is not used in __hash__ method")
 
 
 if __name__ == '__main__':
