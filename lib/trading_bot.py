@@ -1,12 +1,7 @@
 import math
-import os
-import sys
-import traceback
 from datetime import time as datetime_time
-from signal import *
 
 import pandas as pd
-from dotenv import load_dotenv
 from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, OrderState, PostOrderResponse
 
 from dto.config_dto import ConfigDTO
@@ -15,13 +10,8 @@ from prod_env.logger_helper import LoggerHelper, AbstractLoggerHelper
 from prod_env.time_helper import TimeHelper, AbstractTimeHelper
 from prod_env.tinkoff_client import TinkoffProxyClient, AbstractProxyClient
 
-load_dotenv()
 
-TOKEN = os.getenv("INVEST_TOKEN")
-TICKER = 'RNFT'
-
-
-class ScalpingBot:
+class TradingBot:
     STATE_NEW = 1
     STATE_WORKING = 2
     STATE_FINISHED = 3
@@ -522,30 +512,3 @@ class ScalpingBot:
             + self.accounting.get_sum()
             + current_price * self.get_current_count()
         )
-
-
-if __name__ == '__main__':
-    if len(sys.argv) == 1:
-        config_dto = ConfigDTO(
-        )
-    else:
-        config_dto = ConfigDTO.from_string(sys.argv[1])
-
-    bot = ScalpingBot(TOKEN, TICKER, config_dto)
-
-    if len(sys.argv) > 1:
-        bot.log(f"Config string: {sys.argv[1]}")
-
-    def clean(*_args):
-        bot.stop()
-        sys.exit(0)
-
-    for sig in (SIGABRT, SIGILL, SIGINT, SIGSEGV, SIGTERM):
-        signal(sig, clean)
-
-    try:
-        bot.run()
-    except Exception as e:
-        traceback_str = ''.join(traceback.format_exception(None, e, e.__traceback__))
-        bot.logger.error(f"Не перехваченное исключение: {e}\nТрассировка: \n{traceback_str}")
-        bot.stop()

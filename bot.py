@@ -1,0 +1,51 @@
+import os
+import sys
+import traceback
+from signal import *
+
+from dotenv import load_dotenv
+
+from dto.config_dto import ConfigDTO
+from lib.trading_bot import TradingBot
+
+load_dotenv()
+
+TOKEN = os.getenv("INVEST_TOKEN")
+TICKER = 'RNFT'
+
+if __name__ == '__main__':
+    if len(sys.argv) == 1:
+        config_dto = ConfigDTO(
+            step_max_cnt=5,
+            pretest_period=13,
+            step_set_orders_cnt=3,
+            step_size=1.2,
+            step_lots=2,
+
+            threshold_sell_steps=0,
+            threshold_buy_steps=6,
+
+            stop_up_p=.05,
+            stop_down_p=.15,
+        )
+    else:
+        config_dto = ConfigDTO.from_string(sys.argv[1])
+
+    bot = TradingBot(TOKEN, TICKER, config_dto)
+
+    if len(sys.argv) > 1:
+        bot.log(f"Config string: {sys.argv[1]}")
+
+    def clean(*_args):
+        bot.stop()
+        sys.exit(0)
+
+    for sig in (SIGABRT, SIGILL, SIGINT, SIGSEGV, SIGTERM):
+        signal(sig, clean)
+
+    try:
+        bot.run()
+    except Exception as e:
+        traceback_str = ''.join(traceback.format_exception(None, e, e.__traceback__))
+        bot.logger.error(f"Не перехваченное исключение: {e}\nТрассировка: \n{traceback_str}")
+        bot.stop()

@@ -4,12 +4,12 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 from tinkoff.invest import OrderDirection, Client, CandleInterval
 
+from lib.trading_bot import TradingBot
 from test_env.client_test_env import ClientTestEnvHelper
 from test_env.logger_test_env import LoggerTestEnvHelper
 from test_env.time_test_env import TimeTestEnvHelper
 from test_env.accounting_test_env import AccountingTestEnvHelper
 
-from trader_bot import ScalpingBot
 from dto.config_dto import ConfigDTO
 from lib.historical_candles import HistoricalCandles
 
@@ -79,7 +79,7 @@ class TestAlgorithm:
             self.time_helper.set_current_time(date_from)
 
             # создаем бота с настройками
-            bot = ScalpingBot(
+            bot = TradingBot(
                 self.token,
                 self.ticker,
 
