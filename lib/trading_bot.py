@@ -1,10 +1,12 @@
 import math
 from datetime import time as datetime_time
+from typing import Tuple
 
 import pandas as pd
 from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, OrderState, PostOrderResponse
 
 from dto.config_dto import ConfigDTO
+from lib.order_helper import OrderHelper
 from prod_env.accounting_helper import AbstractAccountingHelper, AccountingHelper
 from prod_env.logger_helper import LoggerHelper, AbstractLoggerHelper
 from prod_env.time_helper import TimeHelper, AbstractTimeHelper
@@ -23,6 +25,7 @@ class TradingBot:
             logger_helper: AbstractLoggerHelper | None = None,
             client_helper: AbstractProxyClient | None = None,
             accounting_helper: AbstractAccountingHelper | None = None,
+            order_helper: OrderHelper | None = None
     ):
         # хелперы
         self.config = config or ConfigDTO()
@@ -30,6 +33,7 @@ class TradingBot:
         self.logger = logger_helper or LoggerHelper(__name__)
         self.client = client_helper or TinkoffProxyClient(token, ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
+        self.order_helper = order_helper or OrderHelper(self.client)
 
         self.accounting.set_num(min(
             self.accounting.get_instrument_count(),
@@ -54,6 +58,7 @@ class TradingBot:
                  f"     figi - {self.client.figi} ({self.client.ticker})\n"
                  f"     config - {self.config}\n"
                  f"     cur_used_cnt - {self.get_current_count()}\n"
+                 f"     max_port - {self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots)}\n"
                  )
 
     def pretest_and_modify_config(self):
@@ -103,7 +108,7 @@ class TradingBot:
     def round(self, price) -> float:
         return self.client.round(price)
 
-    def can_trade(self) -> (bool, int):
+    def can_trade(self) -> Tuple[bool, int]:
         """
         Проверяет доступна ли торговля.
         Отдает статус "можно торговать" и количество секунд для задержки, если нет
@@ -148,10 +153,10 @@ class TradingBot:
             return None
 
         self.accounting.add_order(order)
+        price = self.order_helper.get_avg_price(order)
 
         if order_type == OrderType.ORDER_TYPE_MARKET:
             self.accounting.add_deal_by_order(order)
-            price = self.client.quotation_to_float(order.executed_order_price)
             if direction == OrderDirection.ORDER_DIRECTION_BUY:
                 prefix = "BUY MARKET executed"
                 price = -price
@@ -159,7 +164,6 @@ class TradingBot:
                 prefix = "SELL MARKET executed"
 
         else:
-            price = self.client.quotation_to_float(order.initial_order_price)
             if direction == OrderDirection.ORDER_DIRECTION_BUY:
                 self.active_buy_orders[order.order_id] = order
                 prefix = "Buy order set"
@@ -191,14 +195,13 @@ class TradingBot:
         return rounded_quotation_price == rounded_float_price
 
     def set_sell_order_by_buy_order(self, order: OrderState):
-        lots = order.lots_executed
-        price = self.round(self.client.quotation_to_float(order.executed_order_price) / lots)
+        price = self.order_helper.get_avg_price(order)
         price += self.config.step_size
         self.sell_limit(price, self.config.step_lots)
 
     def apply_order_execution(self, order: OrderState):
-        lots = order.lots_executed
-        avg_price = self.round(self.client.quotation_to_float(order.executed_order_price) / lots)
+        lots = self.order_helper.get_lots(order)
+        avg_price = self.order_helper.get_avg_price(order)
         type_text = 'BUY' if order.direction == OrderDirection.ORDER_DIRECTION_BUY else 'SELL'
         self.accounting.add_deal_by_order(order)
         self.log(f"{type_text} order executed, {lots} x {avg_price} {self.get_cur_count_for_log()}")
@@ -264,11 +267,11 @@ class TradingBot:
         return self.get_current_count() % self.config.step_lots
 
     def get_existing_buy_order_prices(self) -> list[float]:
-        return [self.round(self.client.quotation_to_float(order.initial_order_price) / order.lots_requested)
+        return [self.order_helper.get_avg_price(order)
                 for order_id, order in self.active_buy_orders.items()]
 
     def get_existing_sell_order_prices(self) -> list[float]:
-        return [self.round(self.client.quotation_to_float(order.initial_order_price) / order.lots_requested)
+        return [self.order_helper.get_avg_price(order)
                 for order_id, order in self.active_sell_orders.items()]
 
     def place_buy_orders(self):
@@ -348,20 +351,21 @@ class TradingBot:
         # запрашиваем статус и если есть исполненные позиции - делаем обратную операцию
         _, order_state = self.client.order_is_executed(order)
         if order_state:
-            if order_state.lots_executed != 0:
+            lots_executed = order_state.lots_executed
+            if lots_executed != 0:
                 self.logger.error(f"!!!!!!!!!--------- сработала не полная продажа {order}")
                 # зарегистрировать частичное исполнение
                 self.accounting.add_deal_by_order(order_state)
                 # и откатить его
                 if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY:
-                    self.sell(order_state.lots_executed)
+                    self.sell(lots_executed)
                 else:
-                    self.buy(order_state.lots_executed)
+                    self.buy(lots_executed)
 
         if res:
-            lots = order.lots_requested
             prefix = "Buy" if order.direction == OrderDirection.ORDER_DIRECTION_BUY else "Sell"
-            avg_price = self.round(self.client.quotation_to_float(order.initial_order_price) / lots)
+            lots = self.order_helper.get_lots(order)
+            avg_price = self.order_helper.get_avg_price(order)
             self.log(f"{prefix} order canceled, {lots} x {avg_price} {self.get_cur_count_for_log()}")
 
     def cancel_orders_by_limits(self):
@@ -459,11 +463,18 @@ class TradingBot:
             return False
 
         profit = self.get_current_profit()
+        max_portfolio = self.start_price * self.config.step_max_cnt * self.config.step_lots
 
-        if self.config.stop_up_p and profit > self.start_price * self.config.stop_up_p:
+        need_profit = self.round(max_portfolio * self.config.stop_up_p)
+        if self.config.stop_up_p and profit > need_profit:
+            self.log(f"Останавливаем по получению нужного уровня прибыли. "
+                     f"profit={profit}, stop_up_p={self.config.stop_up_p}, need_profit={need_profit}")
             return True
 
-        if self.config.stop_down_p and profit < -self.start_price * self.config.stop_down_p:
+        need_loss = self.round(max_portfolio * self.config.stop_down_p)
+        if self.config.stop_down_p and profit < -need_loss:
+            self.log(f"Останавливаем по достижению критического уровня потерь. "
+                     f"profit={profit}, stop_up_p={self.config.stop_down_p}, need_loss=-{need_loss}")
             return True
 
         return False

@@ -7,42 +7,37 @@ import pytz
 from tinkoff.invest import OrderDirection, PostOrderResponse
 
 from lib.historical_trade import HistoricalTrade
+from lib.order_helper import OrderHelper
 from prod_env.tinkoff_client import AbstractProxyClient
 
 
 class AbstractAccountingHelper(ABC):
     def __init__(self, client):
-        self.last_buy_price = 0.0
-        self.last_sell_price = 0.0
         self.sum = 0
         self.num = 0
         self.client: AbstractProxyClient = client
+        self.order_helper = OrderHelper(self.client)
 
     def add_deal_by_order(self, order):
-        price = self.client.quotation_to_float(order.executed_order_price)
+        lots = self.order_helper.get_lots(order)
+        avg_price = self.order_helper.get_avg_price(order)
+        commission = self.order_helper.get_commission(order)
 
         if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
-            self.last_buy_price = price
-            price = -price
-            self.num += order.lots_executed
+            avg_price = -avg_price
+            self.num += lots
         else:
-            self.last_sell_price = price
-            self.num -= order.lots_executed
+            self.num -= lots
 
-        commission = self.client.quotation_to_float(order.executed_commission)
-        # хак. иногда итоговая комиссия не проставляется в нужное поле
-        if commission == 0:
-            commission = self.client.quotation_to_float(order.initial_commission)
-
-        total = round(price - commission, 2)
+        total = round(avg_price * lots - commission, 2)
 
         self.sum += total
 
         self.add_deal(
             order.direction,
-            self.client.round(price / order.lots_executed),
-            order.lots_executed,
-            self.client.round(commission / order.lots_executed),
+            avg_price,
+            lots,
+            self.client.round(commission / lots),
             total
         )
 

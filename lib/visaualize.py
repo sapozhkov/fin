@@ -6,7 +6,7 @@ from dto.deal_dto import DealDTO
 from dto.order_dto import OrderDTO
 from lib.historical_candles import HistoricalCandles
 from lib.historical_trade import HistoricalTrade
-from lib.order_helper import OrderHelper
+from lib.order_vis_helper import OrderVisHelper
 
 
 class Visualize:
@@ -52,7 +52,7 @@ class Visualize:
 
         labels_added = set()
         for order in orders:
-            label_title, color, marker = OrderHelper.get_plot_settings(order.type)
+            label_title, color, marker = OrderVisHelper.get_plot_settings(order.type)
 
             label = label_title if order.type not in labels_added else ""
             plt.scatter(order.datetime, abs(order.price), color=color, marker=marker, alpha=.5, s=50, label=label)

@@ -1,5 +1,6 @@
 from abc import abstractmethod, ABC
 from datetime import datetime, timezone, timedelta
+from typing import Tuple
 
 from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus, \
     CandleInterval, PostOrderResponse, MoneyValue, OrderState, OrderDirection
@@ -71,7 +72,7 @@ class AbstractProxyClient(ABC):
         pass
 
     @abstractmethod
-    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState | None):
+    def order_is_executed(self, order: PostOrderResponse) -> Tuple[bool, OrderState | None]:
         pass
 
     @abstractmethod
@@ -196,7 +197,7 @@ class TinkoffProxyClient(AbstractProxyClient):
     def get_day_candles(self, from_date, to_date) -> GetCandlesResponse:
         return self.get_candles(from_date, to_date, interval=CandleInterval.CANDLE_INTERVAL_DAY)
 
-    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState | None):
+    def order_is_executed(self, order: PostOrderResponse) -> Tuple[bool, OrderState | None]:
         with Client(self.token) as client:
             try:
                 order_state = client.orders.get_order_state(account_id=self.account_id, order_id=order.order_id)

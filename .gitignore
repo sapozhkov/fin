@@ -3,7 +3,6 @@
 .idea
 .ipynb_checkpoints
 *.ipynb
-test*
 db/
 log/
 archive/

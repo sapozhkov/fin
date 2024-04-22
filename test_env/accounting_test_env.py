@@ -4,7 +4,7 @@ from dto.deal_dto import DealDTO
 from prod_env.accounting_helper import AbstractAccountingHelper
 
 from dto.order_dto import OrderDTO
-from lib.order_helper import OrderHelper
+from lib.order_vis_helper import OrderVisHelper
 from test_env.client_test_env import ClientTestEnvHelper
 
 
@@ -38,34 +38,34 @@ class AccountingTestEnvHelper(AbstractAccountingHelper):
         return self.orders
 
     def add_order(self, order: PostOrderResponse):
-        cnt = order.lots_requested
+        lots = self.order_helper.get_lots(order)
+        avg_price = self.order_helper.get_avg_price(order)
         if order.order_type == OrderType.ORDER_TYPE_MARKET:
-            price = self.client.get_current_price()
-            type_ = OrderHelper.OPEN_BUY_MARKET if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
-                else OrderHelper.OPEN_SELL_MARKET
+            type_ = OrderVisHelper.OPEN_BUY_MARKET if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
+                else OrderVisHelper.OPEN_SELL_MARKET
         else:
-            price = abs(self.client.round(self.client.quotation_to_float(order.initial_order_price) / cnt))
-            type_ = OrderHelper.OPEN_BUY_LIMIT if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
-                else OrderHelper.OPEN_SELL_LIMIT
+            type_ = OrderVisHelper.OPEN_BUY_LIMIT if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
+                else OrderVisHelper.OPEN_SELL_LIMIT
 
         self.orders.append(OrderDTO(
             self.client.time.now(),
             type_,
-            price,
-            cnt,
+            avg_price,
+            lots,
             'test_alg'
         ))
 
     def del_order(self, order: PostOrderResponse):
-        cnt = order.lots_requested
-        type_ = OrderHelper.CANCEL_BUY_LIMIT if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
-            else OrderHelper.CANCEL_SELL_LIMIT
+        lots = self.order_helper.get_lots(order)
+        avg_price = self.order_helper.get_avg_price(order)
+        type_ = OrderVisHelper.CANCEL_BUY_LIMIT if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
+            else OrderVisHelper.CANCEL_SELL_LIMIT
 
         self.orders.append(OrderDTO(
             self.client.time.now(),
             type_,
-            self.client.round(self.client.quotation_to_float(order.initial_order_price) / cnt),
-            cnt,
+            avg_price,
+            lots,
             'test_alg'
         ))
 

@@ -1,4 +1,5 @@
 from datetime import time as datetime_time, datetime, timedelta
+from typing import Tuple
 
 from tinkoff.invest import OrderType, PostOrderResponse, OrderDirection, MoneyValue, HistoricCandle, \
     GetCandlesResponse, OrderState, OrderExecutionReportStatus
@@ -32,6 +33,9 @@ class ClientTestEnvHelper(AbstractProxyClient):
         self.orders: dict[str, PostOrderResponse] = {}
         self.executed_orders_ids = []
 
+    def set_current_price(self, price: float):
+        self.current_price = price
+
     def get_current_price(self):
         return self.current_price
 
@@ -44,7 +48,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
     def set_current_candle(self, candle: HistoricCandle):
         self.current_candle = candle
-        self.current_price = self.quotation_to_float(candle.close)
+        self.set_current_price(self.quotation_to_float(candle.close))
 
     def get_candle(self, dt) -> HistoricCandle | None:
         return self.candles_1_min_dict.get((dt.hour, dt.minute), None)
@@ -81,35 +85,12 @@ class ClientTestEnvHelper(AbstractProxyClient):
         # покупка по рыночной цене
         if order_type == OrderType.ORDER_TYPE_MARKET:
             # считаем сразу исполненной по указанной цене минус комиссия
-            return PostOrderResponse(
-                order_id=self.get_new_order_id(),
-                order_type=order_type,
-                direction=direction,
-                lots_requested=lots,
-                lots_executed=lots,
-                initial_order_price=self.float_to_money_value(lots * self.current_price),
-                executed_order_price=self.float_to_money_value(lots * self.current_price),
-                initial_commission=self.float_to_money_value(lots * self.current_price * self.commission),
-                executed_commission=self.float_to_money_value(lots * self.current_price * self.commission),
-            )
+            return self.get_post_order_response_market(direction, lots)
 
         # иначе лимитная заявка
         elif order_type == OrderType.ORDER_TYPE_LIMIT:
-
-            order = PostOrderResponse(
-                order_id=self.get_new_order_id(),
-                order_type=order_type,
-                direction=direction,
-                lots_requested=lots,
-                lots_executed=0,
-                initial_order_price=self.float_to_money_value(lots * price),
-                executed_order_price=self.float_to_money_value(0),
-                initial_commission=self.float_to_money_value(lots * price * self.commission),
-                executed_commission=self.float_to_money_value(0),
-            )
-
+            order = self.get_post_order_response_limit(direction, lots, price)
             self.orders[order.order_id] = order
-
             return order
 
         else:
@@ -221,14 +202,16 @@ class ClientTestEnvHelper(AbstractProxyClient):
             is_complete=is_complete,
         )
 
-    def order_is_executed(self, order: PostOrderResponse) -> (bool, OrderState | None):
+    def order_is_executed(self, order: PostOrderResponse) -> Tuple[bool, OrderState | None]:
 
         # покупка по рыночной цене
         if order.order_type == OrderType.ORDER_TYPE_MARKET:
             # считаем сразу исполненной по указанной цене минус комиссия
+            if order.order_id not in self.executed_orders_ids:
+                self.executed_orders_ids.append(order.order_id)
             return (
                 True,
-                order
+                self.get_order_state(order)
             )
 
         # иначе лимитная заявка
@@ -265,9 +248,140 @@ class ClientTestEnvHelper(AbstractProxyClient):
     def get_active_orders(self):
         return [order for order_id, order in self.orders.items() if order_id not in self.executed_orders_ids]
 
+    def get_post_order_response_market(self, direction, lots, ):
+        # Реальный ответ от официального клиента на
+        # 2 лота по 243.5 руб
+        # PostOrderResponse(
+        #     order_id='46100948036',
+        #     execution_report_status= < OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL: 1 >,
+        #     lots_requested = 2,
+        #     lots_executed = 2,
+        #     initial_order_price = MoneyValue(currency='rub', units=470, nano=600000000),
+        #     executed_order_price = MoneyValue(currency='rub', units=234, nano=500000000),
+        #     total_order_amount = MoneyValue(currency='rub', units=469, nano=0),
+        #     initial_commission = MoneyValue(currency='rub', units=0, nano=240000000), - на все инструменты
+        #     executed_commission = MoneyValue(currency='rub', units=0, nano=0), - вот тут почему-то нули
+        #     aci_value = MoneyValue(currency='', units=0, nano=0),
+        #     figi = 'BBG00F9XX7H4',
+        #     direction = < OrderDirection.ORDER_DIRECTION_BUY: 1 >,
+        #     initial_security_price = MoneyValue(currency='rub', units=235, nano=300000000),
+        #     order_type = < OrderType.ORDER_TYPE_MARKET: 2 >,
+        #     message = '',
+        #     initial_order_price_pt = Quotation(units=0, nano=0),
+        #     instrument_uid = 'c74855***********************a202904',
+        #     order_request_id = '2024-04-22 13:37:55.118713+00:00',
+        #     response_metadata = ResponseMetadata(
+        #       tracking_id='d680***********************4220a',
+        #       server_time=datetime.datetime(2024, 4, 22, 13, 37, 55, 818008, tzinfo=datetime.timezone.utc)
+        #     ))
+
+        return PostOrderResponse(
+            order_id=self.get_new_order_id(),
+            execution_report_status=OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL,
+            order_type=OrderType.ORDER_TYPE_LIMIT,
+            direction=direction,
+            lots_requested=lots,
+            lots_executed=lots,
+            initial_order_price=self.float_to_money_value(lots * self.current_price),
+            executed_order_price=self.float_to_money_value(self.current_price),
+            total_order_amount=self.float_to_money_value(lots * self.current_price),
+            initial_commission=self.float_to_money_value(lots * self.current_price * self.commission),
+            executed_commission=self.float_to_money_value(0),  # как в оригинале
+            initial_security_price=self.float_to_money_value(self.current_price),
+        )
+
+    def get_post_order_response_limit(self, direction, lots, price):
+        # OrderResponse(
+        #   order_id='R252613501',
+        #   execution_report_status= < OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_NEW: 4 >,
+        #   lots_requested = 2,
+        #   lots_executed = 0,
+        #   initial_order_price = MoneyValue(currency='rub', units=470, nano=0),
+        #   executed_order_price = MoneyValue(currency='rub', units=0,nano=0),
+        #   total_order_amount = MoneyValue(currency='rub', units=0, nano=0),
+        #   initial_commission = MoneyValue(currency='rub', units=0, nano=240000000),
+        #   executed_commission = MoneyValue(currency='rub', units=0, nano=0),
+        #   aci_value = MoneyValue(currency='', units=0, currency='rub', units=235, nano=0),
+        #   order_type = < OrderType.ORDER_TYPE_LIMIT: 1 >,
+        #   message = '',
+        #   initial_order_price_pt = Quotation(units=0,nano=0),
+        #   instrument_uid = 'c74***904',
+        #   order_request_id = '2024-04-22 14:13:57.484562+00:00',
+        #   response_metadata = ResponseMetadata(
+        #     tracking_id='bd***1f0',
+        #     server_time=datetime.datetime(2024, 4, 22, 14, 13, 59, 82995, tzinfo=datetime.timezone.utc)
+        #   ))
+        return PostOrderResponse(
+            order_id=self.get_new_order_id(),
+            execution_report_status=OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_NEW,
+            order_type=OrderType.ORDER_TYPE_LIMIT,
+            direction=direction,
+            lots_requested=lots,
+            lots_executed=0,
+            initial_order_price=self.float_to_money_value(lots * price),
+            executed_order_price=self.float_to_money_value(0),
+            total_order_amount=self.float_to_money_value(0),
+            initial_commission=self.float_to_money_value(lots * price * self.commission),
+            executed_commission=self.float_to_money_value(0),
+        )
+
     def get_order_state(self, order: PostOrderResponse) -> OrderState:
+        # OrderState(
+        #   order_id='R252613501',
+        #   execution_report_status= < OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL: 1 >,
+        #   lots_requested = 2,
+        #   lots_executed = 2,
+        #   initial_order_price = MoneyValue(currency='rub', units=470, nano=0),
+        #   executed_order_price = MoneyValue(currency='rub', units=468, nano=590000000), !!! а вот тут произведение
+        #   total_order_amount = MoneyValue(currency='rub', units=468, nano=590000000),
+        #   average_position_price = MoneyValue(currency='rub', units=234, nano=295000000),
+        #   initial_commission = MoneyValue(currency='rub', units=0, nano=240000000),
+        #   executed_commission = MoneyValue(currency='rub', units=0, nano=230000000),
+        #   figi = 'BBG00F9XX7H4',
+        #   direction = < OrderDirection.ORDER_DIRECTION_BUY: 1 >,
+        #   initial_security_price = MoneyValue(currency='rub', units=235, nano=0),
+        #   stages = [
+        #     OrderStage(
+        #       price=MoneyValue(currency='rub', units=234, nano=295000000),
+        #       quantity=2,
+        #       trade_id='D125637207',
+        #       execution_time=datetime.datetime(2024, 4, 22, 14, 13, 58, 978563, tzinfo=datetime.timezone.utc)
+        #     ),
+        #   ],
+        #   service_commission = MoneyValue(currency='rub', units=0, nano=0),
+        #   currency = 'rub',
+        #   order_type = < OrderType.ORDER_TYPE_LIMIT: 1 >,
+        #   order_date = datetime.datetime(2024, 4, 22, 14, 13, 58, 982707, tzinfo=datetime.timezone.utc),
+        #   instrument_uid = 'c748***904',
+        #   order_request_id = '2024-04-22 14:13:57.484562 00:00'
+        # )
+        #
+        # Для нового 2 х 236,5
+        # OrderState(
+        #   order_id='46106857072',
+        #   execution_report_status= < OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_NEW: 4 >,
+        #   lots_requested = 2,
+        #   lots_executed = 0,
+        #   initial_order_price = MoneyValue(currency='rub', units=473, nano=0),
+        #   executed_order_price = MoneyValue(currency='rub', units=0,nano=0),
+        #   total_order_amount = MoneyValue(currency='rub', units=473, nano=0),
+        #   average_position_price = MoneyValue(currency='rub', units=0,nano=0),
+        #   initial_commission = MoneyValue(currency='rub', units=0, nano=240000000),
+        #   executed_commission = MoneyValue(currency='rub', units=0, nano=0),
+        #   figi = 'BBG00F9XX7H4',
+        #   direction = < OrderDirection.ORDER_DIRECTION_SELL: 2 >,
+        #   initial_security_price = MoneyValue(currency='rub', units=236, nano=500000000),
+        #   stages = [],
+        #   service_commission = MoneyValue(currency='rub', units=0, nano=0),
+        #   currency = 'rub', order_type = < OrderType.ORDER_TYPE_LIMIT: 1 >,
+        #   order_date = datetime.datetime(2024, 4, 22, 14, 41, 41, 164931, tzinfo=datetime.timezone.utc),
+        #   instrument_uid = 'c7***904',
+        #   order_request_id = '2024-04-22 14:41:39.559532 00:00')
+
         is_executed = order.order_id in self.executed_orders_ids
         price_0 = self.float_to_quotation(0)
+        avg_init_price = self.float_to_money_value(
+            self.quotation_to_float(order.initial_order_price) / order.lots_requested)
         return OrderState(
             order_id=order.order_id,
             order_type=order.order_type,
@@ -276,8 +390,12 @@ class ClientTestEnvHelper(AbstractProxyClient):
             lots_executed=order.lots_requested if is_executed else 0,
             initial_order_price=order.initial_order_price,
             executed_order_price=order.initial_order_price if is_executed else price_0,
+            total_order_amount=order.initial_order_price if is_executed else price_0,
+            average_position_price=avg_init_price if is_executed else price_0,
             initial_commission=order.initial_commission,
             executed_commission=order.initial_commission if is_executed else price_0,
+            initial_security_price=avg_init_price,
+            service_commission=self.float_to_money_value(0),
             execution_report_status=OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL
             if is_executed else OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_NEW,
         )

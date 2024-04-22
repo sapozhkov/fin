@@ -4,14 +4,11 @@ from datetime import datetime, timezone, timedelta
 import pandas as pd
 from tinkoff.invest import OrderDirection, Client, CandleInterval
 
+from lib.order_helper import OrderHelper
 from lib.trading_bot import TradingBot
-from test_env.client_test_env import ClientTestEnvHelper
-from test_env.logger_test_env import LoggerTestEnvHelper
-from test_env.time_test_env import TimeTestEnvHelper
-from test_env.accounting_test_env import AccountingTestEnvHelper
+from test_env.test_helper import TestHelper
 
 from dto.config_dto import ConfigDTO
-from lib.historical_candles import HistoricalCandles
 
 
 class TestAlgorithm:
@@ -26,14 +23,9 @@ class TestAlgorithm:
         self.ticker = ticker
         self.figi = figi
 
-        self.data_handler = HistoricalCandles(token, figi, ticker)
-        self.time_helper = TimeTestEnvHelper()
-        self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
-
-        self.client_helper = ClientTestEnvHelper(self.ticker, self.logger_helper, self.time_helper, self.data_handler)
-        self.client_helper.set_ticker_params(1, 0.1, self.figi, 'RUR')
-
-        self.accounting_helper = AccountingTestEnvHelper(self.client_helper)
+        self.data_handler, self.time_helper, self.logger_helper, self.client_helper, self.accounting_helper = \
+            TestHelper.get_helper_pack(token, figi, ticker, do_printing)
+        self.order_helper = OrderHelper(self.client_helper)
 
     def test(
             self,
@@ -139,16 +131,14 @@ class TestAlgorithm:
                 for order_id, order in self.client_helper.orders.items():
                     if order_id in self.client_helper.executed_orders_ids:
                         continue
-                    price = self.client_helper.round(
-                        self.client_helper.quotation_to_float(order.initial_order_price) / order.lots_requested
-                    )
+                    avg_price = self.order_helper.get_avg_price(order)
                     if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
                         low_buy_price = self.client_helper.quotation_to_float(candle.low)
-                        order_executed = price >= low_buy_price
+                        order_executed = avg_price >= low_buy_price
                         # order_executed_on_border = price == low_buy_price
                     else:
                         high_sell_price = self.client_helper.quotation_to_float(candle.high)
-                        order_executed = price <= high_sell_price
+                        order_executed = avg_price <= high_sell_price
                         # order_executed_on_border = price == high_sell_price
 
                     if order_executed:
