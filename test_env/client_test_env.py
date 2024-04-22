@@ -207,8 +207,6 @@ class ClientTestEnvHelper(AbstractProxyClient):
         # покупка по рыночной цене
         if order.order_type == OrderType.ORDER_TYPE_MARKET:
             # считаем сразу исполненной по указанной цене минус комиссия
-            if order.order_id not in self.executed_orders_ids:
-                self.executed_orders_ids.append(order.order_id)
             return (
                 True,
                 self.get_order_state(order)
@@ -378,7 +376,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         #   instrument_uid = 'c7***904',
         #   order_request_id = '2024-04-22 14:41:39.559532 00:00')
 
-        is_executed = order.order_id in self.executed_orders_ids
+        is_executed = order.order_id in self.executed_orders_ids or order.order_type == OrderType.ORDER_TYPE_MARKET
         price_0 = self.float_to_quotation(0)
         avg_init_price = self.float_to_money_value(
             self.quotation_to_float(order.initial_order_price) / order.lots_requested)
