@@ -153,13 +153,13 @@ class TradingBot:
             return None
 
         self.accounting.add_order(order)
-        price = self.order_helper.get_avg_price(order)
+        avg_price = self.order_helper.get_avg_price(order)
 
         if order_type == OrderType.ORDER_TYPE_MARKET:
             self.accounting.add_deal_by_order(order)
             if direction == OrderDirection.ORDER_DIRECTION_BUY:
                 prefix = "BUY MARKET executed"
-                price = -price
+                avg_price = -avg_price
             else:
                 prefix = "SELL MARKET executed"
 
@@ -167,12 +167,11 @@ class TradingBot:
             if direction == OrderDirection.ORDER_DIRECTION_BUY:
                 self.active_buy_orders[order.order_id] = order
                 prefix = "Buy order set"
-                price = -price
+                avg_price = -avg_price
             else:
                 self.active_sell_orders[order.order_id] = order
                 prefix = "Sell order set"
 
-        avg_price = self.round(price / lots)
         self.log(f"{prefix}, {lots} x {avg_price} {self.get_cur_count_for_log()}")
 
         return order
@@ -380,7 +379,7 @@ class TradingBot:
 
             # перебираем активные заявки на покупку и закрываем всё, что ниже
             for order_id, order in self.active_buy_orders.copy().items():
-                order_price = self.client.quotation_to_float(order.initial_order_price)
+                order_price = self.order_helper.get_avg_price(order)
                 if order_price <= threshold_price:
                     self.cancel_order(order)
 
@@ -389,7 +388,7 @@ class TradingBot:
 
             # перебираем активные заявки на продажу и закрываем всё, что ниже
             for order_id, order in self.active_sell_orders.copy().items():
-                order_price = self.client.quotation_to_float(order.initial_order_price)
+                order_price = self.order_helper.get_avg_price(order)
                 if order_price >= threshold_price:
                     self.cancel_order(order)
                     self.sell()
