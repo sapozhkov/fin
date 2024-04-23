@@ -1,4 +1,4 @@
-from datetime import time as datetime_time, datetime, timedelta
+from datetime import time as datetime_time, datetime, timedelta, timezone
 from typing import Tuple
 
 from tinkoff.invest import OrderType, PostOrderResponse, OrderDirection, MoneyValue, HistoricCandle, \
@@ -44,7 +44,11 @@ class ClientTestEnvHelper(AbstractProxyClient):
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
         self.orders = {}
         self.executed_orders_ids = []
-        return len(candles.candles) > 400  # в реальной дате > 500. это флаг отсутствия данных
+
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        is_today = date == today
+
+        return is_today or len(candles.candles) > 400  # в реальной дате > 500. это флаг отсутствия данных
 
     def set_current_candle(self, candle: HistoricCandle):
         self.current_candle = candle
