@@ -18,7 +18,7 @@ async def run_command(command):
     return process
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-config_list = [
+config_list: list[ConfigDTO] = [
     ConfigDTO(
     ),
     # ConfigDTO(
@@ -32,7 +32,7 @@ config_list = [
 async def main():
     commands = []
     for conf in config_list:
-        commands.append(f"python3 {current_dir}/trader_bot.py {conf.to_string()}")
+        commands.append(f"python3 {current_dir}/bot.py {conf.to_string()}")
 
     tasks = [run_command(command) for command in commands]
     await asyncio.gather(*tasks)

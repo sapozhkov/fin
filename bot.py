@@ -16,6 +16,7 @@ TICKER = 'RNFT'
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         config_dto = ConfigDTO(
+            ticker=TICKER,
             step_max_cnt=5,
             pretest_period=13,
             step_set_orders_cnt=3,

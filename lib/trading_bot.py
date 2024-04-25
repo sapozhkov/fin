@@ -31,8 +31,8 @@ class TradingBot:
         # хелперы и DTO
         self.config = config
         self.time = time_helper or TimeHelper()
-        self.logger = logger_helper or LoggerHelper(__name__)
-        self.client = client_helper or TinkoffProxyClient(token, self.config, self.time, self.logger)
+        self.logger = logger_helper or LoggerHelper(__name__, self.config.ticker)
+        self.client = client_helper or TinkoffProxyClient(token, self.config.ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
         self.order_helper = order_helper or OrderHelper(self.client)
 

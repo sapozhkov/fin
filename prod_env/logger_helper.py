@@ -28,16 +28,17 @@ class AbstractLoggerHelper(ABC):
 
 
 class LoggerHelper(AbstractLoggerHelper):
-    def __init__(self, name):
+    def __init__(self, name, file_name):
         super().__init__()
         self.logger = logging.getLogger(name)
-        self.setup_logger()
+        self.setup_logger(file_name)
 
-    def setup_logger(self):
+    def setup_logger(self, file_name=''):
         logging.getLogger('tinkoff.invest').setLevel(logging.CRITICAL)
 
-        # Получаем имя запущенного файла без расширения
-        file_name = os.path.basename(sys.argv[0]).replace('.py', '')
+        if not file_name:
+            # дефолтное имя - имя запущенного файла без расширения
+            file_name = os.path.basename(sys.argv[0]).replace('.py', '')
 
         logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
