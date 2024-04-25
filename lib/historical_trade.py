@@ -182,7 +182,7 @@ class HistoricalTrade:
 
         conn.close()
 
-    def get_deals(self, date: str, algorithm_name: str) -> list[DealDTO]:
+    def get_deals(self, date: str, algorithm_name: str, ticker: str) -> list[DealDTO]:
         db_file = self.db_file
         conn = sqlite3.connect(db_file)
         cursor = conn.cursor()
@@ -194,9 +194,9 @@ class HistoricalTrade:
         cursor.execute("""
             SELECT id, datetime, type, algorithm_name, price, count, commission, total
             FROM deals
-            WHERE datetime LIKE ? AND algorithm_name = ?
+            WHERE datetime LIKE ? AND algorithm_name = ? AND instrument = ?
             ORDER BY datetime
-        """, (date_formatted, algorithm_name))
+        """, (date_formatted, algorithm_name, ticker))
 
         rows = cursor.fetchall()
         conn.close()

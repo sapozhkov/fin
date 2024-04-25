@@ -5,7 +5,7 @@ import time
 
 class AbstractTimeHelper(ABC):
     def __init__(self):
-        self.tmz = 3
+        pass
 
     @abstractmethod
     def now(self):

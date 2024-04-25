@@ -2,14 +2,16 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from tinkoff.invest import Client, GetCandlesResponse, CandleInterval, Quotation, HistoricCandle
 
+from dto.instrument_dto import InstrumentDTO
 
-class HistoricalCandles:
-    def __init__(self, token, figi, ticker):
+
+class TickerCache:
+    def __init__(self, token, ticker):
         self.token = token
-        self.figi = figi
         self.ticker = ticker
-        self.db_file = f"./db/test_{ticker}.db"
+        self.db_file = f"./db/c_{ticker}.db"
         self.create_database()
+        self.instrument: InstrumentDTO | None = None
 
     def create_database(self):
         conn = sqlite3.connect(self.db_file)
@@ -35,6 +37,14 @@ class HistoricalCandles:
             low REAL,
             close REAL,
             volume INTEGER
+        )
+        ''')
+        conn.commit()
+
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS instrument (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL 
         )
         ''')
         conn.commit()
@@ -125,7 +135,7 @@ class HistoricalCandles:
             from_time = datetime.strptime(date + " 06:55", "%Y-%m-%d %H:%M")
             to_time = datetime.strptime(date + " 19:00", "%Y-%m-%d %H:%M")
             candles = client.market_data.get_candles(
-                figi=self.figi,
+                figi=self.get_instrument().figi,
                 from_=from_time,
                 to=to_time,
                 interval=CandleInterval.CANDLE_INTERVAL_1_MIN
@@ -189,7 +199,7 @@ class HistoricalCandles:
                 # Если данных нет в базе, запросить из API и сохранить
                 with Client(self.token) as client:
                     api_candles = client.market_data.get_candles(
-                        figi=self.figi,
+                        figi=self.get_instrument().figi,
                         from_=date_needed.replace(hour=0, minute=0, second=0),
                         to=date_needed.replace(hour=23, minute=59, second=59),
                         interval=CandleInterval.CANDLE_INTERVAL_DAY
@@ -219,3 +229,58 @@ class HistoricalCandles:
 
         conn.close()
         return GetCandlesResponse(candles=candles)
+
+    def get_instrument(self) -> InstrumentDTO:
+        if self.instrument:
+            return self.instrument
+
+        conn = sqlite3.connect(self.db_file)
+        cursor = conn.cursor()
+
+        # Выбираем все данные из таблицы
+        cursor.execute("SELECT key, value FROM instrument")
+        rows = cursor.fetchall()
+        data_dict = {}
+        for key, val in rows:
+            data_dict[key] = val
+
+        # если нет - запрашиваем из API
+        if len(data_dict) == 0:
+            with Client(self.token) as client:
+                instruments = client.instruments.shares()
+                for instrument in instruments.instruments:
+                    if instrument.ticker == self.ticker:
+                        min_increment = instrument.min_price_increment.units + \
+                                        instrument.min_price_increment.nano * 1e-9
+                        min_increment_str = str(min_increment)
+                        decimal_point_index = min_increment_str.find('.')
+                        if decimal_point_index == -1:
+                            round_signs = 0
+                        else:
+                            round_signs = len(min_increment_str) - decimal_point_index - 1
+                        min_increment = round(min_increment, round_signs)
+
+                        data_dict['ticker'] = self.ticker
+                        data_dict['figi'] = instrument.figi
+                        data_dict['currency'] = instrument.currency
+                        data_dict['round_signs'] = round_signs
+                        data_dict['min_increment'] = min_increment
+
+            # кладем в таблицу
+            for key, val in data_dict.items():
+                # Добавляем строку в таблицу
+                cursor.execute("INSERT OR IGNORE INTO instrument (key, value) VALUES (?, ?)",
+                               (key, val))
+
+            # Сохраняем изменения
+            conn.commit()
+
+        # Закрываем соединение с базой данных
+        conn.close()
+
+        if len(data_dict) == 0:
+            raise Exception(f"No figi found for '{self.ticker}'")
+
+        # отдаем объект
+        self.instrument = InstrumentDTO(**data_dict)
+        return self.instrument

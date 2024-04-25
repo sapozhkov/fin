@@ -31,7 +31,7 @@ if __name__ == '__main__':
     else:
         config_dto = ConfigDTO.from_string(sys.argv[1])
 
-    bot = TradingBot(TOKEN, TICKER, config_dto)
+    bot = TradingBot(TOKEN, config_dto)
 
     if len(sys.argv) > 1:
         bot.log(f"Config string: {sys.argv[1]}")

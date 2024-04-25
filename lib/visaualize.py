@@ -4,14 +4,14 @@ import matplotlib.dates as mdates
 
 from dto.deal_dto import DealDTO
 from dto.order_dto import OrderDTO
-from lib.historical_candles import HistoricalCandles
+from lib.ticker_cache import TickerCache
 from lib.historical_trade import HistoricalTrade
 from lib.order_vis_helper import OrderVisHelper
 
 
 class Visualize:
-    def __init__(self, historical_candles: HistoricalCandles):
-        self.historical_candles = historical_candles
+    def __init__(self, ticker_cache: TickerCache):
+        self.ticker_cache = ticker_cache
 
     # Функция для преобразования Quotation в float
     @staticmethod
@@ -20,7 +20,7 @@ class Visualize:
 
     def draw(self, date, deals: list[DealDTO], orders: list[OrderDTO] = list, title=None):
 
-        candles = self.historical_candles.get_candles(date)
+        candles = self.ticker_cache.get_candles(date)
 
         # Подготовка данных для графика
         times = [candle.time for candle in candles.candles]  # Время каждой свечи

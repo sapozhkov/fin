@@ -5,6 +5,10 @@ from typing import Tuple
 from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus, \
     CandleInterval, PostOrderResponse, MoneyValue, OrderState, OrderDirection
 
+from dto.config_dto import ConfigDTO
+from dto.instrument_dto import InstrumentDTO
+from lib.ticker_cache import TickerCache
+from prod_env.logger_helper import AbstractLoggerHelper
 from prod_env.time_helper import AbstractTimeHelper
 
 
@@ -19,14 +23,19 @@ class AbstractProxyClient(ABC):
         CandleInterval.CANDLE_INTERVAL_DAY: 1440,
     }
 
-    def __init__(self):
+    def __init__(
+            self,
+            token,
+            ticker,
+            time: AbstractTimeHelper,
+            logger: AbstractLoggerHelper
+    ):
         # авто расчет надо переделать если будут инструменты с шагом не кратным десятой доле #26
-        self.round_signs = 0
-        self.step_size = 0
-        self.ticker = ''
-        self.figi = ''
-        self.currency = ''
-        self.time: AbstractTimeHelper | None = None
+        self.token = token
+        self.time: AbstractTimeHelper = time
+        self.logger = logger
+        self.ticker_cache = TickerCache(self.token, ticker)
+        self.instrument: InstrumentDTO = self.get_instrument()
 
     @abstractmethod
     def can_trade(self):
@@ -37,11 +46,11 @@ class AbstractProxyClient(ABC):
 
     def quotation_to_float(self, quotation: Quotation | MoneyValue, digits=None):
         if digits is None:
-            digits = self.round_signs
+            digits = self.instrument.round_signs
         return round(quotation.units + quotation.nano * 1e-9, digits)
 
     def round(self, price):
-        return round(price, self.round_signs)
+        return round(price, self.instrument.round_signs)
 
         # авто расчет надо переделать если будут инструменты с шагом не кратным десятой доле #26
         # вариант:
@@ -91,16 +100,16 @@ class AbstractProxyClient(ABC):
     def get_current_price(self):
         pass
 
+    def get_instrument(self) -> InstrumentDTO:
+        return self.ticker_cache.get_instrument()
+
+    def get_figi(self) -> str:
+        return self.get_instrument().figi
+
 
 class TinkoffProxyClient(AbstractProxyClient):
     def __init__(self, token, ticker, time, logger):
-        super().__init__()
-        self.token = token
-        self.ticker = ticker
-        self.time = time
-        self.logger = logger
-
-        self.set_ticker_params()
+        super().__init__(token, ticker, time, logger)
         self.account_id = self.get_account_id()
 
     def get_account_id(self):
@@ -112,45 +121,27 @@ class TinkoffProxyClient(AbstractProxyClient):
             else:
                 raise Exception("No accounts found")
 
-    def set_ticker_params(self):
-        with Client(self.token) as client:
-            instruments = client.instruments.shares()
-            for instrument in instruments.instruments:
-                if instrument.ticker == self.ticker:
-                    self.figi = instrument.figi
-                    self.currency = instrument.currency
-                    min_increment = instrument.min_price_increment.units + instrument.min_price_increment.nano * 1e-9
-                    min_increment_str = str(min_increment)
-                    decimal_point_index = min_increment_str.find('.')
-                    if decimal_point_index == -1:
-                        self.round_signs = 0
-                    else:
-                        self.round_signs = len(min_increment_str) - decimal_point_index - 1
-                    self.step_size = self.round(min_increment)
-                    return
-        raise Exception("No figi found")
-
     def get_current_price(self) -> float | None:
         """
-        Получает текущую цену инструмента по его FIGI.
+        Получает текущую цену инструмента
 
         :return: Текущая цена инструмента или None, если цена не может быть получена.
         """
         with Client(self.token) as client:
             try:
                 # Запрос последних сделок по инструменту
-                order_book = client.market_data.get_order_book(figi=self.figi, depth=1)
+                order_book = client.market_data.get_order_book(figi=self.get_figi(), depth=1)
                 if order_book and order_book.last_price:
                     # Возвращаем последнюю цену из стакана
                     return self.quotation_to_float(order_book.last_price)
             except RequestError as e:
-                self.logger.error(f"Ошибка при запросе текущей цены для FIGI {self.figi}: {e}")
+                self.logger.error(f"Ошибка при запросе текущей цены для FIGI {self.get_figi()}: {e}")
         return None
 
     def can_trade(self):
         try:
             with Client(self.token) as client:
-                trading_status = client.market_data.get_trading_status(figi=self.figi)
+                trading_status = client.market_data.get_trading_status(figi=self.get_figi())
                 if not trading_status.limit_order_available_flag:
                     self.logger.log('Торговля закрыта (ответ из API)')
                     return False
@@ -166,7 +157,7 @@ class TinkoffProxyClient(AbstractProxyClient):
             with Client(self.token) as client:
                 return client.orders.post_order(
                     order_id=str(datetime.now(timezone.utc)),
-                    figi=self.figi,
+                    figi=self.get_figi(),
                     quantity=lots,
                     direction=direction,
                     account_id=self.account_id,
@@ -184,7 +175,7 @@ class TinkoffProxyClient(AbstractProxyClient):
         with Client(self.token) as client:
             try:
                 candles = client.market_data.get_candles(
-                    figi=self.figi,
+                    figi=self.get_figi(),
                     from_=from_date,
                     to=to_date,
                     interval=interval
@@ -217,7 +208,7 @@ class TinkoffProxyClient(AbstractProxyClient):
                 self.logger.error(f"Ошибка при запросе портфеля: {e}")
                 return 0
             for position in portfolio.positions:
-                if position.figi == self.figi:
+                if position.figi == self.get_figi():
                     return position.quantity.units - position.blocked_lots.units
             return 0
 

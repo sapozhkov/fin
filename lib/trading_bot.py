@@ -19,19 +19,20 @@ class TradingBot:
     STATE_FINISHED = 3
 
     def __init__(
-            self, token, ticker,
-            config: ConfigDTO | None = None,
+            self,
+            token,
+            config: ConfigDTO,
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
             client_helper: AbstractProxyClient | None = None,
             accounting_helper: AbstractAccountingHelper | None = None,
             order_helper: OrderHelper | None = None
     ):
-        # хелперы
-        self.config = config or ConfigDTO()
+        # хелперы и DTO
+        self.config = config
         self.time = time_helper or TimeHelper()
         self.logger = logger_helper or LoggerHelper(__name__)
-        self.client = client_helper or TinkoffProxyClient(token, ticker, self.time, self.logger)
+        self.client = client_helper or TinkoffProxyClient(token, self.config, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
         self.order_helper = order_helper or OrderHelper(self.client)
 
@@ -55,7 +56,7 @@ class TradingBot:
         self.pretest_and_modify_config()
 
         self.log(f"INIT \n"
-                 f"     figi - {self.client.figi} ({self.client.ticker})\n"
+                 f"     figi - {self.client.instrument.figi} ({self.client.instrument.ticker})\n"
                  f"     config - {self.config}\n"
                  f"     cur_used_cnt - {self.get_current_count()}\n"
                  f"     max_port - {self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots)}\n"
@@ -507,7 +508,7 @@ class TradingBot:
 
         max_start_total = self.start_price * self.config.step_max_cnt * self.config.step_lots
         if max_start_total:
-            self.log(f"Итог {round(profit, 2)} {self.client.currency} "
+            self.log(f"Итог {round(profit, 2)} {self.client.instrument.currency} "
                      f"({round(100 * profit / max_start_total, 2)}%)")
 
     def get_current_profit(self, current_price=None) -> float:

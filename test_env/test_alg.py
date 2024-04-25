@@ -1,48 +1,47 @@
 import copy
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 
-import pandas as pd
-from tinkoff.invest import OrderDirection, Client, CandleInterval
+from tinkoff.invest import OrderDirection
 
 from lib.order_helper import OrderHelper
 from lib.trading_bot import TradingBot
-from test_env.test_helper import TestHelper
+from test_env.accounting_test_env import AccountingTestEnvHelper
+from test_env.client_test_env import ClientTestEnvHelper
+from test_env.logger_test_env import LoggerTestEnvHelper
 
 from dto.config_dto import ConfigDTO
+from test_env.time_test_env import TimeTestEnvHelper
 
 
 class TestAlgorithm:
     def __init__(
             self,
             token,
-            ticker,
-            figi,
+            config: ConfigDTO,
             do_printing=False
     ):
         self.token = token
-        self.ticker = ticker
-        self.figi = figi
-
-        self.data_handler, self.time_helper, self.logger_helper, self.client_helper, self.accounting_helper = \
-            TestHelper.get_helper_pack(token, figi, ticker, do_printing)
+        self.config = config
+        self.time_helper = TimeTestEnvHelper()
+        self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
+        self.client_helper = ClientTestEnvHelper(token, config.ticker, self.logger_helper, self.time_helper)
+        self.accounting_helper = AccountingTestEnvHelper(self.client_helper)
         self.order_helper = OrderHelper(self.client_helper)
 
     def test(
-            self,
-
-            config: ConfigDTO,
-
-            last_test_date,
-            test_days_num,
-            shares_count=0,
+        self,
+        last_test_date,
+        test_days_num,
+        shares_count=0,
     ):
+        # внутренние переменные
         profit = 0
         success_days = 0
         balance_change_list = []
         operations_cnt = 0
         operations_cnt_list = []
 
-        days_list = self.data_handler.get_days_list(last_test_date, test_days_num)
+        days_list = self.client_helper.ticker_cache.get_days_list(last_test_date, test_days_num)
 
         self.accounting_helper.set_num(shares_count)
 
@@ -51,7 +50,7 @@ class TestAlgorithm:
         start_price_t = 0
         end_price_t = 0
 
-        original_config = copy.copy(config)
+        original_config = copy.copy(self.config)
         maj_commission = 0
         total_maj_commission = 0
 
@@ -73,9 +72,7 @@ class TestAlgorithm:
             # создаем бота с настройками
             bot = TradingBot(
                 self.token,
-                self.ticker,
-
-                config=config,
+                config=self.config,
                 time_helper=self.time_helper,
                 logger_helper=self.logger_helper,
                 client_helper=self.client_helper,
@@ -103,7 +100,7 @@ class TestAlgorithm:
             start_cnt = 0
 
             # Использование итератора для вывода каждой пары час-минута
-            for dt in self.data_handler.get_hour_minute_pairs(date_from, date_to):
+            for dt in self.client_helper.ticker_cache.get_hour_minute_pairs(date_from, date_to):
                 if not bot.continue_trading():
                     break
 
@@ -199,6 +196,8 @@ class TestAlgorithm:
         total_maj_commission += maj_commission
         profit += maj_commission
 
+        config = original_config
+
         profit_p = round(profit / (start_price_t * config.step_max_cnt * config.step_lots), 2) \
             if start_price_t and config.step_max_cnt else 0
 
@@ -240,32 +239,6 @@ class TestAlgorithm:
             # 'operations_cnt': operations_cnt,
             # 'operations_avg': round(sum(operations_cnt_list) / test_days_num, 2),
         }
-
-    def calculate_rsi_trend(self, period=10):
-        with Client(self.token) as client:
-            to_date = self.time_helper.now() - timedelta(days=1)
-            from_date = to_date - timedelta(days=period * 2 + 1)  # Удваиваем период для точности RSI
-
-            candles = client.market_data.get_candles(
-                figi=self.figi,
-                from_=from_date,
-                to=to_date,
-                interval=CandleInterval.CANDLE_INTERVAL_DAY
-            )
-
-            closing_prices = pd.Series([candle.close.units + candle.close.nano * 1e-9 for candle in candles.candles])
-            delta = closing_prices.diff()
-            gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-
-            rs = gain / loss
-            rsi = 100 - (100 / (1 + rs))
-
-            # Нормализуем RSI для получения значения от 0 до 1
-            normalized_rsi = rsi / 100
-            current_trend = normalized_rsi.iloc[-1]
-
-            return current_trend
 
     @staticmethod
     def get_end_time(test_date, end_time):

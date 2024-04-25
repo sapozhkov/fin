@@ -12,7 +12,7 @@ class LoggerTestEnvHelper(AbstractLoggerHelper):
         if not self.do_printing:
             return
         time = self.time.current_time
-        print(f"{time.hour + self.time.tmz}{time.strftime(':%M')} - {message}")
+        print(f"{time.strftime('%H:%M')} - {message}")
 
     def error(self, message):
         self.info(message)

@@ -1,4 +1,3 @@
-import sqlite3
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -84,7 +83,7 @@ class AccountingHelper(AbstractAccountingHelper):
         self.historical_trade.add_deal(
             self.db_alg_name,
             deal_type,
-            self.client.ticker,
+            self.client.instrument.ticker,
             datetime_with_tz,
             price,
             count,

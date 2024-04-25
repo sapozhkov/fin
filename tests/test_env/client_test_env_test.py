@@ -1,7 +1,6 @@
 import unittest
-from unittest.mock import Mock
 
-from tinkoff.invest import PostOrderResponse, OrderDirection, OrderType, HistoricCandle, OrderExecutionReportStatus
+from tinkoff.invest import OrderDirection, OrderType, OrderExecutionReportStatus
 
 from lib.order_helper import OrderHelper
 from test_env.test_helper import TestHelper
@@ -11,20 +10,9 @@ class TestOrderHelper(unittest.TestCase):
 
     def setUp(self):
 
-        self.data_handler, self.time_helper, self.logger_helper, self.client_helper, self.accounting_helper = \
+        self.time_helper, self.logger_helper, self.client_helper, self.accounting_helper = \
             TestHelper.get_helper_pack()
         self.order_helper = OrderHelper(self.client_helper)
-
-        # bot = TradingBot(
-        #     self.token,
-        #     self.ticker,
-        #
-        #     config=config,
-        #     time_helper=self.time_helper,
-        #     logger_helper=self.logger_helper,
-        #     client_helper=self.client_helper,
-        #     accounting_helper=self.accounting_helper,
-        # )
 
     def test_get_avg_price_on_post(self):
         price = 100

@@ -1,6 +1,8 @@
 class ConfigDTO:
     def __init__(
             self,
+            ticker='',
+
             start_time='07:00',  # 10:00
             end_time='15:29',  # 18:29
 
@@ -26,8 +28,13 @@ class ConfigDTO:
 
             use_shares=None,
     ):
-        self.start_time = start_time
-        self.end_time = end_time
+        if not ticker:
+            raise Exception(f"Ticker is empty in config")
+
+        self.ticker = str(ticker)
+
+        self.start_time = str(start_time)
+        self.end_time = str(end_time)
 
         self.step_max_cnt = int(step_max_cnt)
         self.step_base_cnt = int(step_base_cnt) if step_base_cnt is not None else None
@@ -105,6 +112,7 @@ class ConfigDTO:
         if not isinstance(other, ConfigDTO):
             raise TypeError
         return (
+                self.ticker == other.ticker and
                 self.start_time == other.start_time and
                 self.end_time == other.end_time and
                 self.sleep_trading == other.sleep_trading and
@@ -126,6 +134,7 @@ class ConfigDTO:
 
     def __hash__(self):
         return hash((
+            self.ticker,
             self.start_time, self.end_time,
             self.sleep_trading, self.sleep_no_trade,
             self.step_max_cnt, self.step_base_cnt, self.pretest_period,

@@ -4,23 +4,18 @@ from typing import Tuple
 from tinkoff.invest import OrderType, PostOrderResponse, OrderDirection, MoneyValue, HistoricCandle, \
     GetCandlesResponse, OrderState, OrderExecutionReportStatus
 
-from lib.historical_candles import HistoricalCandles
 from prod_env.tinkoff_client import AbstractProxyClient
 from test_env.time_test_env import TimeTestEnvHelper
 
 
 class ClientTestEnvHelper(AbstractProxyClient):
     def __init__(self,
+                 token,
                  ticker,
                  logger,
                  time_helper: TimeTestEnvHelper,
-                 data_handler: HistoricalCandles,
                  ):
-        super().__init__()
-        self.ticker = ticker
-        self.logger = logger
-        self.time = time_helper
-        self.data_handler = data_handler
+        super().__init__(token, ticker, time_helper, logger)
 
         self.candles_1_min_dict: dict = {}
         self.total_completed_orders = 0
@@ -40,7 +35,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         return self.current_price
 
     def set_candles_list_by_date(self, date):
-        candles = self.data_handler.get_candles(date)
+        candles = self.ticker_cache.get_candles(date)
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
         self.orders = {}
         self.executed_orders_ids = []
@@ -57,12 +52,6 @@ class ClientTestEnvHelper(AbstractProxyClient):
     def get_candle(self, dt) -> HistoricCandle | None:
         return self.candles_1_min_dict.get((dt.hour, dt.minute), None)
 
-    def set_ticker_params(self, round_signs, step_size, figi, currency):
-        self.round_signs = round_signs
-        self.step_size = step_size
-        self.figi = figi
-        self.currency = currency
-
     def can_trade(self):
         now = self.time.now()
 
@@ -70,14 +59,14 @@ class ClientTestEnvHelper(AbstractProxyClient):
         if now.weekday() >= 5:
             return False
 
-        # Проверка, что текущее время между 10:00 и 18:40
-        if not (datetime_time(10 - self.time.tmz, 00) <= now.time() <= datetime_time(18 - self.time.tmz, 40)):
+        # Проверка, что текущее время между 10:00 и 18:40 (-3 часа)
+        if not (datetime_time(7, 00) <= now.time() <= datetime_time(15, 40)):
             return False
 
         return True
 
     def float_to_money_value(self, price) -> MoneyValue:
-        return MoneyValue(self.currency, units=int(price), nano=int((self.round(price - int(price))) * 1e9))
+        return MoneyValue(self.instrument.currency, units=int(price), nano=int((self.round(price - int(price))) * 1e9))
 
     def get_new_order_id(self):
         self.order_next_index += 1
@@ -109,7 +98,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         return GetCandlesResponse(candles)
 
     def get_day_candles(self, from_date, to_date) -> GetCandlesResponse:
-        return self.data_handler.get_day_candles(from_date, to_date)
+        return self.ticker_cache.get_day_candles(from_date, to_date)
 
     @staticmethod
     def get_interval_time_list(from_date, to_date, interval):
