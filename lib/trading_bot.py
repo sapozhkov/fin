@@ -208,14 +208,15 @@ class TradingBot:
 
     def get_cur_count_for_log(self):
         """
-        Формат '| s3 (x5+1=16)'
+        Формат '| s3 (x5+1=16) | p 1.3 rub'
         для отрицательных работает так '| s-3 (x5+3=-12)'
         """
         rest = self.get_current_step_rest_count()
         return (f"| s{self.get_current_step_count()} "
                 f"(x{self.config.step_lots}"
                 f"{'+' + str(rest) if rest else ''}"
-                f"={self.get_current_count()})"
+                f"={self.get_current_count()}) "
+                f"| p {self.get_current_profit()} {self.client.instrument.currency}"
                 )
 
     def update_orders_status(self):
