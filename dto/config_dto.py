@@ -1,6 +1,7 @@
 class ConfigDTO:
     def __init__(
             self,
+            name='',
             ticker='',
 
             start_time='07:00',  # 10:00
@@ -28,6 +29,7 @@ class ConfigDTO:
 
             use_shares=None,
     ):
+        self.name = str(name)
         self.ticker = str(ticker)
 
         self.start_time = str(start_time)
@@ -109,6 +111,7 @@ class ConfigDTO:
         if not isinstance(other, ConfigDTO):
             raise TypeError
         return (
+                self.name == other.name and
                 self.ticker == other.ticker and
                 self.start_time == other.start_time and
                 self.end_time == other.end_time and
@@ -131,7 +134,7 @@ class ConfigDTO:
 
     def __hash__(self):
         return hash((
-            self.ticker,
+            self.name, self.ticker,
             self.start_time, self.end_time,
             self.sleep_trading, self.sleep_no_trade,
             self.step_max_cnt, self.step_base_cnt, self.pretest_period,
