@@ -10,7 +10,7 @@ class TestOrderHelper(unittest.TestCase):
 
     def setUp(self):
 
-        self.time_helper, self.logger_helper, self.client_helper, self.accounting_helper = \
+        self.config, self.time_helper, self.logger_helper, self.client_helper, self.accounting_helper = \
             TestHelper.get_helper_pack()
         self.order_helper = OrderHelper(self.client_helper)
 

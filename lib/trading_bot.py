@@ -6,6 +6,7 @@ import pandas as pd
 from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, OrderState, PostOrderResponse
 
 from dto.config_dto import ConfigDTO
+from lib.day_exclusions import DayExclusions
 from lib.order_helper import OrderHelper
 from prod_env.accounting_helper import AbstractAccountingHelper, AccountingHelper
 from prod_env.logger_helper import LoggerHelper, AbstractLoggerHelper
@@ -36,6 +37,10 @@ class TradingBot:
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
         self.order_helper = order_helper or OrderHelper(self.client)
 
+        if not self.is_trading_day():
+            self.state = self.STATE_FINISHED
+            return
+
         self.accounting.set_num(min(
             self.accounting.get_instrument_count(),
             self.config.step_max_cnt * self.config.step_lots
@@ -61,6 +66,16 @@ class TradingBot:
                  f"     cur_used_cnt - {self.get_current_count()}\n"
                  f"     max_port - {self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots)}\n"
                  )
+
+    def is_trading_day(self):
+        now = self.time.now()
+
+        ex = DayExclusions()
+        is_exclusion = ex.is_exclusion(now)
+
+        is_working_day = now.weekday() < 5
+
+        return is_working_day ^ is_exclusion  # xor
 
     def pretest_and_modify_config(self):
         if not self.config.pretest_period:
@@ -117,11 +132,6 @@ class TradingBot:
         """
         now = self.time.now()
         now_time = now.time()
-
-        # Проверка, что сейчас будний день (0 - понедельник, 6 - воскресенье)
-        if now.weekday() >= 5:
-            self.stop()
-            return False, 0
 
         start_hour_str, start_min_str = self.config.start_time.split(':')
         end_hour_str, end_min_str = self.config.end_time.split(':')
