@@ -18,14 +18,14 @@ class ConfigDTO:
             majority_trade=True,
             maj_to_zero=True,  # откупить до 0 в конце работы алгоритма (или дня)
 
-            threshold_buy_steps=6,
-            threshold_sell_steps=0,  # вот тут 0 - это важно. эффективность сильно выше. не даем заднюю
+            threshold_buy_steps=0,
+            threshold_sell_steps=0,
 
-            step_max_cnt=5,
-            step_base_cnt=5,
-            step_size=1.4,
-            step_set_orders_cnt=5,
-            step_lots=1,
+            step_max_cnt=0,
+            step_base_cnt=0,
+            step_size=0,
+            step_set_orders_cnt=0,
+            step_lots=0,
 
             use_shares=None,
     ):
