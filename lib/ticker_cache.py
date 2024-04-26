@@ -79,14 +79,6 @@ class TickerCache:
         return out
 
     @staticmethod
-    def get_hour_minute_pairs(start_datetime, end_datetime):
-        """итератор по минутам для заданного времени"""
-        current_datetime = start_datetime
-        while current_datetime <= end_datetime:
-            yield current_datetime
-            current_datetime += timedelta(minutes=1)
-
-    @staticmethod
     def q2f(quotation: Quotation, digits=2):
         return round(quotation.units + quotation.nano * 1e-9, digits)
 

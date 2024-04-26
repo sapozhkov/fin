@@ -26,3 +26,11 @@ class TimeTestEnvHelper(AbstractTimeHelper):
 
     def is_time_to_awake(self):
         return self.current_time >= self.sleep_until
+
+    @staticmethod
+    def get_hour_minute_pairs(start_datetime, end_datetime):
+        """итератор по минутам для заданного времени"""
+        current_datetime = start_datetime
+        while current_datetime <= end_datetime:
+            yield current_datetime
+            current_datetime += timedelta(minutes=1)

@@ -100,7 +100,7 @@ class TestAlgorithm:
             start_cnt = 0
 
             # Использование итератора для вывода каждой пары час-минута
-            for dt in self.client_helper.ticker_cache.get_hour_minute_pairs(date_from, date_to):
+            for dt in self.time_helper.get_hour_minute_pairs(date_from, date_to):
                 if not bot.continue_trading():
                     break
 
