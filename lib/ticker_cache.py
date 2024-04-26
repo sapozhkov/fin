@@ -171,11 +171,16 @@ class TickerCache:
         dates_needed = [from_date + timedelta(days=x) for x in range((to_date - from_date).days + 1)]
         candles = []
 
+        # запрашиваем из базы все, что есть по этим датам
+        cursor.execute(
+            'SELECT * FROM candles_day WHERE date >= ? AND date <= ?',
+            (from_date.strftime('%Y-%m-%d'), to_date.strftime('%Y-%m-%d')))
+        data_dict = dict([(row[0], row) for row in cursor.fetchall()])
+
         for date_needed in dates_needed:
-            cursor.execute('SELECT * FROM candles_day WHERE date = ?', (date_needed.strftime('%Y-%m-%d'),))
-            row = cursor.fetchone()
-            if row:
-                date, open_, high, low, close, volume = row
+            _date = date_needed.strftime('%Y-%m-%d')
+            if _date in data_dict:
+                date, open_, high, low, close, volume = data_dict[_date]
                 if open_ > 0:
                     candle = HistoricCandle(
                         time=datetime.strptime(date, "%Y-%m-%d"),
