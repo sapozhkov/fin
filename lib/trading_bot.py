@@ -94,7 +94,7 @@ class TradingBot:
                 self.config.step_base_cnt = 0
 
         self.log(f"Pretest. RSI = {round(current_trend, 2)}")
-        self.log(f"Change config to {self.config}")
+        self.log(f"Change step_base_cnt to {self.config.step_base_cnt}")
 
     def get_rsi_trend_val(self, period) -> float | None:
         to_date = self.time.get_delta_days_date(days=1)

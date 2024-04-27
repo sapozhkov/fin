@@ -198,7 +198,7 @@ class TestAlgorithm:
 
         config = original_config
 
-        profit_p = round(profit / (start_price_t * config.step_max_cnt * config.step_lots), 2) \
+        profit_p = round(100 * profit / (start_price_t * config.step_max_cnt * config.step_lots), 2) \
             if start_price_t and config.step_max_cnt else 0
 
         # это для обычной торговли. купил в начале, в конце продал
