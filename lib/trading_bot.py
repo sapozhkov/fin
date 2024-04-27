@@ -403,7 +403,6 @@ class TradingBot:
                 order_price = self.order_helper.get_avg_price(order)
                 if order_price >= threshold_price:
                     self.cancel_order(order)
-                    self.sell()
 
     def continue_trading(self):
         return self.state != self.STATE_FINISHED
