@@ -55,10 +55,6 @@ class ClientTestEnvHelper(AbstractProxyClient):
     def can_trade(self):
         now = self.time.now()
 
-        # Проверка, что сейчас будний день (0 - понедельник, 6 - воскресенье)
-        if now.weekday() >= 5:
-            return False
-
         # Проверка, что текущее время между 10:00 и 18:40 (-3 часа)
         if not (datetime_time(7, 00) <= now.time() <= datetime_time(15, 40)):
             return False
