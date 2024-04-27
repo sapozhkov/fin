@@ -76,9 +76,9 @@ class ConfigDTO:
             self.threshold_sell_steps = self.step_set_orders_cnt + 1
 
     def __repr__(self):
-        base = f"pre{self.pretest_period}" if self.pretest_period else f"{self.step_base_cnt}"
+        base = f"pre{self.pretest_period}:{self.step_base_cnt}" if self.pretest_period else f"{self.step_base_cnt}"
         lots = f"x l{self.step_lots} " if self.step_lots else ''
-        return (f"{self.ticker} {self.step_max_cnt}/{base}({self.step_set_orders_cnt}) {lots}x {self.step_size} ¤, "
+        return (f"{self.ticker} {self.step_max_cnt}/{base}/{self.step_set_orders_cnt} {lots}x {self.step_size}¤, "
                 f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| "
                 f"|u{self.stop_up_p} d{self.stop_down_p}| "
                 f"maj{'+' if self.majority_trade else '-'}z{'+' if self.maj_to_zero else '-'} "
