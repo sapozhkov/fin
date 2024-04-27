@@ -66,6 +66,9 @@ class ConfigDTO:
         if self.step_base_cnt > self.step_max_cnt:
             self.step_base_cnt = self.step_max_cnt
 
+        if self.step_set_orders_cnt > self.step_max_cnt:
+            self.step_set_orders_cnt = self.step_max_cnt
+
         if self.threshold_buy_steps and self.threshold_buy_steps <= self.step_set_orders_cnt:
             self.threshold_buy_steps = self.step_set_orders_cnt + 1
 
