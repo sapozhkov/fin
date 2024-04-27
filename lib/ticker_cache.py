@@ -262,6 +262,7 @@ class TickerCache:
                         data_dict['currency'] = instrument.currency
                         data_dict['round_signs'] = round_signs
                         data_dict['min_increment'] = min_increment
+                        data_dict['lot'] = instrument.lot
 
             # кладем в таблицу
             for key, val in data_dict.items():
