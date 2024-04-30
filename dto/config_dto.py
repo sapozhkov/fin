@@ -1,3 +1,6 @@
+import re
+
+
 class ConfigDTO:
     def __init__(
             self,
@@ -77,12 +80,46 @@ class ConfigDTO:
 
     def __repr__(self):
         base = f"pre{self.pretest_period}:{self.step_base_cnt}" if self.pretest_period else f"{self.step_base_cnt}"
-        lots = f"x l{self.step_lots} " if self.step_lots else ''
-        return (f"{self.ticker} {self.step_max_cnt}/{base}/{self.step_set_orders_cnt} {lots}x {self.step_size}¤, "
+        return (f"{self.ticker} "
+                f"{self.step_max_cnt}/{base}/{self.step_set_orders_cnt} x l{self.step_lots} x {self.step_size}¤, "
                 f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| "
                 f"|u{self.stop_up_p} d{self.stop_down_p}| "
                 f"maj{'+' if self.majority_trade else '-'}z{'+' if self.maj_to_zero else '-'} "
                 )
+
+    @classmethod
+    def from_repr_string(cls, input_string):
+        # RNFT 3/0/3 x l2 x 1.0¤, |s0 b0| |u0.0 d0.0| maj+z+
+        pattern = r"((?P<ticker>\w*) )?" \
+                  r"(?P<step_max_cnt>\d+)/" \
+                  r"(pre(?P<pretest_period>\d+):)?(?P<step_base_cnt>\d+)/" \
+                  r"(?P<step_set_orders_cnt>\d+) " \
+                  r"x l(?P<step_lots>\d+) x (?P<step_size>[\d.]+)¤, " \
+                  r"\|s(?P<threshold_sell_steps>\d+) b(?P<threshold_buy_steps>\d+)\| " \
+                  r"\|u(?P<stop_up_p>[\d.]+) d(?P<stop_down_p>[\d.]+)\| " \
+                  r"maj(?P<majority_trade>[\+\-])z(?P<maj_to_zero>[\+\-])"
+        match = re.match(pattern, input_string)
+
+        if match:
+            values = match.groupdict()
+            # Преобразование строковых значений в нужный формат (int, float, bool и т.д.)
+            values['ticker'] = str(values['ticker']) if values['ticker'] is not None else ''
+            values['step_max_cnt'] = int(values['step_max_cnt'])
+            values['step_base_cnt'] = int(values['step_base_cnt'])
+            values['step_set_orders_cnt'] = int(values['step_set_orders_cnt'])
+            values['pretest_period'] = int(values['pretest_period']) if values['pretest_period'] is not None else 0
+            values['step_lots'] = int(values['step_lots'])
+            values['step_size'] = float(values['step_size'])
+            values['threshold_sell_steps'] = int(values['threshold_sell_steps'])
+            values['threshold_buy_steps'] = int(values['threshold_buy_steps'])
+            values['stop_up_p'] = float(values['stop_up_p'])
+            values['stop_down_p'] = float(values['stop_down_p'])
+            values['majority_trade'] = values['majority_trade'] == '+'
+            values['maj_to_zero'] = values['maj_to_zero'] == '+'
+
+            return ConfigDTO(**values)
+        else:
+            raise Exception(f"Cannot create ConfigDTO from string '{input_string}'")
 
     def to_string(self):
         args = []

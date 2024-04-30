@@ -127,6 +127,51 @@ class MyTestCase(unittest.TestCase):
             self.assertIn(field, method_code.co_names,
                           f"Field '{field}' is not used in __hash__ method")
 
+    def test_from_repr_string(self):
+        """
+        восстановление из repr строки работает не для всех полей
+        RNFT 3/0/3 x l2 x 1.0¤, |s0 b0| |u0.0 d0.0| maj+z+
+
+        вот всё, чего тут нет и не работает
+        """
+
+        config_list = [
+            # пустой набор - всё стандартное
+            ConfigDTO(),
+
+            ConfigDTO(pretest_period=0),
+            ConfigDTO(ticker="TEST"),
+
+            # те, что с None взаимодействуют
+            ConfigDTO(
+                step_base_cnt=None,
+            ),
+
+            # полный набор - всё не стандартное. новые поля докидывать сюда
+            ConfigDTO(
+                stop_up_p=.2,
+                stop_down_p=.34,
+
+                step_max_cnt=21,
+                step_base_cnt=8,
+                pretest_period=22,
+
+                majority_trade=False,
+                maj_to_zero=False,
+
+                threshold_buy_steps=89,
+                threshold_sell_steps=34,
+
+                step_size=12.31,
+                step_set_orders_cnt=9,
+                step_lots=2,
+            ),
+        ]
+
+        for c in config_list:
+            self.assertEqual(c,ConfigDTO.from_repr_string(str(c)), str(c))
+            self.assertEqual(c, ConfigDTO.from_repr_string(str(c).strip()), f"'{str(c).strip()}'")
+
 
 if __name__ == '__main__':
     unittest.main()
