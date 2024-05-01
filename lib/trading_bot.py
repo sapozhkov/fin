@@ -38,6 +38,7 @@ class TradingBot:
         self.order_helper = order_helper or OrderHelper(self.client)
 
         if not self.is_trading_day():
+            self.log("Не торговый день. Завершаем работу.")
             self.state = self.STATE_FINISHED
             return
 
