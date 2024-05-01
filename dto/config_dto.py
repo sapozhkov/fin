@@ -92,7 +92,7 @@ class ConfigDTO:
         # RNFT 3/0/3 x l2 x 1.0¤, |s0 b0| |u0.0 d0.0| maj+z+
         pattern = r"((?P<ticker>\w*) )?" \
                   r"(?P<step_max_cnt>\d+)/" \
-                  r"(pre(?P<pretest_period>\d+):)?(?P<step_base_cnt>\d+)/" \
+                  r"(pre(?P<pretest_period>\d+):)?(?P<step_base_cnt>-?\d+)/" \
                   r"(?P<step_set_orders_cnt>\d+) " \
                   r"x l(?P<step_lots>\d+) x (?P<step_size>[\d.]+)¤, " \
                   r"\|s(?P<threshold_sell_steps>\d+) b(?P<threshold_buy_steps>\d+)\| " \

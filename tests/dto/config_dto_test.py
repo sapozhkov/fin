@@ -141,6 +141,7 @@ class MyTestCase(unittest.TestCase):
 
             ConfigDTO(pretest_period=0),
             ConfigDTO(ticker="TEST"),
+            ConfigDTO(step_base_cnt=-3),
 
             # те, что с None взаимодействуют
             ConfigDTO(
