@@ -5,7 +5,6 @@ from typing import Tuple
 from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus, \
     CandleInterval, PostOrderResponse, MoneyValue, OrderState, OrderDirection
 
-from dto.config_dto import ConfigDTO
 from dto.instrument_dto import InstrumentDTO
 from lib.ticker_cache import TickerCache
 from prod_env.logger_helper import AbstractLoggerHelper
@@ -50,15 +49,8 @@ class AbstractProxyClient(ABC):
         return round(quotation.units + quotation.nano * 1e-9, digits)
 
     def round(self, price):
-        return round(price, self.instrument.round_signs)
-
-        # авто расчет надо переделать если будут инструменты с шагом не кратным десятой доле #26
-        # вариант:
-        # def align_price_to_increment(self, price, min_price_increment):
-        #     increments_count = price / min_price_increment
-        #     aligned_increments_count = round(increments_count)
-        #     aligned_price = aligned_increments_count * min_price_increment
-        #     return aligned_price
+        return round(round(price / self.instrument.min_increment) * self.instrument.min_increment,
+                     self.instrument.round_signs)
 
     @abstractmethod
     def place_order(self, lots: int, direction, price: float | None,
