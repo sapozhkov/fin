@@ -58,6 +58,13 @@ class TickerCache:
         conn.commit()
         conn.close()
 
+    def clear_instrument_table(self):
+        conn = sqlite3.connect(self.db_file)
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM instrument WHERE 1')
+        conn.commit()
+        conn.close()
+
     @staticmethod
     def get_days_list(end_date, days_num):
         """
@@ -241,8 +248,12 @@ class TickerCache:
         for key, val in rows:
             data_dict[key] = val
 
+        instrument_fields = vars(InstrumentDTO())
+
         # если нет - запрашиваем из API
-        if len(data_dict) == 0:
+        if len(data_dict) != len(instrument_fields):
+            self.clear_instrument_table()
+
             with Client(self.token) as client:
                 instruments = client.instruments.shares()
                 for instrument in instruments.instruments:
