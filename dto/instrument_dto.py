@@ -1,5 +1,4 @@
 class InstrumentDTO:
-    # todo 76 26 протестировать разные варианты. в тч и сбер, где корявая градация или поискать 0.5
     def __init__(self, ticker='', figi='', currency='', round_signs=0, min_increment=0, lot=1):
         self.ticker = ticker
         self.figi = figi
