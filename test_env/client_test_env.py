@@ -9,6 +9,9 @@ from test_env.time_test_env import TimeTestEnvHelper
 
 
 class ClientTestEnvHelper(AbstractProxyClient):
+    START_TIME = '07:00'
+    END_TIME = '15:29'
+
     def __init__(self,
                  token,
                  ticker,
@@ -35,13 +38,13 @@ class ClientTestEnvHelper(AbstractProxyClient):
         return self.current_price
 
     def set_candles_list_by_date(self, date):
-        candles = self.ticker_cache.get_candles(date)
+        is_today = self.ticker_cache.is_today(date)
+        is_evening = datetime.now(timezone.utc).time() > self.to_time(self.END_TIME)
+
+        candles = self.ticker_cache.get_candles(date, force_cache=is_today and is_evening)
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
         self.orders = {}
         self.executed_orders_ids = []
-
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        is_today = date == today
 
         return is_today or len(candles.candles) > 400  # в реальной дате > 500. это флаг отсутствия данных
 
@@ -52,11 +55,16 @@ class ClientTestEnvHelper(AbstractProxyClient):
     def get_candle(self, dt) -> HistoricCandle | None:
         return self.candles_1_min_dict.get((dt.hour, dt.minute), None)
 
+    @staticmethod
+    def to_time(str_time) -> datetime_time:
+        hours, minutes = map(int, str_time.split(':'))
+        return datetime_time(hours, minutes)
+
     def can_trade(self):
         now = self.time.now()
 
-        # Проверка, что текущее время между 10:00 и 18:40 (-3 часа)
-        if not (datetime_time(7, 00) <= now.time() <= datetime_time(15, 40)):
+        # Проверка, что текущее время между 10:00 и 18:29 (-3 часа)
+        if not (self.to_time(self.START_TIME) <= now.time() <= self.to_time(self.END_TIME)):
             return False
 
         return True
