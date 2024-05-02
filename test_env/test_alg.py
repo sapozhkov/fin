@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from tinkoff.invest import OrderDirection
 
+from lib.time_helper import TimeHelper
 from lib.order_helper import OrderHelper
 from lib.trading_bot import TradingBot
 from test_env.accounting_test_env import AccountingTestEnvHelper
@@ -40,6 +41,14 @@ class TestAlgorithm:
         balance_change_list = []
         operations_cnt = 0
         operations_cnt_list = []
+
+        if last_test_date is None:
+            # если сейчас вечер, то берем текущий день
+            if TimeHelper.is_evening():
+                last_test_date = TimeHelper.get_current_date()
+            else:
+                # иначе предыдущий
+                last_test_date = TimeHelper.get_previous_date()
 
         days_list = self.client_helper.ticker_cache.get_days_list(last_test_date, test_days_num)
 

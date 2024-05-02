@@ -1,8 +1,9 @@
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from tinkoff.invest import Client, GetCandlesResponse, CandleInterval, Quotation, HistoricCandle
 
 from dto.instrument_dto import InstrumentDTO
+from lib.time_helper import TimeHelper
 
 
 class TickerCache:
@@ -95,13 +96,8 @@ class TickerCache:
         nano = int(round(value - units, 2) * 1e9)
         return Quotation(units=units, nano=nano)
 
-    @staticmethod
-    def is_today(date):
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        return date == today
-
     def get_candles(self, date, force_cache=False):
-        if self.is_today(date):
+        if TimeHelper.is_today(date):
             # Запрос к API для сегодняшней даты всегда к API и без сохранения, если нет принудительного флага
             return self.fetch_candles_from_api(date, force_cache)
 
@@ -190,7 +186,7 @@ class TickerCache:
 
         for date_needed in dates_needed:
             _date = date_needed.strftime('%Y-%m-%d')
-            is_today = self.is_today(_date)
+            is_today = TimeHelper.is_today(_date)
             if _date in data_dict:
                 date, open_, high, low, close, volume = data_dict[_date]
                 if open_ > 0:

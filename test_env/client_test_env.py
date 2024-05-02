@@ -1,9 +1,10 @@
-from datetime import time as datetime_time, datetime, timedelta, timezone
+from datetime import time as datetime_time, datetime, timedelta
 from typing import Tuple
 
 from tinkoff.invest import OrderType, PostOrderResponse, OrderDirection, MoneyValue, HistoricCandle, \
     GetCandlesResponse, OrderState, OrderExecutionReportStatus
 
+from lib.time_helper import TimeHelper
 from prod_env.tinkoff_client import AbstractProxyClient
 from test_env.time_test_env import TimeTestEnvHelper
 
@@ -38,8 +39,8 @@ class ClientTestEnvHelper(AbstractProxyClient):
         return self.current_price
 
     def set_candles_list_by_date(self, date):
-        is_today = self.ticker_cache.is_today(date)
-        is_evening = datetime.now(timezone.utc).time() > self.to_time(self.END_TIME)
+        is_today = TimeHelper.is_today(date)
+        is_evening = TimeHelper.is_evening()
 
         candles = self.ticker_cache.get_candles(date, force_cache=is_today and is_evening)
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
@@ -61,13 +62,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         return datetime_time(hours, minutes)
 
     def can_trade(self):
-        now = self.time.now()
-
-        # Проверка, что текущее время между 10:00 и 18:29 (-3 часа)
-        if not (self.to_time(self.START_TIME) <= now.time() <= self.to_time(self.END_TIME)):
-            return False
-
-        return True
+        return TimeHelper.is_working_hours(self.time.now())
 
     def float_to_money_value(self, price) -> MoneyValue:
         return MoneyValue(self.instrument.currency, units=int(price), nano=int((self.round(price - int(price))) * 1e9))
