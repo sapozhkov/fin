@@ -58,8 +58,7 @@ class TradingBot:
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
 
-        # вот тут проводим переустановку base
-        self.pretest_and_modify_config()
+        self.validate_and_modify_config()
 
         self.log(f"INIT \n"
                  f"     figi - {self.client.instrument.figi} ({self.client.instrument.ticker})\n"
@@ -77,6 +76,14 @@ class TradingBot:
         is_working_day = now.weekday() < 5
 
         return is_working_day ^ is_exclusion  # xor
+
+    def validate_and_modify_config(self):
+        if self.config.majority_trade and self.client.instrument.kshort == 0:
+            self.config.majority_trade = False
+            self.log(f"Change majority_trade to False. Instrument kshort is 0")
+
+        # вот тут проводим переустановку base
+        self.pretest_and_modify_config()
 
     def pretest_and_modify_config(self):
         if not self.config.pretest_period:

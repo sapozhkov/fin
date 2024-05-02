@@ -282,6 +282,7 @@ class TickerCache:
                         data_dict['round_signs'] = round_signs
                         data_dict['min_increment'] = min_increment
                         data_dict['lot'] = instrument.lot
+                        data_dict['kshort'] = self.q2f(instrument.kshort)
 
             # кладем в таблицу
             for key, val in data_dict.items():

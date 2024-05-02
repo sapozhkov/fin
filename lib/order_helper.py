@@ -59,4 +59,3 @@ class OrderHelper:
         if commission == 0:
             commission = self.client.quotation_to_float(order.initial_commission)
         return commission
-
