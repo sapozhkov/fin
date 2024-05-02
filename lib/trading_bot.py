@@ -64,7 +64,7 @@ class TradingBot:
                  f"     figi - {self.client.instrument.figi} ({self.client.instrument.ticker})\n"
                  f"     config - {self.config}\n"
                  f"     cur_used_cnt - {self.get_current_count()}\n"
-                 f"     max_port - {self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots)}\n"
+                 f"     max_port - {self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots)}"
                  )
 
     def is_trading_day(self):
@@ -527,7 +527,7 @@ class TradingBot:
         max_start_total = self.start_price * self.config.step_max_cnt * self.config.step_lots
         if max_start_total:
             self.log(f"Итог {round(profit, 2)} {self.client.instrument.currency} "
-                     f"({round(100 * profit / max_start_total, 2)}%)")
+                     f"({round(100 * profit / max_start_total, 2)}%)\n\n")
 
     def get_current_profit(self, current_price=None) -> float:
         if current_price is None:
