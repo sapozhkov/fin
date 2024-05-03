@@ -78,7 +78,7 @@ class TradingBot:
         return is_working_day ^ is_exclusion  # xor
 
     def validate_and_modify_config(self):
-        if self.config.majority_trade and self.client.instrument.kshort == 0:
+        if self.config.majority_trade and not self.client.instrument.short_enabled_flag:
             self.config.majority_trade = False
             self.config.maj_to_zero = False
             self.log(f"Change majority_trade to False. Instrument kshort is 0")

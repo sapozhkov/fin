@@ -279,6 +279,7 @@ class TickerCache:
                         data_dict['min_increment'] = min_increment
                         data_dict['lot'] = instrument.lot
                         data_dict['kshort'] = self.q2f(instrument.kshort)
+                        data_dict['short_enabled_flag'] = self.q2f(instrument.short_enabled_flag)
 
             # кладем в таблицу
             for key, val in data_dict.items():
