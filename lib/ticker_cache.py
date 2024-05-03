@@ -272,14 +272,16 @@ class TickerCache:
                             round_signs = len(min_increment_str) - decimal_point_index - 1
                         min_increment = round(min_increment, round_signs)
 
-                        data_dict['ticker'] = self.ticker
-                        data_dict['figi'] = instrument.figi
-                        data_dict['name'] = instrument.name
-                        data_dict['currency'] = instrument.currency
-                        data_dict['round_signs'] = round_signs
-                        data_dict['min_increment'] = min_increment
-                        data_dict['lot'] = instrument.lot
-                        data_dict['short_enabled_flag'] = instrument.short_enabled_flag
+                        data_dict = {
+                            'ticker': self.ticker,
+                            'figi': instrument.figi,
+                            'name': instrument.name,
+                            'currency': instrument.currency,
+                            'round_signs': round_signs,
+                            'min_increment': min_increment,
+                            'lot': instrument.lot,
+                            'short_enabled_flag': instrument.short_enabled_flag,
+                        }
 
             # кладем в таблицу
             for key, val in data_dict.items():

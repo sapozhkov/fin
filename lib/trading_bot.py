@@ -81,7 +81,7 @@ class TradingBot:
         if self.config.majority_trade and not self.client.instrument.short_enabled_flag:
             self.config.majority_trade = False
             self.config.maj_to_zero = False
-            self.log(f"Change majority_trade to False. Instrument kshort is 0")
+            self.log(f"Change majority_trade to False. Instrument short_enabled_flag is False")
             if self.config.step_base_cnt < 0:
                 self.config.step_base_cnt = 0
                 self.log(f"Change step_base_cnt to 0")
