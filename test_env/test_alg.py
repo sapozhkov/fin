@@ -43,12 +43,7 @@ class TestAlgorithm:
         operations_cnt_list = []
 
         if last_test_date is None:
-            # если сейчас вечер, то берем текущий день
-            if TimeHelper.is_evening():
-                last_test_date = TimeHelper.get_current_date()
-            else:
-                # иначе предыдущий
-                last_test_date = TimeHelper.get_previous_date()
+            last_test_date = TimeHelper.get_current_date()
 
         days_list = self.client_helper.ticker_cache.get_days_list(last_test_date, test_days_num)
 
