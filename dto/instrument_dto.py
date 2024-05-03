@@ -9,5 +9,6 @@ class InstrumentDTO:
         self.kshort = float(kshort)
 
     def __repr__(self):
-        return f"InstrumentDTO({self.ticker} ({self.figi}), {self.currency}, " \
-               f"round_signs={self.round_signs}, min_increment={self.min_increment}, lot={self.lot}"
+        return f"{self.ticker} ({self.figi}), {self.currency}, " \
+               f"round_signs={self.round_signs}, inc={self.min_increment}, " \
+               f"lot={self.lot}, kshort={self.kshort}"

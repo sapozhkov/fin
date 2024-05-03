@@ -61,7 +61,7 @@ class TradingBot:
         self.validate_and_modify_config()
 
         self.log(f"INIT \n"
-                 f"     figi - {self.client.instrument.figi} ({self.client.instrument.ticker})\n"
+                 f"     instrument - {self.client.instrument}\n"
                  f"     config - {self.config}\n"
                  f"     cur_used_cnt - {self.get_current_count()}\n"
                  f"     max_port - {self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots)}"
