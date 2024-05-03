@@ -80,7 +80,11 @@ class TradingBot:
     def validate_and_modify_config(self):
         if self.config.majority_trade and self.client.instrument.kshort == 0:
             self.config.majority_trade = False
+            self.config.maj_to_zero = False
             self.log(f"Change majority_trade to False. Instrument kshort is 0")
+            if self.config.step_base_cnt < 0:
+                self.config.step_base_cnt = 0
+                self.log(f"Change step_base_cnt to 0")
 
         # вот тут проводим переустановку base
         self.pretest_and_modify_config()
