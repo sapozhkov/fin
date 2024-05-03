@@ -274,12 +274,12 @@ class TickerCache:
 
                         data_dict['ticker'] = self.ticker
                         data_dict['figi'] = instrument.figi
+                        data_dict['name'] = instrument.name
                         data_dict['currency'] = instrument.currency
                         data_dict['round_signs'] = round_signs
                         data_dict['min_increment'] = min_increment
                         data_dict['lot'] = instrument.lot
-                        data_dict['kshort'] = self.q2f(instrument.kshort)
-                        data_dict['short_enabled_flag'] = self.q2f(instrument.short_enabled_flag)
+                        data_dict['short_enabled_flag'] = instrument.short_enabled_flag
 
             # кладем в таблицу
             for key, val in data_dict.items():
