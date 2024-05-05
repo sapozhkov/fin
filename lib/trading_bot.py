@@ -19,6 +19,9 @@ class TradingBot:
     STATE_WORKING = 2
     STATE_FINISHED = 3
 
+    # количество секунд задержки старта работы в начале торгового дня. хак, чтобы не влететь в отсечку утром
+    START_SEC_SHIFT = 1
+
     def __init__(
             self,
             token,
@@ -148,7 +151,7 @@ class TradingBot:
         start_hour_str, start_min_str = self.config.start_time.split(':')
         end_hour_str, end_min_str = self.config.end_time.split(':')
 
-        start_time = datetime_time(int(start_hour_str), int(start_min_str))
+        start_time = datetime_time(int(start_hour_str), int(start_min_str), self.START_SEC_SHIFT)
         end_time = datetime_time(int(end_hour_str), int(end_min_str))
 
         # ко времени запуска приближаемся шагами в половину оставшегося времени
@@ -161,10 +164,6 @@ class TradingBot:
         if now_time >= end_time:
             self.stop()
             return False, 0
-
-        # Проверка доступности рыночной торговли через API
-        if not self.client.can_trade():
-            return False, self.config.sleep_no_trade
 
         return True, 0
 
