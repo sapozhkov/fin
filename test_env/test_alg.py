@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from tinkoff.invest import OrderDirection
 
+from lib.ticker_cache import TickerCache
 from lib.time_helper import TimeHelper
 from lib.order_helper import OrderHelper
 from lib.trading_bot import TradingBot
@@ -34,6 +35,9 @@ class TestAlgorithm:
         last_test_date,
         test_days_num,
         shares_count=0,
+
+        auto_conf_days_freq=0,
+        auto_conf_prev_days=0,
     ):
         # внутренние переменные
         profit = 0
@@ -45,7 +49,12 @@ class TestAlgorithm:
         if last_test_date is None:
             last_test_date = TimeHelper.get_current_date()
 
-        days_list = self.client_helper.ticker_cache.get_days_list(last_test_date, test_days_num)
+        if test_days_num < 7:
+            # несколько дней - берутся только рабочие
+            days_list = TickerCache.get_days_list_working_only(last_test_date, test_days_num)
+        else:
+            # на большом промежутке берутся все
+            days_list = TickerCache.get_days_list(last_test_date, test_days_num)
 
         self.accounting_helper.set_num(shares_count)
 
@@ -57,11 +66,28 @@ class TestAlgorithm:
         original_config = copy.copy(self.config)
         maj_commission = 0
         total_maj_commission = 0
+        config = None
 
         # закручиваем цикл по датам
         for test_date in days_list:
+            if self.accounting_helper.get_num() < 0:
+                maj_commission += self.client_helper.get_current_price() * self.accounting_helper.get_num() * 0.0012
+                # print(f"{test_date} - maj_commission {round(maj_commission, 2)} = "
+                #       f"{self.client_helper.get_current_price()} * {self.accounting_helper.get_num()} * {0.0012}")
 
-            config = copy.copy(original_config)
+            if not TimeHelper.is_working_day(TimeHelper.to_datetime(test_date)):
+                continue
+
+            if auto_conf_days_freq:
+                config = self.make_best_config(
+                    start_date=days_list[0],
+                    test_date=test_date,
+                    auto_conf_days_freq=auto_conf_days_freq,
+                    auto_conf_prev_days=auto_conf_prev_days,
+                    original_config=original_config,
+                    last_config=config)
+            else:
+                config = copy.copy(original_config)
 
             # дальше текущего времени не убегаем
             config.end_time = self.get_end_time(test_date, config.end_time)
@@ -76,17 +102,12 @@ class TestAlgorithm:
             # создаем бота с настройками
             bot = TradingBot(
                 self.token,
-                config=self.config,
+                config=config,
                 time_helper=self.time_helper,
                 logger_helper=self.logger_helper,
                 client_helper=self.client_helper,
                 accounting_helper=self.accounting_helper,
             )
-
-            if self.accounting_helper.get_num() < 0:
-                maj_commission += self.client_helper.get_current_price() * self.accounting_helper.get_num() * 0.0012
-                # print(f"{test_date} - maj_commission {round(maj_commission, 2)} = "
-                #       f"{self.client_helper.get_current_price()} * {self.accounting_helper.get_num()} * {0.0012}")
 
             if bot.state == bot.STATE_FINISHED:
                 # print(f"{test_date} - skip, finished status on start")
@@ -183,7 +204,7 @@ class TestAlgorithm:
             # else:
             #     rsi_text = ''
             # print(f"{test_date} "
-            #       f"{rsi_text}"
+                      # f"{rsi_text}"
             #       f"change: {round(balance_change, 2)}, "
             #       f"num: {bot.get_current_count()}")
 
@@ -225,23 +246,7 @@ class TestAlgorithm:
             # 'success_days': success_days,
             # 'success_p': round(success_days / test_days_num, 2),
             #
-            'op_cnt': operations_cnt,
-            # 'op_avg': round(sum(operations_cnt_list) / test_days_num, 2),
-
-            # 'sleep_trading': config.sleep_trading,
-            #
-            # # 'quit_on_balance_up_percent': quit_on_balance_up_percent,
-            # # 'quit_on_balance_down_percent': quit_on_balance_down_percent,
-            #
-            # 'step_max_cnt': config.step_max_cnt,
-            # 'step_base_cnt': config.step_base_cnt,
-            # 'threshold_buy_steps': config.threshold_buy_steps,
-            # 'threshold_sell_steps': config.threshold_sell_steps,
-            # 'step_size': config.step_size,
-            # 'step_set_orders_cnt': config.step_set_orders_cnt,
-            #
-            # 'operations_cnt': operations_cnt,
-            # 'operations_avg': round(sum(operations_cnt_list) / test_days_num, 2),
+            'op': operations_cnt,
         }
 
     @staticmethod
@@ -261,3 +266,120 @@ class TestAlgorithm:
         min_time = min(current_time, end_time_dt)
 
         return min_time.strftime("%H:%M")
+
+    @staticmethod
+    def is_nth_day_from_start(start_date_string: str, date_string: str, n: int):
+        start_date = datetime.strptime(start_date_string, "%Y-%m-%d")
+        target_date = datetime.strptime(date_string, "%Y-%m-%d")
+
+        days_difference = (target_date - start_date).days
+        return days_difference % n == 0
+
+    def make_best_config(
+            self,
+            start_date: str,
+            test_date: str,
+            auto_conf_days_freq: int,
+            auto_conf_prev_days: int,
+            original_config: ConfigDTO,
+            last_config: ConfigDTO | None
+    ) -> ConfigDTO:
+        need_run = self.is_nth_day_from_start(start_date, test_date, auto_conf_days_freq)
+
+        if not need_run:
+            return copy.copy(last_config) if last_config is not None else copy.copy(original_config)
+
+        conf_list = self.make_config_variants(original_config)
+
+        if last_config is not None:
+            conf_list2 = self.make_config_variants(last_config)
+            conf_list += conf_list2
+
+        conf_list = list(set(conf_list))
+        results = []
+
+        # запускаем получение результатов работы всех вариантов конфигурации
+        for config in conf_list:
+            test_alg = TestAlgorithm(self.token, do_printing=False, config=config)
+            res = test_alg.test(
+                last_test_date=TimeHelper.get_previous_date(TimeHelper.to_datetime(test_date)),
+                test_days_num=auto_conf_prev_days,
+                shares_count=0,
+
+                # не менять, чтобы в рекурсию не уйти
+                auto_conf_days_freq=0,
+                auto_conf_prev_days=0,
+            )
+            if res:
+                results.append(res)
+
+        # сортировка результатов
+        sorted_results = sorted(results, key=lambda x: float(x['profit_p']), reverse=True)
+
+        # дальше берем лучший и возвращаем его
+        best_res = sorted_results[0]
+
+        if best_res:
+            best_conf = best_res['config']
+            if last_config:
+                # пробросить, так как сбрасывается
+                best_conf.use_shares = last_config.use_shares
+            # print(f"Best of {len(conf_list)}/{len(sorted_results)} {test_date} - {best_conf}")
+            return best_conf
+        else:
+            print(f"Ошибка при получении лучшей конфигурации")
+            return copy.copy(original_config)
+
+    @staticmethod
+    def make_config_variants(config: ConfigDTO) -> list[ConfigDTO]:
+        return [
+            (ConfigDTO(
+                name=config.name,
+                ticker=config.ticker,
+
+                start_time=config.start_time,
+                end_time=config.end_time,
+
+                stop_up_p=config.stop_up_p,
+                stop_down_p=config.stop_down_p,
+
+                sleep_trading=config.sleep_trading,
+                sleep_no_trade=config.sleep_no_trade,
+
+                pretest_period=config.pretest_period,
+
+                majority_trade=config.majority_trade,
+                maj_to_zero=config.maj_to_zero,
+
+                threshold_buy_steps=config.threshold_buy_steps,
+                threshold_sell_steps=config.threshold_sell_steps,
+
+                step_max_cnt=step_max_cnt,
+                step_base_cnt=step_base_cnt,
+                step_size=step_size,
+                step_set_orders_cnt=step_set_orders_cnt,
+                step_lots=config.step_lots,
+
+                use_shares=0,  # тут 0, чтобы текущая настройка с чистого листа работала
+            ))
+            # for step_max_cnt in [config.step_max_cnt]
+            # for step_base_cnt in [config.step_max_cnt]
+            # for step_size in [config.step_size]
+            # for step_set_orders_cnt in [config.step_set_orders_cnt]
+            for step_max_cnt in [
+                config.step_max_cnt,
+                # config.step_max_cnt+1,
+                # config.step_max_cnt-1
+            ]
+            for step_base_cnt in [
+                0,
+                config.step_max_cnt,
+                -config.step_max_cnt if config.majority_trade else config.step_max_cnt // 2
+            ]
+            for step_size in [
+                round(config.step_size, 2),
+                round(config.step_size-0.2, 2),
+                round(config.step_size+0.2, 2),
+            ]
+            for step_set_orders_cnt in [config.step_set_orders_cnt]
+        ]

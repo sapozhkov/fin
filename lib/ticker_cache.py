@@ -73,7 +73,7 @@ class TickerCache:
 
         :param end_date: Строка с датой в формате "YYYY-MM-DD".
         :param days_num: Число дней для возврата.
-        :return: Список строк с датами предыдущих будних дней.
+        :return: Список строк с датами предыдущих дней.
         """
         out = []
         current_date = datetime.strptime(end_date, "%Y-%m-%d")
@@ -81,6 +81,27 @@ class TickerCache:
         while len(out) < days_num:
             out.append(current_date.strftime("%Y-%m-%d"))
             current_date -= timedelta(days=1)
+
+        out.reverse()
+
+        return out
+
+    @staticmethod
+    def get_days_list_working_only(end_date, days_num):
+        """
+        Возвращает список предыдущих будних дней, но только рабочих
+
+        :param end_date: Строка с датой в формате "YYYY-MM-DD".
+        :param days_num: Число дней для возврата.
+        :return: Список строк с датами предыдущих будних дней.
+        """
+        current_date = datetime.strptime(end_date, "%Y-%m-%d")
+        out = [end_date]
+
+        while len(out) < days_num:
+            current_date -= timedelta(days=1)
+            if TimeHelper.is_working_day(current_date):
+                out.append(current_date.strftime("%Y-%m-%d"))
 
         out.reverse()
 

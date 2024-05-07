@@ -41,7 +41,7 @@ class AbstractTimeHelper(ABC):
         return " ".join(parts[:2])
 
 
-class TimeHelper(AbstractTimeHelper):
+class TimeProdEnvHelper(AbstractTimeHelper):
     def now(self):
         return datetime.now(timezone.utc)
 

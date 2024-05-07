@@ -69,6 +69,10 @@ class ConfigDTO:
         if self.step_base_cnt > self.step_max_cnt:
             self.step_base_cnt = self.step_max_cnt
 
+        min_base_cnt = -self.step_max_cnt if self.majority_trade else 0
+        if self.step_base_cnt < min_base_cnt:
+            self.step_base_cnt = min_base_cnt
+
         if self.step_set_orders_cnt > self.step_max_cnt:
             self.step_set_orders_cnt = self.step_max_cnt
 

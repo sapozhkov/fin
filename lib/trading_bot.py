@@ -6,11 +6,11 @@ import pandas as pd
 from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, OrderState, PostOrderResponse
 
 from dto.config_dto import ConfigDTO
-from lib.day_exclusions import DayExclusions
 from lib.order_helper import OrderHelper
+from lib.time_helper import TimeHelper
 from prod_env.accounting_helper import AbstractAccountingHelper, AccountingHelper
 from prod_env.logger_helper import LoggerHelper, AbstractLoggerHelper
-from prod_env.time_helper import TimeHelper, AbstractTimeHelper
+from prod_env.time_helper import TimeProdEnvHelper, AbstractTimeHelper
 from prod_env.tinkoff_client import TinkoffProxyClient, AbstractProxyClient
 
 
@@ -34,7 +34,7 @@ class TradingBot:
     ):
         # хелперы и DTO
         self.config = config
-        self.time = time_helper or TimeHelper()
+        self.time = time_helper or TimeProdEnvHelper()
         self.logger = logger_helper or LoggerHelper(__name__, config.name or config.ticker)
         self.client = client_helper or TinkoffProxyClient(token, self.config.ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
@@ -71,14 +71,7 @@ class TradingBot:
                  )
 
     def is_trading_day(self):
-        now = self.time.now()
-
-        ex = DayExclusions()
-        is_exclusion = ex.is_exclusion(now)
-
-        is_working_day = now.weekday() < 5
-
-        return is_working_day ^ is_exclusion  # xor
+        return TimeHelper.is_working_day(self.time.now())
 
     def validate_and_modify_config(self):
         if self.config.majority_trade and not self.client.instrument.short_enabled_flag:
@@ -454,7 +447,7 @@ class TradingBot:
         can_trade, sleep_sec = self.can_trade()
         if not can_trade:
             if sleep_sec:
-                self.log(f"can not trade, sleep {TimeHelper.get_remaining_time_text(sleep_sec)}")
+                self.log(f"can not trade, sleep {TimeProdEnvHelper.get_remaining_time_text(sleep_sec)}")
                 self.time.sleep(sleep_sec)
             return
 
