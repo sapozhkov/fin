@@ -29,6 +29,9 @@ config_list: list[ConfigDTO] = [
     # ),
 ]
 
+# print(config_list)
+# exit()
+
 
 async def main():
     commands = []
