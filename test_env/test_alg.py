@@ -225,7 +225,7 @@ class TestAlgorithm:
             # 'success_days': success_days,
             # 'success_p': round(success_days / test_days_num, 2),
             #
-            # 'op_cnt': operations_cnt,
+            'op_cnt': operations_cnt,
             # 'op_avg': round(sum(operations_cnt_list) / test_days_num, 2),
 
             # 'sleep_trading': config.sleep_trading,
