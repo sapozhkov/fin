@@ -204,7 +204,7 @@ class TestAlgorithm:
             # else:
             #     rsi_text = ''
             # print(f"{test_date} "
-                      # f"{rsi_text}"
+            #       f"{rsi_text}"
             #       f"change: {round(balance_change, 2)}, "
             #       f"num: {bot.get_current_count()}")
 
