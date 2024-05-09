@@ -66,6 +66,9 @@ class ConfigDTO:
             self.step_base_cnt = round(self.step_max_cnt / 2)
 
         # корректировки параметров
+        if self.step_size <= 0:
+            self.step_size = 0.2
+
         if self.step_base_cnt > self.step_max_cnt:
             self.step_base_cnt = self.step_max_cnt
 
