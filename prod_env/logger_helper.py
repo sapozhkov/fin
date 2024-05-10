@@ -48,8 +48,13 @@ class LoggerHelper(AbstractLoggerHelper):
         log_file_path = f"{log_directory}/{file_name}.log"
 
         # Создаем директорию, если она не существует
-        if not os.path.exists(log_directory):
-            os.makedirs(log_directory)
+        try:
+            if not os.path.exists(log_directory):
+                os.makedirs(log_directory)
+        except FileExistsError:
+            # если есть, то её сосед создал, всё ок.
+            # 11 пункт дзена
+            print(f"directory {log_directory} already exists")
 
         # Создаем логгер
         self.logger.setLevel(logging.INFO)
