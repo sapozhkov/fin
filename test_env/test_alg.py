@@ -295,11 +295,11 @@ class TestAlgorithm:
             conf_list2 = self.make_config_variants(last_config)
             conf_list += conf_list2
 
-        conf_list = list(set(conf_list))
+        unique_conf_list = list(set(conf_list))
         results = []
 
         # запускаем получение результатов работы всех вариантов конфигурации
-        for config in conf_list:
+        for config in unique_conf_list:
             test_alg = TestAlgorithm(self.token, do_printing=False, config=config)
             res = test_alg.test(
                 last_test_date=TimeHelper.get_previous_date(TimeHelper.to_datetime(test_date)),
