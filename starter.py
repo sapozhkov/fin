@@ -36,12 +36,11 @@ config_list: list[ConfigDTO] = [
 async def main():
     commands = []
     for conf in config_list:
-        commands.append(f"python3 {current_dir}/bot.py {conf.to_string()}")
+        commands.append(f"python3 {current_dir}/bot.py {conf.to_string()} >> log/all.log 2>&1")
 
     for command in commands:
         tasks = [run_command(command)]
         await asyncio.gather(*tasks)
-        time.sleep(10)
 
 print(f'start {datetime.datetime.now()}')
 
