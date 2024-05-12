@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import os
-import time
 
 from dto.config_dto import ConfigDTO
 
