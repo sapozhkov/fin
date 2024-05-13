@@ -223,7 +223,10 @@ class TestAlgorithm:
 
         config = original_config
 
-        profit_p = round(100 * profit / (start_price_t * config.step_max_cnt * config.step_lots), 2) \
+        # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
+        maj_k = 2 if config.majority_trade else 1
+
+        profit_p = round(100 * profit / (start_price_t * config.step_max_cnt * config.step_lots * maj_k), 2) \
             if start_price_t and config.step_max_cnt else 0
 
         # это для обычной торговли. купил в начале, в конце продал

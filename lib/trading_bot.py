@@ -520,7 +520,10 @@ class TradingBot:
 
         profit = self.get_current_profit(current_price)
 
-        max_start_total = self.start_price * self.config.step_max_cnt * self.config.step_lots
+        # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
+        maj_k = 2 if self.config.majority_trade else 1
+
+        max_start_total = self.start_price * self.config.step_max_cnt * self.config.step_lots * maj_k
         if max_start_total:
             self.log(f"Итог {round(profit, 2)} {self.client.instrument.currency} "
                      f"({round(100 * profit / max_start_total, 2)}%)\n\n")
