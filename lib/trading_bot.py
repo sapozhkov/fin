@@ -76,7 +76,6 @@ class TradingBot:
     def validate_and_modify_config(self):
         if self.config.majority_trade and not self.client.instrument.short_enabled_flag:
             self.config.majority_trade = False
-            self.config.maj_to_zero = False
             self.log(f"Change majority_trade to False. Instrument short_enabled_flag is False")
             if self.config.step_base_cnt < 0:
                 self.config.step_base_cnt = 0
@@ -87,6 +86,10 @@ class TradingBot:
 
     def pretest_and_modify_config(self):
         if not self.config.pretest_period:
+            return
+
+        # пока работает только для RSI внутри бота. PRE запускается снаружи до
+        if self.config.pretest_type != ConfigDTO.PRETEST_RSI:
             return
 
         current_trend = self.get_rsi_trend_val(self.config.pretest_period)
@@ -502,17 +505,15 @@ class TradingBot:
         self.log("Остановка бота...")
         self.cancel_active_orders()
 
-        # если в конце дня надо вернуться в 0 лотов на балансе
-        if self.config.maj_to_zero or to_zero:
-            current_count = self.get_current_count()
+        current_count = self.get_current_count()
 
-            # продать откупленные инструменты
-            if to_zero and current_count > 0:
-                self.sell(current_count)
+        # если надо вернуться в 0 - продать откупленные инструменты
+        if to_zero and current_count > 0:
+            self.sell(current_count)
 
-            # и откупить перепроданные
-            if current_count < 0:
-                self.buy(-current_count)
+        # при мажоритарной откупить перепроданные, если есть
+        if self.config.majority_trade and current_count < 0:
+            self.buy(-current_count)
 
         current_price = self.get_current_price()
         if not current_price:

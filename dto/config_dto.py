@@ -2,6 +2,10 @@ import re
 
 
 class ConfigDTO:
+    PRETEST_NONE = ''
+    PRETEST_RSI = 'rsi'  # прогон по RSI
+    PRETEST_PRE = 'pre'  # анализ и выбор лучшего варианта том же алгоритме за pretest_period дней с вариациями конфига
+
     def __init__(
             self,
             name='',
@@ -16,10 +20,10 @@ class ConfigDTO:
             sleep_trading=1 * 60,
             sleep_no_trade=1 * 60,
 
-            pretest_period=13,
+            pretest_type=PRETEST_NONE,
+            pretest_period=0,
 
             majority_trade=True,
-            maj_to_zero=True,  # откупить до 0 в конце работы алгоритма (или дня)
 
             threshold_buy_steps=0,
             threshold_sell_steps=0,
@@ -45,9 +49,10 @@ class ConfigDTO:
         self.step_set_orders_cnt = int(step_set_orders_cnt)
         self.step_lots = int(step_lots)
 
+        self.pretest_type = str(pretest_type)
         self.pretest_period = int(pretest_period)
+
         self.majority_trade = bool(majority_trade)
-        self.maj_to_zero = bool(maj_to_zero)
         self.threshold_buy_steps = int(threshold_buy_steps)
         self.threshold_sell_steps = int(threshold_sell_steps)
 
@@ -69,6 +74,12 @@ class ConfigDTO:
         if self.step_size <= 0:
             self.step_size = 0.2
 
+        if self.pretest_type not in [self.PRETEST_NONE, self.PRETEST_RSI, self.PRETEST_PRE]:
+            self.pretest_type = self.PRETEST_NONE
+
+        if self.pretest_type == self.PRETEST_NONE:
+            self.pretest_period = 0
+
         if self.step_base_cnt > self.step_max_cnt:
             self.step_base_cnt = self.step_max_cnt
 
@@ -86,43 +97,47 @@ class ConfigDTO:
             self.threshold_sell_steps = self.step_set_orders_cnt + 1
 
     def __repr__(self):
-        base = f"pre{self.pretest_period}:{self.step_base_cnt}" if self.pretest_period else f"{self.step_base_cnt}"
-        return (f"{self.ticker} "
-                f"{self.step_max_cnt}/{base}/{self.step_set_orders_cnt} x l{self.step_lots} x {self.step_size}¤, "
-                f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| "
-                f"|u{self.stop_up_p} d{self.stop_down_p}| "
-                f"maj{'+' if self.majority_trade else '-'}z{'+' if self.maj_to_zero else '-'} "
+        base = f"{self.pretest_type}{self.pretest_period}:{self.step_base_cnt}" \
+            if self.pretest_type else f"{self.step_base_cnt}"
+        thresholds = f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| " \
+            if self.threshold_sell_steps or self.threshold_buy_steps else ''
+        stops = f"|u{self.stop_up_p} d{self.stop_down_p}| " \
+            if self.stop_up_p or self.stop_down_p else ''
+        return (f"{self.ticker}{'+' if self.majority_trade else '-'} "
+                f"{self.step_max_cnt}/{base}/{self.step_set_orders_cnt} x l{self.step_lots} x {self.step_size}¤ "
+                f"{thresholds}{stops}"
                 )
 
     @classmethod
     def from_repr_string(cls, input_string):
-        # RNFT 3/0/3 x l2 x 1.0¤, |s0 b0| |u0.0 d0.0| maj+z+
-        pattern = r"((?P<ticker>\w*) )?" \
+        # RNFT+ 3/0/3 x l2 x 1.0¤ |s0 b0| |u0.0 d0.0| maj+z+
+        # RNFT- 3/pre7:-3/3 x l2 x 1.0¤ |s0 b0| |u0.0 d0.0| maj+z+
+        # RNFT- 3/pre7:-3/3 x l2 x 1.0¤
+        pattern = r"^\s*(?P<ticker>\w*)(?P<majority_trade>[\+\-]) " \
                   r"(?P<step_max_cnt>\d+)/" \
-                  r"(pre(?P<pretest_period>\d+):)?(?P<step_base_cnt>-?\d+)/" \
+                  r"((?P<pretest_type>pre|rsi)(?P<pretest_period>\d+):)?(?P<step_base_cnt>-?\d+)/" \
                   r"(?P<step_set_orders_cnt>\d+) " \
-                  r"x l(?P<step_lots>\d+) x (?P<step_size>[\d.]+)¤, " \
-                  r"\|s(?P<threshold_sell_steps>\d+) b(?P<threshold_buy_steps>\d+)\| " \
-                  r"\|u(?P<stop_up_p>[\d.]+) d(?P<stop_down_p>[\d.]+)\| " \
-                  r"maj(?P<majority_trade>[\+\-])z(?P<maj_to_zero>[\+\-])"
+                  r"x l(?P<step_lots>\d+) x (?P<step_size>[\d.]+)¤\s?" \
+                  r"(\|s(?P<threshold_sell_steps>\d+) b(?P<threshold_buy_steps>\d+)\|\s?)?" \
+                  r"(\|u(?P<stop_up_p>[\d.]+) d(?P<stop_down_p>[\d.]+)\|\s?)?$"
         match = re.match(pattern, input_string)
 
         if match:
             values = match.groupdict()
             # Преобразование строковых значений в нужный формат (int, float, bool и т.д.)
-            values['ticker'] = str(values['ticker']) if values['ticker'] is not None else ''
+            values['ticker'] = str(values['ticker'] or '')
             values['step_max_cnt'] = int(values['step_max_cnt'])
             values['step_base_cnt'] = int(values['step_base_cnt'])
             values['step_set_orders_cnt'] = int(values['step_set_orders_cnt'])
-            values['pretest_period'] = int(values['pretest_period']) if values['pretest_period'] is not None else 0
+            values['pretest_type'] = str(values['pretest_type'] or '')
+            values['pretest_period'] = int(values['pretest_period'] or 0)
             values['step_lots'] = int(values['step_lots'])
             values['step_size'] = float(values['step_size'])
-            values['threshold_sell_steps'] = int(values['threshold_sell_steps'])
-            values['threshold_buy_steps'] = int(values['threshold_buy_steps'])
-            values['stop_up_p'] = float(values['stop_up_p'])
-            values['stop_down_p'] = float(values['stop_down_p'])
+            values['threshold_sell_steps'] = int(values['threshold_sell_steps'] or 0)
+            values['threshold_buy_steps'] = int(values['threshold_buy_steps'] or 0)
+            values['stop_up_p'] = float(values['stop_up_p'] or 0)
+            values['stop_down_p'] = float(values['stop_down_p'] or 0)
             values['majority_trade'] = values['majority_trade'] == '+'
-            values['maj_to_zero'] = values['maj_to_zero'] == '+'
 
             return ConfigDTO(**values)
         else:
@@ -166,9 +181,9 @@ class ConfigDTO:
                 self.sleep_no_trade == other.sleep_no_trade and
                 self.step_max_cnt == other.step_max_cnt and
                 self.step_base_cnt == other.step_base_cnt and
+                self.pretest_type == other.pretest_type and
                 self.pretest_period == other.pretest_period and
                 self.majority_trade == other.majority_trade and
-                self.maj_to_zero == other.maj_to_zero and
                 self.threshold_buy_steps == other.threshold_buy_steps and
                 self.stop_up_p == other.stop_up_p and
                 self.stop_down_p == other.stop_down_p and
@@ -184,8 +199,9 @@ class ConfigDTO:
             self.name, self.ticker,
             self.start_time, self.end_time,
             self.sleep_trading, self.sleep_no_trade,
-            self.step_max_cnt, self.step_base_cnt, self.pretest_period,
-            self.majority_trade, self.maj_to_zero,
+            self.step_max_cnt, self.step_base_cnt,
+            self.pretest_type, self.pretest_period,
+            self.majority_trade,
             self.threshold_buy_steps, self.threshold_sell_steps,
             self.stop_up_p, self.stop_down_p,
             self.step_size, self.step_set_orders_cnt, self.step_lots,

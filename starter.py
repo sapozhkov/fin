@@ -1,9 +1,14 @@
 import asyncio
 import datetime
 import os
+from dotenv import load_dotenv
 
 from dto.config_dto import ConfigDTO
+from lib.time_helper import TimeHelper
+from test_env.test_alg import TestAlgorithm
 
+load_dotenv()
+TOKEN = os.getenv("INVEST_TOKEN")
 
 async def run_command(command):
     process = await asyncio.create_subprocess_shell(
@@ -35,7 +40,34 @@ config_list: list[ConfigDTO] = [
 async def main():
     commands = []
     for conf in config_list:
-        commands.append(f"python3 {current_dir}/bot.py {conf.to_string()} >> log/all.log 2>&1")
+
+        # вот сюда втыкаем выбор лучшего конфига по текущему
+        test_alg = TestAlgorithm(
+            TOKEN,
+            do_printing=False,
+            config=conf,
+        )
+
+        if conf.pretest_type == ConfigDTO.PRETEST_PRE:
+            pretest_freq = 1
+            pretest_days = conf.pretest_period
+        else:
+            pretest_freq = 0
+            pretest_days = 0
+
+        best_conf = test_alg.make_best_config(
+            start_date=TimeHelper.get_current_date(),
+            test_date=TimeHelper.get_current_date(),
+            auto_conf_days_freq=pretest_freq,
+            auto_conf_prev_days=pretest_days,
+            original_config=conf,
+            # и предыдущего конфига нет, это на будущее, когда база будет
+            last_config=None
+        )
+
+        print(f"{datetime.datetime.now()} Выбран лучший конфиг {best_conf}")
+
+        commands.append(f"python3 {current_dir}/bot.py {best_conf.to_string()} >> log/all.log 2>&1")
 
     for command in commands:
         tasks = [run_command(command)]

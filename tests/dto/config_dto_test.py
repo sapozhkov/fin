@@ -1,4 +1,3 @@
-import inspect
 import unittest
 
 from dto.config_dto import ConfigDTO
@@ -29,10 +28,11 @@ class MyTestCase(unittest.TestCase):
 
                 step_max_cnt=21,
                 step_base_cnt=8,
+
+                pretest_type=ConfigDTO.PRETEST_RSI,
                 pretest_period=22,
 
                 majority_trade=False,
-                maj_to_zero=False,
 
                 threshold_buy_steps=89,
                 threshold_sell_steps=34,
@@ -148,17 +148,35 @@ class MyTestCase(unittest.TestCase):
                 step_base_cnt=None,
             ),
 
-            # полный набор - всё не стандартное. новые поля докидывать сюда
+            # разные варианты претестов
             ConfigDTO(
+                pretest_type=ConfigDTO.PRETEST_NONE,
+                pretest_period=12,
+            ),
+
+            ConfigDTO(
+                pretest_type=ConfigDTO.PRETEST_RSI,
+                pretest_period=13,
+            ),
+
+            ConfigDTO(
+                pretest_type=ConfigDTO.PRETEST_PRE,
+                pretest_period=14,
+            ),
+
+            # # полный набор - всё не стандартное. новые поля докидывать сюда
+            ConfigDTO(
+                ticker='TEST',
+
                 stop_up_p=.2,
                 stop_down_p=.34,
 
                 step_max_cnt=21,
                 step_base_cnt=8,
+                pretest_type=ConfigDTO.PRETEST_RSI,
                 pretest_period=22,
 
                 majority_trade=False,
-                maj_to_zero=False,
 
                 threshold_buy_steps=89,
                 threshold_sell_steps=34,
