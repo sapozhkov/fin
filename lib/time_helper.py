@@ -22,6 +22,10 @@ class TimeHelper:
         return cls.now().time() > cls.to_time(cls.END_TIME)
 
     @classmethod
+    def is_morning(cls) -> bool:
+        return cls.now().time() < cls.to_time(cls.START_TIME)
+
+    @classmethod
     def is_working_hours(cls, dt: datetime | None = None) -> bool:
         if dt is None:
             dt = cls.now()

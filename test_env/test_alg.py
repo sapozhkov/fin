@@ -47,7 +47,11 @@ class TestAlgorithm:
         operations_cnt_list = []
 
         if last_test_date is None:
-            last_test_date = TimeHelper.get_current_date()
+            # до утра гоняем предыдущий день, а то откинется лишний
+            if TimeHelper.is_morning():
+                last_test_date = TimeHelper.get_previous_date()
+            else:
+                last_test_date = TimeHelper.get_current_date()
 
         if test_days_num < 7:
             # несколько дней - берутся только рабочие
@@ -352,7 +356,6 @@ class TestAlgorithm:
                 pretest_period=config.pretest_period,
 
                 majority_trade=config.majority_trade,
-                maj_to_zero=config.maj_to_zero,
 
                 threshold_buy_steps=config.threshold_buy_steps,
                 threshold_sell_steps=config.threshold_sell_steps,
