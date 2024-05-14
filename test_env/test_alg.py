@@ -354,6 +354,7 @@ class TestAlgorithm:
                 sleep_no_trade=config.sleep_no_trade,
 
                 pretest_period=config.pretest_period,
+                pretest_type=config.pretest_type,
 
                 majority_trade=config.majority_trade,
 
@@ -386,6 +387,10 @@ class TestAlgorithm:
                 round(config.step_size, 2),
                 round(config.step_size-0.2, 2),
                 round(config.step_size+0.2, 2),
+
+                # todo удалить после того, как сделаю добавление конфига предыдущего дня
+                round(config.step_size-0.4, 2),
+                round(config.step_size+0.4, 2),
             ]
             for step_set_orders_cnt in [config.step_set_orders_cnt]
         ]

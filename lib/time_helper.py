@@ -32,9 +32,12 @@ class TimeHelper:
         return cls.to_time(cls.START_TIME) <= dt.time() <= cls.to_time(cls.END_TIME)
 
     @classmethod
-    def is_working_day(cls, dt: datetime | None = None) -> bool:
+    def is_working_day(cls, dt: datetime | str | None = None) -> bool:
         if dt is None:
             dt = cls.now()
+
+        if isinstance(dt, str):
+            dt = cls.to_datetime(dt)
 
         ex = DayExclusions()
         is_exclusion = ex.is_exclusion(dt)
@@ -61,3 +64,10 @@ class TimeHelper:
             dt = cls.now()
         previous_datetime = dt - timedelta(days=1)
         return previous_datetime.strftime(cls.DATE_FORMAT)
+
+    @classmethod
+    def get_next_date(cls, dt: datetime | None = None) -> str:
+        if dt is None:
+            dt = cls.now()
+        next_datetime = dt + timedelta(days=1)
+        return next_datetime.strftime(cls.DATE_FORMAT)
