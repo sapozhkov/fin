@@ -30,11 +30,11 @@ async def run_command(command):
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 config_list: list[ConfigDTO] = [
-    ConfigDTO.from_repr_string('DELI+ 3/pre6:-3/3 x l2 x 1.6¤ |u0.0 d0.02|'),
-    ConfigDTO.from_repr_string('ETLN- 3/pre4:0/2 x l10 x 1.0¤ |u0.0 d0.02|'),
-    ConfigDTO.from_repr_string('EUTR+ 3/pre3:-3/3 x l2 x 0.8¤ |u0.0 d0.02|'),
-    ConfigDTO.from_repr_string('RNFT+ 3/pre5:3/2 x l2 x 1.4¤ |u0.0 d0.02|'),
-    ConfigDTO.from_repr_string('SPBE- 3/pre6:0/2 x l10 x 1.8¤ |u0.0 d0.02|'),
+    ConfigDTO.from_repr_string('DELI+ 3/pre6:-3/3 x l2 x 1.6¤'),
+    ConfigDTO.from_repr_string('ETLN- 3/pre4:0/2 x l10 x 1.0¤'),
+    ConfigDTO.from_repr_string('EUTR+ 3/pre3:-3/3 x l2 x 0.8¤'),
+    ConfigDTO.from_repr_string('RNFT+ 3/pre5:3/2 x l2 x 1.4¤'),
+    ConfigDTO.from_repr_string('SPBE- 3/pre6:0/2 x l10 x 1.8¤'),
 ]
 
 # print(config_list)
