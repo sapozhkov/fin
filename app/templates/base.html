@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}My Fin App{% endblock %}</title>
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('routes.index') }}">Home</a></li>
+                <li><a href="{{ url_for('routes.logout') }}">Logout</a></li>
+            </ul>
+        </nav>
+    {% endif %}
+    {% block content %}{% endblock %}
+</body>
+</html>
