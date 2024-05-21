@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Deals</h1>
+    <a href="{{ url_for('deals.create') }}">Create new deal</a>
+    <ul>
+        {% for deal in deals %}
+            <li>
+                <a href="{{ url_for('deals.view', id=deal.id) }}">{{ deal.type }} - {{ deal.datetime }}</a>
+                <a href="{{ url_for('deals.edit', id=deal.id) }}">Edit</a>
+                <form action="{{ url_for('deals.delete', id=deal.id) }}" method="post" style="display:inline;">
+                    <button type="submit">Delete</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

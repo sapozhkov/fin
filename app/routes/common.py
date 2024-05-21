@@ -3,7 +3,7 @@ from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User
 from config import Config
 
-bp = Blueprint('routes', __name__)
+bp = Blueprint('common', __name__)
 
 
 @bp.route('/')
@@ -15,13 +15,13 @@ def index():
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('routes.index'))
+        return redirect(url_for('common.index'))
     if request.method == 'POST':
         password = request.form.get('password')
         if password == Config.PASSWORD:
             user = User()
             login_user(user)
-            return redirect(url_for('routes.index'))
+            return redirect(url_for('common.index'))
         else:
             flash('Invalid password.')
     return render_template('login.html')
@@ -30,4 +30,4 @@ def login():
 @bp.route('/logout')
 def logout():
     logout_user()
-    return redirect(url_for('routes.login'))
+    return redirect(url_for('common.login'))

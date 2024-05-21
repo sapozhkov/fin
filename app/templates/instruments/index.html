@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Instruments</h1>
+    <a href="{{ url_for('instruments.create') }}">Create new instrument</a>
+    <ul>
+        {% for instrument in instruments %}
+            <li>
+                <a href="{{ url_for('instruments.view', id=instrument.id) }}">{{ instrument.ticker }}</a>
+                <a href="{{ url_for('instruments.edit', id=instrument.id) }}">Edit</a>
+                <form action="{{ url_for('instruments.delete', id=instrument.id) }}" method="post" style="display:inline;">
+                    <button type="submit">Delete</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

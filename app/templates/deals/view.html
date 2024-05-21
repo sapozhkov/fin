@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Deal: {{ deal.id }}</h1>
+    <ul>
+        <li>Run: {{ deal.run_rel.config }}</li>
+        <li>Type: {{ deal.type }}</li>
+        <li>Datetime: {{ deal.datetime }}</li>
+        <li>Price: {{ deal.price }}</li>
+        <li>Commission: {{ deal.commission }}</li>
+        <li>Total: {{ deal.total }}</li>
+        <li>Count: {{ deal.count }}</li>
+    </ul>
+    <a href="{{ url_for('deals.edit', id=deal.id) }}">Edit</a>
+    <form action="{{ url_for('deals.delete', id=deal.id) }}" method="post" style="display:inline;">
+        <button type="submit">Delete</button>
+    </form>
+    <a href="{{ url_for('deals.index') }}">Back to list</a>
+{% endblock %}

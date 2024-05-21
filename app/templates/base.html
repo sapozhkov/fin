@@ -1,18 +1,33 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <title>{% block title %}My Fin App{% endblock %}</title>
+    <title>{% block title %}My Application{% endblock %}</title>
 </head>
 <body>
     {% if current_user.is_authenticated %}
-        <nav>
-            <ul>
-                <li><a href="{{ url_for('routes.index') }}">Home</a></li>
-                <li><a href="{{ url_for('routes.logout') }}">Logout</a></li>
-            </ul>
-        </nav>
+        <header>
+            <nav>
+                <ul>
+                    <li><a href="{{ url_for('common.index') }}">Home</a></li>
+                    <li><a href="{{ url_for('instruments.index') }}">Instruments</a></li>
+                    <li><a href="{{ url_for('runs.index') }}">Runs</a></li>
+                    <li><a href="{{ url_for('deals.index') }}">Deals</a></li>
+                    <li><a href="{{ url_for('common.logout') }}">Logout</a></li>
+                </ul>
+            </nav>
+        </header>
     {% endif %}
-    {% block content %}{% endblock %}
+    <main>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
 </body>
 </html>

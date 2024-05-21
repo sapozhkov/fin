@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+    <h1>Runs</h1>
+    <a href="{{ url_for('runs.create') }}">Create new run</a>
+    <ul>
+        {% for run in runs %}
+            <li>
+                <a href="{{ url_for('runs.view', id=run.id) }}">{{ run.config }}</a>
+                <a href="{{ url_for('runs.edit', id=run.id) }}">Edit</a>
+                <form action="{{ url_for('runs.delete', id=run.id) }}" method="post" style="display:inline;">
+                    <button type="submit">Delete</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

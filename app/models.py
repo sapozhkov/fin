@@ -44,8 +44,8 @@ class Run(db.Model):
     end_cnt = db.Column(db.Integer, nullable=False)
     candle = db.Column(db.String, nullable=False)
 
-    # Связь с моделью Instruments
-    instrument_rel = db.relationship('Instruments', backref=db.backref('runs', lazy=True))
+    # Связь с моделью Instrument
+    instrument_rel = db.relationship('Instrument', backref=db.backref('runs', lazy=True))
 
     # Индексы
     __table_args__ = (
