@@ -367,7 +367,7 @@ class TestAlgorithm:
                 step_set_orders_cnt=step_set_orders_cnt,
                 step_lots=config.step_lots,
 
-                use_shares=0,  # тут 0, чтобы текущая настройка с чистого листа работала
+                use_shares=None,  # тут None, чтобы текущая настройка с чистого листа работала
             ))
             # for step_max_cnt in [config.step_max_cnt]
             # for step_base_cnt in [config.step_max_cnt]
