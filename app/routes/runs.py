@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from app import db
 from app.models import Run, Instrument
 from app.forms.run_form import RunForm
+from lib.time_helper import TimeHelper
 
 bp = Blueprint('runs', __name__, url_prefix='/runs')
 
@@ -19,7 +20,7 @@ def create():
     if form.validate_on_submit():
         run = Run(
             instrument=form.instrument.data,
-            date=form.date.data,
+            date=TimeHelper.to_datetime(form.date.data).date(),
             status=form.status.data,
             exit_code=form.exit_code.data,
             last_error=form.last_error.data,
@@ -46,7 +47,7 @@ def edit(id):
     form.instrument.choices = [(instr.id, instr.ticker) for instr in Instrument.query.all()]
     if form.validate_on_submit():
         run.instrument = form.instrument.data
-        run.date = form.date.data
+        run.date = TimeHelper.to_datetime(form.date.data).date()
         run.status = form.status.data
         run.exit_code = form.exit_code.data
         run.last_error = form.last_error.data
@@ -70,7 +71,7 @@ def view(id):
     return render_template('runs/view.html', run=run)
 
 
-@bp.route('/<int:id>/delete', methods=['POST'])
+@bp.route('/<int:id>/delete')
 def delete(id):
     run = Run.query.get_or_404(id)
     db.session.delete(run)

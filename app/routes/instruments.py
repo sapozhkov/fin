@@ -50,7 +50,7 @@ def view(id):
     return render_template('instruments/view.html', instrument=instrument)
 
 
-@bp.route('/<int:id>/delete', methods=['POST'])
+@bp.route('/<int:id>/delete')
 def delete(id):
     instrument = Instrument.query.get_or_404(id)
     db.session.delete(instrument)

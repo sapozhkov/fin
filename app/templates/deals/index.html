@@ -7,9 +7,7 @@
             <li>
                 <a href="{{ url_for('deals.view', id=deal.id) }}">{{ deal.type }} - {{ deal.datetime }}</a>
                 <a href="{{ url_for('deals.edit', id=deal.id) }}">Edit</a>
-                <form action="{{ url_for('deals.delete', id=deal.id) }}" method="post" style="display:inline;">
-                    <button type="submit">Delete</button>
-                </form>
+                <a href="{{ url_for('deals.delete', id=deal.id) }}" onclick="return confirm('Are you sure you want to delete this item?');">Delete</a>
             </li>
         {% endfor %}
     </ul>

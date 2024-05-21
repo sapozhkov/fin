@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash
 from app import db
 from app.models import Deal, Run
 from app.forms.deal_form import DealForm
+from lib.time_helper import TimeHelper
 
 bp = Blueprint('deals', __name__, url_prefix='/deals')
 
@@ -20,7 +21,7 @@ def create():
         deal = Deal(
             run=form.run.data,
             type=form.type.data,
-            datetime=form.datetime.data,
+            datetime=TimeHelper.to_datetime(form.datetime.data),
             price=form.price.data,
             commission=form.commission.data,
             total=form.total.data,
@@ -41,7 +42,7 @@ def edit(id):
     if form.validate_on_submit():
         deal.run = form.run.data
         deal.type = form.type.data
-        deal.datetime = form.datetime.data
+        deal.datetime = TimeHelper.to_datetime(form.datetime.data)
         deal.price = form.price.data
         deal.commission = form.commission.data
         deal.total = form.total.data
@@ -58,7 +59,7 @@ def view(id):
     return render_template('deals/view.html', deal=deal)
 
 
-@bp.route('/<int:id>/delete', methods=['POST'])
+@bp.route('/<int:id>/delete')
 def delete(id):
     deal = Deal.query.get_or_404(id)
     db.session.delete(deal)
