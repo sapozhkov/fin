@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
     <title>{% block title %}My Application{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
     {% if current_user.is_authenticated %}
