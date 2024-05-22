@@ -3,6 +3,8 @@ import datetime
 import os
 from dotenv import load_dotenv
 
+from app import create_app
+from app.models import Instrument
 from dto.config_dto import ConfigDTO
 from lib.time_helper import TimeHelper
 from test_env.test_alg import TestAlgorithm
@@ -29,13 +31,13 @@ async def run_command(command):
     return process
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
-config_list: list[ConfigDTO] = [
-    ConfigDTO.from_repr_string('DELI+ 3/pre6:-3/3 x l2 x 1.6¤'),
-    ConfigDTO.from_repr_string('ETLN- 3/pre4:0/2 x l10 x 1.0¤'),
-    ConfigDTO.from_repr_string('EUTR+ 3/pre3:-3/3 x l2 x 0.8¤'),
-    ConfigDTO.from_repr_string('RNFT+ 3/pre5:3/2 x l2 x 1.4¤'),
-    ConfigDTO.from_repr_string('SPBE- 3/pre6:0/2 x l10 x 1.8¤'),
-]
+config_list: list[ConfigDTO] = []
+
+app = create_app()
+with app.app_context():
+    instruments = Instrument.query.filter_by(status=1).all()
+    for instrument in instruments:
+        config_list.append(ConfigDTO.from_repr_string(instrument.config))
 
 # print(config_list)
 # exit()
