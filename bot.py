@@ -17,11 +17,17 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         config_dto = ConfigDTO(
             ticker=TICKER,
+
             step_max_cnt=5,
-            pretest_period=13,
+            step_base_cnt=0,
             step_set_orders_cnt=3,
             step_size=1.2,
             step_lots=2,
+
+            use_shares=0,
+
+            pretest_period=0,
+            pretest_type=ConfigDTO.PRETEST_NONE,
 
             threshold_sell_steps=0,
             threshold_buy_steps=6,

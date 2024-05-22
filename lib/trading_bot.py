@@ -66,8 +66,7 @@ class TradingBot:
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"
                  f"     instrument - {self.client.instrument}\n"
-                 f"     cur_used_cnt - {self.get_current_count()}\n"
-                 f"     max_port - {self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots)}"
+                 f"     cur_used_cnt - {self.get_current_count()}"
                  )
 
     def is_trading_day(self):
@@ -438,6 +437,13 @@ class TradingBot:
 
         # требуемое изменение портфеля
         need_operations = self.config.step_base_cnt * self.config.step_lots - self.get_current_count()
+
+        max_portfolio_size = self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots)
+        self.log(f"START \n"
+                 f"     need_operations - {need_operations}\n"
+                 f"     start_price - {self.start_price} {self.client.instrument.currency}\n"
+                 f"     max_port - {max_portfolio_size} {self.client.instrument.currency}"
+                 )
 
         # докупаем недостающие по рыночной цене
         if need_operations > 0:
