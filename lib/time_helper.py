@@ -1,4 +1,4 @@
-from datetime import datetime, timezone, time, timedelta, date
+from datetime import datetime, timezone, time, timedelta
 
 from lib.day_exclusions import DayExclusions
 
