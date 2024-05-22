@@ -1,6 +1,0 @@
-{% extends "base.html" %}
-{% block content %}
-    <h1>Welcome to the Home Page</h1>
-    <p>You are logged in as: {{ current_user.id }}</p>
-    <a href="{{ url_for('common.logout') }}">Logout</a>
-{% endblock %}
