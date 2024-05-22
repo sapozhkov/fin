@@ -16,7 +16,7 @@ login.login_view = 'common.login'
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
-    app.config['FLASK_ADMIN_SWATCH'] = 'cerulean'
+    app.config['FLASK_ADMIN_SWATCH'] = 'cosmo' if Config.DEBUG_MODE else 'cerulean'
 
     # Инициализация расширений с приложением
     db.init_app(app)
