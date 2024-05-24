@@ -15,6 +15,7 @@ class LoggerTestEnvHelper(AbstractLoggerHelper):
         print(f"{time.strftime('%H:%M')} - {message}")
 
     def error(self, message):
+        self.last_error = message
         self.info(message)
 
     def debug(self, message):

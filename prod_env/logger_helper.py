@@ -7,12 +7,13 @@ from datetime import datetime
 
 class AbstractLoggerHelper(ABC):
     def __init__(self):
-        self.logger_last_message = ''
+        self.last_message = ''
+        self.last_error = ''
 
     def log(self, message, repeat=False):
-        if self.logger_last_message != message or repeat:
+        if self.last_message != message or repeat:
             self.info(message)
-            self.logger_last_message = message
+            self.last_message = message
 
     @abstractmethod
     def info(self, message):
@@ -71,6 +72,7 @@ class LoggerHelper(AbstractLoggerHelper):
         self.logger.info(message)
 
     def error(self, message):
+        self.last_error = message
         self.logger.error(message)
 
     def debug(self, message):

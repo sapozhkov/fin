@@ -477,9 +477,10 @@ class TradingBot:
                  f"     max_port - {max_portfolio_size} {self.client.instrument.currency}"
                  )
 
-        self.run_state.depo = max_portfolio_size
-        self.run_state.status = RunStatus.WORKING
-        self.save_run_state()
+        if self.run_state:
+            self.run_state.depo = max_portfolio_size
+            self.run_state.status = RunStatus.WORKING
+            self.save_run_state()
 
         # докупаем недостающие по рыночной цене
         if need_operations > 0:
@@ -524,6 +525,7 @@ class TradingBot:
             self.run_state.end_cnt = self.get_current_count()
             if self.run_state.depo:
                 self.run_state.profit = round(100 * self.run_state.total / self.run_state.depo, 2)
+            self.run_state.last_error = self.logger.last_error
             self.save_run_state()
 
         # self.logger.debug(f"Ждем следующего цикла, sleep {self.config.sleep_trading}")
@@ -592,6 +594,7 @@ class TradingBot:
             self.run_state.depo = max_start_total
             self.run_state.profit = profit_p
             self.run_state.end_cnt = self.get_current_count()
+            self.run_state.last_error = self.logger.last_error
             self.save_run_state()
 
     def get_max_start_depo(self):
