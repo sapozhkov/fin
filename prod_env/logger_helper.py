@@ -9,6 +9,7 @@ class AbstractLoggerHelper(ABC):
     def __init__(self):
         self.last_message = ''
         self.last_error = ''
+        self.error_cnt = 0
 
     def log(self, message, repeat=False):
         if self.last_message != message or repeat:
@@ -73,6 +74,7 @@ class LoggerHelper(AbstractLoggerHelper):
 
     def error(self, message):
         self.last_error = message
+        self.error_cnt += 1
         self.logger.error(message)
 
     def debug(self, message):

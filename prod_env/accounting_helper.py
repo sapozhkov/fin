@@ -14,6 +14,7 @@ class AbstractAccountingHelper(ABC):
     def __init__(self, client):
         self.sum = 0
         self.num = 0
+        self.operations_cnt = 0
         self.client: AbstractProxyClient = client
         self.order_helper = OrderHelper(self.client)
 
@@ -31,6 +32,8 @@ class AbstractAccountingHelper(ABC):
         total = round(avg_price * lots - commission, 2)
 
         self.sum += total
+
+        self.operations_cnt += 1
 
         self.add_deal(
             order.direction,

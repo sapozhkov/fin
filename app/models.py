@@ -45,6 +45,8 @@ class Run(db.Model):
     start_cnt = db.Column(db.Integer, nullable=False)
     end_cnt = db.Column(db.Integer, nullable=False)
     candle = db.Column(db.String, nullable=False)
+    error_cnt = db.Column(db.Integer, nullable=False, server_default='0')
+    operations_cnt = db.Column(db.Integer, nullable=False, server_default='0')
 
     # Связь с моделью Instrument
     instrument_rel = db.relationship('Instrument', backref=db.backref('runs', lazy=True))

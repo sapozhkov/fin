@@ -55,10 +55,14 @@ def create_app(config_class=Config):
         )
         column_list = (
             'id', 'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
-            'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at')
+            'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at',
+            'error_cnt', 'operations_cnt'
+        )
         form_columns = (
             'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
-            'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at')
+            'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at',
+            'error_cnt', 'operations_cnt'
+        )
 
         def create_form(self, obj=None):
             form = super(RunView, self).create_form()

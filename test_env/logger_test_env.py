@@ -16,6 +16,7 @@ class LoggerTestEnvHelper(AbstractLoggerHelper):
 
     def error(self, message):
         self.last_error = message
+        self.error_cnt += 1
         self.info(message)
 
     def debug(self, message):
