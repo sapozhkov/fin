@@ -17,13 +17,13 @@ class Instrument(db.Model):
     __tablename__ = 'instruments'
 
     id = db.Column(db.Integer, primary_key=True)
-    ticker = db.Column(db.String(10), nullable=False)
-    server = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    account = db.Column(db.Integer, nullable=False)
     config = db.Column(db.String(256), nullable=False)
     status = db.Column(db.Integer, nullable=False)
 
     def __repr__(self):
-        return f"<Instrument {self.id} '{self.config}' {self.config}>"
+        return f"<Instrument {self.id} '{self.config}' [{self.account}] {'On' if self.status else 'Off'}>"
 
 
 class Run(db.Model):
@@ -32,6 +32,8 @@ class Run(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     instrument = db.Column(db.Integer, db.ForeignKey('instruments.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
+    created_at = db.Column(db.DateTime)
+    updated_at = db.Column(db.DateTime)
     status = db.Column(db.Integer, nullable=False)
     exit_code = db.Column(db.Integer, nullable=False)
     last_error = db.Column(db.String, nullable=True)
@@ -53,7 +55,7 @@ class Run(db.Model):
     )
 
     def __repr__(self):
-        return f'<Run {self.instrument} ({self.config}) on {self.date}>'
+        return f'<Run {self.instrument} ({self.config}) at {self.date}>'
 
     # Метод для получения связанного инструмента
     def get_instrument(self):
@@ -82,3 +84,11 @@ class Deal(db.Model):
     # Метод для получения связанного инструмента
     def get_instrument(self):
         return Instrument.query.get(self.instrument)
+
+
+# Функция для получения Instrument по id
+def get_instrument_by_id(instrument_id) -> Instrument | None:
+    instrument = Instrument.query.get(instrument_id)
+    if instrument is None:
+        return None  # Объект не найден
+    return instrument  # Объект найден

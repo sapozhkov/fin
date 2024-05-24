@@ -5,6 +5,9 @@ from typing import Tuple
 import pandas as pd
 from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, OrderState, PostOrderResponse
 
+from app import db
+from app.models import Run, get_instrument_by_id
+from app.constants.run_status import RunStatus
 from dto.config_dto import ConfigDTO
 from lib.order_helper import OrderHelper
 from lib.time_helper import TimeHelper
@@ -63,10 +66,33 @@ class TradingBot:
 
         self.validate_and_modify_config()
 
+        self.run_state: Run | None = None
+        if self.config.instrument_id:
+            instrument = get_instrument_by_id(self.config.instrument_id)
+            self.run_state = Run(
+                instrument=instrument.id,
+                date=self.time.now().date(),
+                created_at=self.time.now(),
+                status=RunStatus.NEW,
+                exit_code=0,
+                last_error='',
+                total=0,
+                depo=0,
+                profit=0,
+                data='',
+                config=str(self.config),
+                start_cnt=self.get_current_count(),
+                end_cnt=0,
+                candle='',
+            )
+            self.save_run_state()
+
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"
                  f"     instrument - {self.client.instrument}\n"
-                 f"     cur_used_cnt - {self.get_current_count()}"
+                 f"     cur_used_cnt - {self.get_current_count()}\n"
+                 f"     instrument_id - {self.config.instrument_id}\n"
+                 f"     run_instance - {self.run_state}"
                  )
 
     def is_trading_day(self):
@@ -268,6 +294,12 @@ class TradingBot:
                  f"buy {self.get_existing_buy_order_prices()}, "
                  f"sell {self.get_existing_sell_order_prices()} ")
 
+    def get_status_str(self) -> str:
+        return f"cur {self.cached_current_price} | " \
+               f"buy {self.get_existing_buy_order_prices()} " \
+               f"sell {self.get_existing_sell_order_prices()} " \
+               f"{self.get_cur_count_for_log()}"
+
     def get_current_price(self) -> float | None:
         return self.client.get_current_price()
 
@@ -438,12 +470,16 @@ class TradingBot:
         # требуемое изменение портфеля
         need_operations = self.config.step_base_cnt * self.config.step_lots - self.get_current_count()
 
-        max_portfolio_size = self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots)
+        max_portfolio_size = self.get_max_start_depo()
         self.log(f"START \n"
                  f"     need_operations - {need_operations}\n"
                  f"     start_price - {self.start_price} {self.client.instrument.currency}\n"
                  f"     max_port - {max_portfolio_size} {self.client.instrument.currency}"
                  )
+
+        self.run_state.depo = max_portfolio_size
+        self.run_state.status = RunStatus.WORKING
+        self.save_run_state()
 
         # докупаем недостающие по рыночной цене
         if need_operations > 0:
@@ -457,6 +493,9 @@ class TradingBot:
         if not can_trade:
             if sleep_sec:
                 self.log(f"can not trade, sleep {TimeProdEnvHelper.get_remaining_time_text(sleep_sec)}")
+                if self.run_state:
+                    self.run_state.status = RunStatus.SLEEPING
+                    self.save_run_state()
                 self.time.sleep(sleep_sec)
             return
 
@@ -477,6 +516,15 @@ class TradingBot:
         # Выставляем заявки
         self.place_buy_orders()
         self.place_sell_orders()
+
+        if self.run_state:
+            self.run_state.data = self.get_status_str()
+            self.run_state.status = RunStatus.WORKING
+            self.run_state.total = self.get_current_profit()
+            self.run_state.end_cnt = self.get_current_count()
+            if self.run_state.depo:
+                self.run_state.profit = round(100 * self.run_state.total / self.run_state.depo, 2)
+            self.save_run_state()
 
         # self.logger.debug(f"Ждем следующего цикла, sleep {self.config.sleep_trading}")
         self.time.sleep(self.config.sleep_trading)
@@ -527,13 +575,29 @@ class TradingBot:
 
         profit = self.get_current_profit(current_price)
 
+        max_start_total = self.get_max_start_depo()
+        if max_start_total:
+            profit_p = round(100 * profit / max_start_total, 2)
+            final_message = f"Итог {round(profit, 2)} {self.client.instrument.currency} ({profit_p}%)\n\n"
+        else:
+            final_message = 'Ошибка при выявлении общей суммы. Получен 0'
+            profit_p = 0
+
+        self.log(final_message)
+
+        if self.run_state:
+            self.run_state.status = RunStatus.FINISHED
+            self.run_state.total = profit
+            self.run_state.data = final_message
+            self.run_state.depo = max_start_total
+            self.run_state.profit = profit_p
+            self.run_state.end_cnt = self.get_current_count()
+            self.save_run_state()
+
+    def get_max_start_depo(self):
         # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
         maj_k = 2 if self.config.majority_trade else 1
-
-        max_start_total = self.start_price * self.config.step_max_cnt * self.config.step_lots * maj_k
-        if max_start_total:
-            self.log(f"Итог {round(profit, 2)} {self.client.instrument.currency} "
-                     f"({round(100 * profit / max_start_total, 2)}%)\n\n")
+        return self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots * maj_k)
 
     def get_current_profit(self, current_price=None) -> float:
         if current_price is None:
@@ -547,3 +611,11 @@ class TradingBot:
             + self.accounting.get_sum()
             + current_price * self.get_current_count()
         )
+
+    def save_run_state(self):
+        if self.run_state is None:
+            return
+        if not self.run_state.id:
+            db.session.add(self.run_state)
+        self.run_state.updated_at = self.time.now()
+        db.session.commit()

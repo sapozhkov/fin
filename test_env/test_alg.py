@@ -276,6 +276,9 @@ class TestAlgorithm:
 
     @staticmethod
     def is_nth_day_from_start(start_date_string: str, date_string: str, n: int):
+        if n == 0:
+            return True
+
         start_date = datetime.strptime(start_date_string, "%Y-%m-%d")
         target_date = datetime.strptime(date_string, "%Y-%m-%d")
 

@@ -10,6 +10,7 @@ class ConfigDTO:
             self,
             name='',
             ticker='',
+            instrument_id=0,
 
             start_time='07:00',  # 10:00
             end_time='15:29',  # 18:29
@@ -38,6 +39,7 @@ class ConfigDTO:
     ):
         self.name = str(name)
         self.ticker = str(ticker)
+        self.instrument_id = int(instrument_id)
 
         self.start_time = str(start_time)
         self.end_time = str(end_time)
@@ -175,6 +177,7 @@ class ConfigDTO:
         return (
                 self.name == other.name and
                 self.ticker == other.ticker and
+                self.instrument_id == other.instrument_id and
                 self.start_time == other.start_time and
                 self.end_time == other.end_time and
                 self.sleep_trading == other.sleep_trading and
@@ -196,7 +199,7 @@ class ConfigDTO:
 
     def __hash__(self):
         return hash((
-            self.name, self.ticker,
+            self.name, self.ticker, self.instrument_id,
             self.start_time, self.end_time,
             self.sleep_trading, self.sleep_no_trade,
             self.step_max_cnt, self.step_base_cnt,

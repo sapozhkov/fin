@@ -45,14 +45,39 @@ def create_app(config_class=Config):
         def index(self):
             return redirect(url_for('common.logout'))
 
+    class InstrumentView(ModelView):
+        column_list = ('id', 'name', 'account', 'config', 'status')
+        form_columns = ('name', 'account', 'config', 'status')
+
+    class RunView(ModelView):
+        column_filters = (
+            'instrument', 'instrument_rel', 'status', 'date'
+        )
+        column_list = (
+            'id', 'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
+            'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at')
+        form_columns = (
+            'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
+            'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at')
+
+        def create_form(self, obj=None):
+            form = super(RunView, self).create_form()
+            form.instrument_rel.query_factory = lambda: models.Instrument.query.all()
+            return form
+
+        def edit_form(self, obj=None):
+            form = super(RunView, self).edit_form(obj)
+            form.instrument_rel.query_factory = lambda: models.Instrument.query.all()
+            return form
+
     # Импортируем модели после создания приложения и расширений, иначе циклится
     from app import models
 
     admin = Admin(app, name='FinHub', template_mode='bootstrap3', url='/', index_view=IndexView(url='/'))
 
     # Добавьте модели в админку
-    admin.add_view(ModelView(models.Instrument, db.session))
-    admin.add_view(ModelView(models.Run, db.session))
+    admin.add_view(InstrumentView(models.Instrument, db.session))
+    admin.add_view(RunView(models.Run, db.session))
     admin.add_view(ModelView(models.Deal, db.session))
     admin.add_view(LogoutView(name="Logout", endpoint='logout'))
 
