@@ -62,7 +62,7 @@ class Run(db.Model):
     )
 
     def __repr__(self):
-        return f'<Run i{self.instrument} ({self.config}) at {self.date}>'
+        return f'<Run {self.id} i{self.instrument} ({self.config}) at {self.date}>'
 
     # Метод для получения связанного инструмента
     def get_instrument(self):
