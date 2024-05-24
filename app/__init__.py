@@ -4,6 +4,8 @@ from flask_migrate import Migrate
 from flask_login import LoginManager, current_user, login_required
 from flask_admin import Admin, AdminIndexView, expose, BaseView
 from flask_admin.contrib.sqla import ModelView
+
+from app.constants.run_status import RunStatus
 from config import Config
 
 # Инициализация расширений
@@ -48,11 +50,23 @@ def create_app(config_class=Config):
     class InstrumentView(ModelView):
         column_list = ('id', 'name', 'account', 'config', 'status')
         form_columns = ('name', 'account', 'config', 'status')
+        column_editable_list = ['status']
+        column_filters = ['status']
+        form_choices = {
+            'status': [
+                (0, 'Off'),
+                (1, 'Active')
+            ]
+        }
+        column_choices = {
+            'status': [
+                (0, 'Off'),
+                (1, 'Active')
+            ]
+        }
 
     class RunView(ModelView):
-        column_filters = (
-            'instrument', 'instrument_rel', 'status', 'date'
-        )
+        column_filters = ('instrument', 'instrument_rel', 'status', 'date')
         column_list = (
             'id', 'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
             'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at',
@@ -63,6 +77,8 @@ def create_app(config_class=Config):
             'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at',
             'error_cnt', 'operations_cnt'
         )
+        form_choices = RunStatus.get_list()
+        column_choices = RunStatus.get_list()
 
         def create_form(self, obj=None):
             form = super(RunView, self).create_form()
