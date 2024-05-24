@@ -1,5 +1,10 @@
+from typing import Optional
+
 from flask_login import UserMixin
+from sqlalchemy import desc
+
 from app import login, db
+from lib.time_helper import TimeHelper
 
 
 class User(UserMixin):
@@ -57,11 +62,17 @@ class Run(db.Model):
     )
 
     def __repr__(self):
-        return f'<Run {self.instrument} ({self.config}) at {self.date}>'
+        return f'<Run i{self.instrument} ({self.config}) at {self.date}>'
 
     # Метод для получения связанного инструмента
     def get_instrument(self):
         return Instrument.query.get(self.instrument)
+
+    @staticmethod
+    def get_prev_run(instrument_id: int) -> Optional['Run']:
+        return Run.query\
+            .filter(Run.date < TimeHelper.get_current_date(), Run.instrument == instrument_id)\
+            .order_by(desc(Run.id)).first()
 
 
 class Deal(db.Model):

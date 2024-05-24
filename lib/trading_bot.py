@@ -69,23 +69,24 @@ class TradingBot:
         self.run_state: Run | None = None
         if self.config.instrument_id:
             instrument = get_instrument_by_id(self.config.instrument_id)
-            self.run_state = Run(
-                instrument=instrument.id,
-                date=self.time.now().date(),
-                created_at=self.time.now(),
-                status=RunStatus.NEW,
-                exit_code=0,
-                last_error='',
-                total=0,
-                depo=0,
-                profit=0,
-                data='',
-                config=str(self.config),
-                start_cnt=self.get_current_count(),
-                end_cnt=0,
-                candle='',
-            )
-            self.save_run_state()
+            if instrument:
+                self.run_state = Run(
+                    instrument=instrument.id,
+                    date=self.time.now().date(),
+                    created_at=self.time.now(),
+                    status=RunStatus.NEW,
+                    exit_code=0,
+                    last_error='',
+                    total=0,
+                    depo=0,
+                    profit=0,
+                    data='',
+                    config=str(self.config),
+                    start_cnt=self.get_current_count(),
+                    end_cnt=0,
+                    candle='',
+                )
+                self.save_run_state()
 
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"

@@ -3,7 +3,7 @@ import datetime
 import os
 
 from app import create_app
-from app.models import Instrument
+from app.models import Instrument, Run
 from config import Config
 from dto.config_dto import ConfigDTO
 from lib.time_helper import TimeHelper
@@ -59,14 +59,20 @@ async def main():
                 pretest_freq = 0
                 pretest_days = 0
 
+            prev_run = Run.get_prev_run(instrument.id)
+            if prev_run:
+                last_config = ConfigDTO.from_repr_string(prev_run.config)
+                print(f"{datetime.datetime.now()} + пред {last_config} от {prev_run.date}")
+            else:
+                last_config = None
+
             best_conf = test_alg.make_best_config(
                 start_date=TimeHelper.get_current_date(),
                 test_date=TimeHelper.get_current_date(),
                 auto_conf_days_freq=pretest_freq,
                 auto_conf_prev_days=pretest_days,
                 original_config=conf,
-                # и предыдущего конфига нет, это на будущее, когда база будет
-                last_config=None
+                last_config=last_config
             )
 
             # проброс в конфиг значения номера инструмента
