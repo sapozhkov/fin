@@ -335,6 +335,7 @@ class TestAlgorithm:
                 # пробросить, так как сбрасывается
                 best_conf.use_shares = last_config.use_shares
             # print(f"Best of {len(conf_list)}/{len(sorted_results)} {test_date} - {best_conf}")
+            # print(f"{best_conf} with profit_p {best_res['profit_p']}")
             return best_conf
         else:
             print(f"Ошибка при получении лучшей конфигурации")
@@ -378,8 +379,8 @@ class TestAlgorithm:
             # for step_set_orders_cnt in [config.step_set_orders_cnt]
             for step_max_cnt in [
                 config.step_max_cnt,
-                # config.step_max_cnt+1,
-                # config.step_max_cnt-1
+                config.step_max_cnt+1,
+                config.step_max_cnt-1,
             ]
             for step_base_cnt in [
                 0,

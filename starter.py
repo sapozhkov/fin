@@ -3,9 +3,11 @@ import datetime
 import os
 
 from app import create_app
+from app.lib.tinkoff_api import TinkoffApi
 from app.models import Instrument, Run
 from config import Config
 from dto.config_dto import ConfigDTO
+from lib.ticker_cache import TickerCache
 from lib.time_helper import TimeHelper
 from test_env.test_alg import TestAlgorithm
 
@@ -16,6 +18,8 @@ if not TimeHelper.is_working_day(date):
 
 
 async def run_command(command):
+    print(command)
+
     process = await asyncio.create_subprocess_shell(
         command,
         stdout=asyncio.subprocess.PIPE,
@@ -23,75 +27,178 @@ async def run_command(command):
     )
     # Не ждем завершения процесса
 
-    print(f'Run "{command}", pid {process.pid}')
+    print(f'Running on pid {process.pid}')
 
     return process
+
+
+class Stock:
+    instrument_id: int = 0
+    config: ConfigDTO | None = None
+    ticker: str = ''
+    figi: str = ''
+    price: float = 0
+    budget: float = 0
+    lots: int = 0
+
+    def __repr__(self):
+        return f"{self.config} p{self.price} b{self.budget} l{self.lots}"
+
+
+def distribute_budget(stocks: list[Stock], budget):
+    # Сортируем акции по минимальной стоимости портфеля
+    stocks.sort(key=lambda s: s.budget, reverse=True)
+
+    # result = {stock: 0 for stock in stocks}
+    remaining_budget = budget
+
+    # Вычисляем равную долю бюджета для каждой акции
+    equal_share = budget / len(stocks)
+
+    # Распределяем равную долю бюджета для каждой акции
+    for stock in stocks:
+        # Количество акций, которые можно купить за бюджет
+        count = int(equal_share // stock.budget)
+        stock.lots = count
+        remaining_budget -= count * stock.budget
+
+    # Если есть оставшиеся средства, распределяем их начиная с самых дорогих акций
+    if remaining_budget > 0:
+        for stock in stocks:
+            if remaining_budget < stock.budget:
+                continue
+
+            count = int(remaining_budget // stock.budget)
+            stock.lots += count
+            remaining_budget -= count * stock.budget
+
+            if remaining_budget <= 0:
+                break
+
+    # обновляем конфиги
+    for stock in stocks:
+        stock.config.step_lots = stock.lots
+
+    print(f"Запланировано использование бюджета {round(budget - remaining_budget)} / {round(budget)} "
+          f"({round((budget - remaining_budget)/budget, 2)}%)")
+
+
+def get_best_config(stock):
+    conf = stock.config
+
+    # вот сюда втыкаем выбор лучшего конфига по текущему
+    test_alg = TestAlgorithm(
+        Config.TOKEN,
+        do_printing=False,
+        config=conf,
+    )
+
+    if conf.pretest_type == ConfigDTO.PRETEST_PRE:
+        pretest_freq = 1
+        pretest_days = conf.pretest_period
+    else:
+        pretest_freq = 0
+        pretest_days = 0
+
+    print(f"{datetime.datetime.now()} Анализ {conf}")
+
+    last_config = None
+    prev_run = Run.get_prev_run(stock.instrument_id)
+    if prev_run:
+        try:
+            last_config = ConfigDTO.from_repr_string(prev_run.config)
+            print(f"{datetime.datetime.now()} + пред {last_config} от {prev_run.date}")
+        except ValueError:
+            print(f"Не удалось разобрать конфиг {prev_run}")
+
+    best_conf = test_alg.make_best_config(
+        start_date=TimeHelper.get_current_date(),
+        test_date=TimeHelper.get_current_date(),
+        auto_conf_days_freq=pretest_freq,
+        auto_conf_prev_days=pretest_days,
+        original_config=conf,
+        last_config=last_config
+    )
+
+    print(f"{datetime.datetime.now()} Выбран {best_conf}")
+    print('')
+
+    return best_conf
 
 
 async def main():
     app = create_app()
     with app.app_context():
+        balance_correction = 1  # 1 ничего не меняем, 0.9 - -10%, 2 - х2 для мажоритарной
         commands = []
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
+        # набор инструментов
+        stocks = []
         instruments = Instrument.query.filter_by(status=1).all()
-
-        # print(instruments)
-        # exit()
-
         for instrument in instruments:
+            config = ConfigDTO.from_repr_string(instrument.config)
+            ticker = config.ticker
+            ticker_cache = TickerCache(Config.TOKEN, ticker)
+            figi = ticker_cache.get_instrument().figi
 
-            conf = ConfigDTO.from_repr_string(instrument.config)
+            stock = Stock()
+            stock.instrument_id = instrument.id
+            stock.config = config
+            stock.ticker = ticker
+            stock.figi = figi
 
-            # вот сюда втыкаем выбор лучшего конфига по текущему
-            test_alg = TestAlgorithm(
-                Config.TOKEN,
-                do_printing=False,
-                config=conf,
-            )
+            stocks.append(stock)
 
-            print(f"{datetime.datetime.now()} Анализ {conf}")
+        # определение лучшего конфига
+        for stock in stocks:
 
-            if conf.pretest_type == ConfigDTO.PRETEST_PRE:
-                pretest_freq = 1
-                pretest_days = conf.pretest_period
-            else:
-                pretest_freq = 0
-                pretest_days = 0
+            best_conf = get_best_config(stock)
 
-            last_config = None
-            prev_run = Run.get_prev_run(instrument.id)
-            if prev_run:
-                try:
-                    last_config = ConfigDTO.from_repr_string(prev_run.config)
-                    print(f"{datetime.datetime.now()} + пред {last_config} от {prev_run.date}")
-                except ValueError:
-                    print(f"Не удалось разобрать конфиг {prev_run}")
+            # проброс в конфиг значения номера инструмента (будет привязка при запуске)
+            best_conf.instrument_id = stock.instrument_id
 
-            best_conf = test_alg.make_best_config(
-                start_date=TimeHelper.get_current_date(),
-                test_date=TimeHelper.get_current_date(),
-                auto_conf_days_freq=pretest_freq,
-                auto_conf_prev_days=pretest_days,
-                original_config=conf,
-                last_config=last_config
-            )
+            stock.config = best_conf
 
-            # проброс в конфиг значения номера инструмента
-            best_conf.instrument_id = instrument.id
+        # последние цены и базовый бюджет
+        last_prices = TinkoffApi.get_last_prices(figi_list=[s.figi for s in stocks])
+        for s in stocks:
+            if s.figi in last_prices:
+                price = last_prices[s.figi]
+                maj_k = 2 if s.config.majority_trade else 1
 
-            print(f"{datetime.datetime.now()} Выбран {best_conf}")
-            print('')
+                s.price = price
+                s.budget = round(price * s.config.step_max_cnt * maj_k, 2)
 
-            commands.append(f"python3 {current_dir}/bot.py {best_conf.to_string()} >> log/all.log 2>&1")
+        # отфильтровываем нулевые цены
+        stocks = [stock for stock in stocks if stock.price != 0]
+
+        # баланс целевого аккаунта
+        balance = TinkoffApi.get_account_balance_rub()
+
+        # коррекция суммы
+        balance *= balance_correction
+
+        # распределение ресурсов
+        distribute_budget(stocks, balance)
+
+        print('Конфигурации на запуск')
+        for stock in stocks:
+            print(stock)
+        print()
+
+        for stock in stocks:
+            commands.append(f"python3 {current_dir}/bot.py {stock.config.to_string()} >> log/all.log 2>&1")
 
         for command in commands:
             tasks = [run_command(command)]
             await asyncio.gather(*tasks)
 
-print(f'start {datetime.datetime.now()}')
 
-asyncio.run(main())
+if __name__ == '__main__':
+    print(f'start {datetime.datetime.now()}')
 
-print(f'stop {datetime.datetime.now()}')
-print()
+    asyncio.run(main())
+
+    print(f'stop {datetime.datetime.now()}')
+    print()

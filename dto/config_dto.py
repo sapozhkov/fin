@@ -24,7 +24,7 @@ class ConfigDTO:
             pretest_type=PRETEST_NONE,
             pretest_period=0,
 
-            majority_trade=True,
+            majority_trade=False,
 
             threshold_buy_steps=0,
             threshold_sell_steps=0,
@@ -73,6 +73,9 @@ class ConfigDTO:
             self.step_base_cnt = round(self.step_max_cnt / 2)
 
         # корректировки параметров
+        if self.step_max_cnt < 1:
+            self.step_max_cnt = 1
+
         if self.step_size <= 0:
             self.step_size = 0.2
 
