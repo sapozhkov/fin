@@ -143,7 +143,7 @@ class ConfigDTO:
 
             return ConfigDTO(**values)
         else:
-            raise Exception(f"Cannot create ConfigDTO from string '{input_string}'")
+            raise ValueError(f"Cannot create ConfigDTO from string '{input_string}'")
 
     def to_string(self):
         args = []
