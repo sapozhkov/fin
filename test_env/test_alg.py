@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from tinkoff.invest import OrderDirection
 
+from config import Config
 from lib.ticker_cache import TickerCache
 from lib.time_helper import TimeHelper
 from lib.order_helper import OrderHelper
@@ -18,15 +19,14 @@ from test_env.time_test_env import TimeTestEnvHelper
 class TestAlgorithm:
     def __init__(
             self,
-            token,
             config: ConfigDTO,
             do_printing=False
     ):
-        self.token = token
+        self.token = Config.TOKEN
         self.config = config
         self.time_helper = TimeTestEnvHelper()
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
-        self.client_helper = ClientTestEnvHelper(token, config.ticker, self.logger_helper, self.time_helper)
+        self.client_helper = ClientTestEnvHelper(self.token, config.ticker, self.logger_helper, self.time_helper)
         self.accounting_helper = AccountingTestEnvHelper(self.client_helper)
         self.order_helper = OrderHelper(self.client_helper)
 
@@ -310,7 +310,7 @@ class TestAlgorithm:
 
         # запускаем получение результатов работы всех вариантов конфигурации
         for config in unique_conf_list:
-            test_alg = TestAlgorithm(self.token, do_printing=False, config=config)
+            test_alg = TestAlgorithm(do_printing=False, config=config)
             res = test_alg.test(
                 last_test_date=TimeHelper.get_previous_date(TimeHelper.to_datetime(test_date)),
                 test_days_num=auto_conf_prev_days,

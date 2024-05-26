@@ -7,6 +7,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 
 class Config:
+    BASE_DIR = basedir
     TOKEN = os.environ.get('INVEST_TOKEN')
     PASSWORD = os.environ.get('PASSWORD')
     DEBUG_MODE = True if os.environ.get('DEBUG') == '1' else False

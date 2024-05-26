@@ -88,7 +88,6 @@ def get_best_config(stock):
 
     # вот сюда втыкаем выбор лучшего конфига по текущему
     test_alg = TestAlgorithm(
-        Config.TOKEN,
         do_printing=False,
         config=conf,
     )
@@ -139,7 +138,7 @@ async def main():
         for instrument in instruments:
             config = ConfigDTO.from_repr_string(instrument.config)
             ticker = config.ticker
-            ticker_cache = TickerCache(Config.TOKEN, ticker)
+            ticker_cache = TickerCache(ticker)
             figi = ticker_cache.get_instrument().figi
 
             stock = Stock()

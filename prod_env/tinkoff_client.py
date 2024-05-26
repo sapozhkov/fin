@@ -33,7 +33,7 @@ class AbstractProxyClient(ABC):
         self.token = token
         self.time: AbstractTimeHelper = time
         self.logger = logger
-        self.ticker_cache = TickerCache(self.token, ticker)
+        self.ticker_cache = TickerCache(ticker)
         self.instrument: InstrumentDTO = self.get_instrument()
 
     @abstractmethod

@@ -35,8 +35,8 @@ class TestHelper:
         return ClientTestEnvHelper(token, config.ticker, logger_helper, time_helper)
 
     @staticmethod
-    def get_ticker_cache(token='', ticker=DEF_TICKER) -> TickerCache:
-        return TickerCache(token, ticker)
+    def get_ticker_cache(ticker=DEF_TICKER) -> TickerCache:
+        return TickerCache(ticker)
 
     @staticmethod
     def get_accounting(client_helper=None) -> AccountingTestEnvHelper:
