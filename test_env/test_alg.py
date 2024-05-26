@@ -334,7 +334,7 @@ class TestAlgorithm:
             if last_config:
                 # пробросить, так как сбрасывается
                 best_conf.use_shares = last_config.use_shares
-            # print(f"Best of {len(conf_list)}/{len(sorted_results)} {test_date} - {best_conf}")
+            # print(f"Best of {len(sorted_results)}/{len(conf_list)} {test_date} - {best_conf}")
             # print(f"{best_conf} with profit_p {best_res['profit_p']}")
             return best_conf
         else:

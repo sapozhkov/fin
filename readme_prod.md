@@ -62,3 +62,6 @@ WantedBy=multi-user.target
 sudo systemctl daemon-reload
 sudo systemctl start myapp
 sudo systemctl enable myapp
+
+# перезапуск (при каждом изменении кода надо делать)
+sudo systemctl restart myapp.service
