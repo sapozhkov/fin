@@ -5,7 +5,6 @@ import os
 from app import create_app
 from app.lib.tinkoff_api import TinkoffApi
 from app.models import Instrument, Run
-from config import Config
 from dto.config_dto import ConfigDTO
 from lib.ticker_cache import TickerCache
 from lib.time_helper import TimeHelper
