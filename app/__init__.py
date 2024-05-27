@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import Flask, redirect, url_for, request
 from flask_sqlalchemy import SQLAlchemy
@@ -48,6 +48,7 @@ def create_app(config_class=Config):
     def format_time(value, _format='%H:%M'):
         """Форматирование даты и времени в указанный формат."""
         if isinstance(value, datetime):
+            value += timedelta(hours=3)  # Добавляем 3 часа
             return value.strftime(_format)
         return value  # Если значение не является datetime, возвращаем его без изменений
 
