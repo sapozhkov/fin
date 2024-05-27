@@ -48,11 +48,13 @@ class TradingBot:
             self.state = self.STATE_FINISHED
             return
 
-        self.accounting.set_num(min(
-            self.accounting.get_instrument_count(),
-            self.config.step_max_cnt * self.config.step_lots
-        ))
-        if self.config.use_shares is not None:
+        if self.config.use_shares is None:
+            self.accounting.set_num(self.accounting.get_instrument_count())
+        else:
+            self.accounting.set_num(min(
+                self.accounting.get_instrument_count(),
+                self.config.step_max_cnt * self.config.step_lots
+            ))
             self.accounting.set_num(min(self.accounting.get_num(), self.config.use_shares))
 
         # внутренние переменные
