@@ -3,7 +3,7 @@ from typing import Optional
 from flask_login import UserMixin
 from sqlalchemy import desc
 
-from app import login, db
+from app import login, db, RunStatus
 from lib.time_helper import TimeHelper
 
 
@@ -73,6 +73,9 @@ class Run(db.Model):
         return Run.query\
             .filter(Run.date < TimeHelper.get_current_date(), Run.instrument == instrument_id)\
             .order_by(desc(Run.id)).first()
+
+    def get_status_title(self):
+        return RunStatus.get_title(self.status)
 
 
 class Deal(db.Model):

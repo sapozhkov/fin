@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask import Flask, redirect, url_for, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -32,66 +34,25 @@ def create_app(config_class=Config):
         if not current_user.is_authenticated and request.endpoint not in ['common.login']:
             return redirect(url_for('common.login'))
 
-    class IndexView(AdminIndexView):
-        @expose('/')
-        @login_required
-        def index(self):
-            return self.render(self._template)
-
     with app.app_context():
         from app.routes import common
         app.register_blueprint(common.bp)
 
-    class LogoutView(BaseView):
-        @expose('/')
-        def index(self):
-            return redirect(url_for('common.logout'))
-
-    class InstrumentView(ModelView):
-        column_list = ('id', 'name', 'account', 'config', 'status')
-        form_columns = ('name', 'account', 'config', 'status')
-        column_editable_list = ['status']
-        column_filters = ['status']
-        form_choices = {
-            'status': [
-                (0, 'Off'),
-                (1, 'Active')
-            ]
-        }
-        column_choices = {
-            'status': [
-                (0, 'Off'),
-                (1, 'Active')
-            ]
-        }
-
-    class RunView(ModelView):
-        column_filters = ('instrument', 'instrument_rel', 'status', 'date')
-        column_list = (
-            'id', 'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
-            'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at',
-            'error_cnt', 'operations_cnt'
-        )
-        form_columns = (
-            'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
-            'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at',
-            'error_cnt', 'operations_cnt'
-        )
-        form_choices = RunStatus.get_list()
-        column_choices = RunStatus.get_list()
-
-        def create_form(self, obj=None):
-            form = super(RunView, self).create_form()
-            form.instrument_rel.query_factory = lambda: models.Instrument.query.all()
-            return form
-
-        def edit_form(self, obj=None):
-            form = super(RunView, self).edit_form(obj)
-            form.instrument_rel.query_factory = lambda: models.Instrument.query.all()
-            return form
-
     # Импортируем модели после создания приложения и расширений, иначе циклится
     from app import models
+    from app.views.index_view import IndexView
+    from app.views.instrument_view import InstrumentView
+    from app.views.run_view import RunView
+    from app.views.logout_view import LogoutView
+
+    def format_time(value, _format='%H:%M'):
+        """Форматирование даты и времени в указанный формат."""
+        if isinstance(value, datetime):
+            return value.strftime(_format)
+        return value  # Если значение не является datetime, возвращаем его без изменений
+
+    # Регистрация фильтра в приложении
+    app.jinja_env.filters['time'] = format_time
 
     admin = Admin(app, name='FinHub', template_mode='bootstrap3', url='/', index_view=IndexView(url='/'))
 

@@ -1,5 +1,29 @@
 {% extends 'admin/master.html' %}
 
 {% block body %}
-  <p>Вот тут должна будет выводиться статистика работы</p>
+    <div class="container mt-4">
+        <h1 class="mb-4">Сегодняшние запуски</h1>
+        <div class="run-table-container">
+            {% include 'admin/run_table.html' %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function fetchRuns() {
+                fetch('{{ url_for('admin.get_runs') }}')
+                    .then(response => response.text())
+                    .then(html => {
+                        document.getElementById('run-table-container').innerHTML = html;
+                    })
+                    .catch(error => console.error('Error fetching runs:', error));
+            }
+
+            // Fetch runs every 30 seconds
+            setInterval(fetchRuns, 30000);
+
+            // Initial fetch
+            fetchRuns();
+        });
+    </script>
 {% endblock %}
