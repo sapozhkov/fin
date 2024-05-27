@@ -1,10 +1,16 @@
 class RunStatus:
+    NEW = 1
+    SLEEPING = 2
+    WORKING = 3
+    FINISHED = 4
+    FAILED = 5
+
     _statuses = [
-        (1, 'New'),
-        (2, 'Sleeping'),
-        (3, 'Working'),
-        (4, 'Finished'),
-        (5, 'Failed'),
+        (NEW, 'New'),
+        (SLEEPING, 'Sleeping'),
+        (WORKING, 'Working'),
+        (FINISHED, 'Finished'),
+        (FAILED, 'Failed'),
     ]
 
     @classmethod
