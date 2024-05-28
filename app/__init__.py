@@ -52,8 +52,12 @@ def create_app(config_class=Config):
             return value.strftime(_format)
         return value  # Если значение не является datetime, возвращаем его без изменений
 
+    def format_currency(value):
+        return f"{value:,.0f}"
+
     # Регистрация фильтра в приложении
     app.jinja_env.filters['time'] = format_time
+    app.jinja_env.filters['currency'] = format_currency
 
     admin = Admin(app, name='FinHub', template_mode='bootstrap3', url='/', index_view=IndexView(url='/'))
 
