@@ -4,71 +4,94 @@
     <title>Login</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* Основные стили */
-        body, html {
-            height: 100%;
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f8f9fa;
             margin: 0;
             font-family: Arial, sans-serif;
         }
 
-        .login-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            background-color: #f2f2f2;
+        main {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 300px;
+            width: 100%;
         }
 
-        .login-form {
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        form {
             display: flex;
             flex-direction: column;
-            background-color: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 400px;
+            gap: 10px;
         }
 
-        .login-form label {
-            margin-bottom: 10px;
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
 
-        .login-form input[type="password"] {
+        input[type="password"] {
             padding: 10px;
             border: 1px solid #ccc;
-            border-radius: 5px;
-            width: 100%;
-            margin-bottom: 10px;
-            box-sizing: border-box;
+            border-radius: 4px;
         }
 
-        .login-form button {
+        button {
             padding: 10px;
             border: none;
-            border-radius: 5px;
-            background-color: #007bff;
+            border-radius: 4px;
+            background: #007bff;
             color: white;
-            font-size: 16px;
             cursor: pointer;
-            width: 100%;
-            box-sizing: border-box;
         }
 
-        .login-form button:hover {
-            background-color: #0056b3;
+        button:hover {
+            background: #0056b3;
         }
-
     </style>
 </head>
 <body>
-    <main class="login-container">
-        <form method="POST" class="login-form">
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <form method="POST">
             <label>
                 <input type="password" name="password" placeholder="Password">
             </label>
             <button type="submit">Login</button>
         </form>
-    </main>
-</body>
+    </main></body>
 </html>
