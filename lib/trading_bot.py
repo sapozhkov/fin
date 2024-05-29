@@ -405,7 +405,7 @@ class TradingBot:
         if order_state:
             lots_executed = order_state.lots_executed
             if lots_executed != 0:
-                self.logger.error(f"!!!!!!!!!--------- сработала не полная продажа {order}")
+                self.logger.error(f"!!!!!!!!!--------- сработала не полная продажа {order}, {order_state}")
                 # зарегистрировать частичное исполнение
                 self.accounting.add_deal_by_order(order_state)
                 # и откатить его
