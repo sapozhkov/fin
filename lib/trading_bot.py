@@ -532,7 +532,8 @@ class TradingBot:
             self.run_state.end_cnt = self.get_current_count()
             if self.run_state.depo:
                 self.run_state.profit = round(100 * self.run_state.total / self.run_state.depo, 2)
-            self.run_state.last_error = self.logger.last_error
+            self.run_state.last_error = f"{self.time.now()} - {self.logger.last_error}" \
+                if self.logger.last_error else ''
             self.run_state.error_cnt = self.logger.error_cnt
             self.run_state.operations_cnt = self.accounting.operations_cnt
             self.save_run_state()
@@ -603,7 +604,8 @@ class TradingBot:
             self.run_state.depo = max_start_total
             self.run_state.profit = profit_p
             self.run_state.end_cnt = self.get_current_count()
-            self.run_state.last_error = self.logger.last_error
+            self.run_state.last_error = f"{self.time.now()} - {self.logger.last_error}" \
+                if self.logger.last_error else ''
             self.run_state.error_cnt = self.logger.error_cnt
             self.run_state.operations_cnt = self.accounting.operations_cnt
             self.save_run_state()
