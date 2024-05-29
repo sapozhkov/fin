@@ -23,7 +23,10 @@
         {% for run in runs %}
             <tr>
                 <td>{{ run.config }}</td>
-                <td>{{ run.get_status_title() }}</td>
+                <td class="{% if run.status == 3 %}text-primary{% elif run.status == 4 %}text-success{%
+                        elif run.status == 2 %}text-warning{% endif %}">
+                    {{ run.get_status_title() }}
+                </td>
                 <td class="{% if run.total < 0 %}text-danger{% else %}text-success{% endif %}">
                     {{ run.total }} ({{ run.profit }}%)
                 </td>
