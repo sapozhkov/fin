@@ -401,18 +401,22 @@ class TradingBot:
         self.accounting.del_order(order)
 
         # запрашиваем статус и если есть исполненные позиции - делаем обратную операцию
-        _, order_state = self.client.order_is_executed(order)
+        order_executed, order_state = self.client.order_is_executed(order)
         if order_state:
             lots_executed = order_state.lots_executed
             if lots_executed != 0:
-                self.logger.error(f"!!!!!!!!!--------- сработала не полная продажа {order}, {order_state}")
-                # зарегистрировать частичное исполнение
-                self.accounting.add_deal_by_order(order_state)
-                # и откатить его
-                if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY:
-                    self.sell(lots_executed)
+                if order_executed:
+                    self.apply_order_execution(order_state)
+                    self._remove_order_from_active_list(order)
                 else:
-                    self.buy(lots_executed)
+                    self.logger.error(f"!!!!!!!!!--------- сработала не полная продажа {order}, {order_state}")
+                    # зарегистрировать частичное исполнение
+                    self.accounting.add_deal_by_order(order_state)
+                    # и откатить его
+                    if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY:
+                        self.sell(lots_executed)
+                    else:
+                        self.buy(lots_executed)
 
         if res:
             prefix = "Buy" if order.direction == OrderDirection.ORDER_DIRECTION_BUY else "Sell"
@@ -505,14 +509,14 @@ class TradingBot:
 
         self.update_cached_price()
 
-        if self.check_need_stop():
-            self.stop(True)
-            return
-
         self.start()
 
         # Обновляем список активных заявок, тут же заявки на продажу при удачной покупке
         self.update_orders_status()
+
+        if self.check_need_stop():
+            self.stop(True)
+            return
 
         # закрываем заявки, которые не входят в лимиты
         self.cancel_orders_by_limits()
