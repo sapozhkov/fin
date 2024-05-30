@@ -5,6 +5,7 @@ from typing import Tuple
 from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus, \
     CandleInterval, PostOrderResponse, MoneyValue, OrderState, OrderDirection
 
+from app.lib.tinkoff_api import TinkoffApi
 from dto.instrument_dto import InstrumentDTO
 from lib.ticker_cache import TickerCache
 from prod_env.logger_helper import AbstractLoggerHelper
@@ -116,19 +117,12 @@ class TinkoffProxyClient(AbstractProxyClient):
     def get_current_price(self) -> float | None:
         """
         Получает текущую цену инструмента
-
         :return: Текущая цена инструмента или None, если цена не может быть получена.
         """
-        with Client(self.token) as client:
-            try:
-                # Запрос последних сделок по инструменту
-                order_book = client.market_data.get_order_book(figi=self.get_figi(), depth=1)
-                if order_book and order_book.last_price:
-                    # Возвращаем последнюю цену из стакана
-                    return self.quotation_to_float(order_book.last_price)
-            except RequestError as e:
-                self.logger.error(f"Ошибка при запросе текущей цены для FIGI {self.get_figi()}: {e}")
-        return None
+        price = TinkoffApi.get_last_price(self.get_figi())
+        if price is None:
+            self.logger.error(f"Ошибка при запросе текущей цены для FIGI {self.get_figi()}")
+        return price
 
     def can_trade(self):
         try:

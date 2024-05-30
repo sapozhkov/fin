@@ -59,8 +59,9 @@ class TradingBot:
 
         # внутренние переменные
         self.state = self.STATE_NEW
-        self.start_price = 0
-        self.start_count = 0
+        # это запросим еще раз при старте торгов. часто открывает не на той цене, где закончились в предыдущий день
+        self.start_price = self.get_current_price()
+        self.start_count = self.get_current_count()
         self.cached_current_price: float | None = 0
 
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
@@ -80,11 +81,11 @@ class TradingBot:
                     exit_code=0,
                     last_error='',
                     total=0,
-                    depo=0,
+                    depo=self.get_max_start_depo(),
                     profit=0,
                     data='',
                     config=str(self.config),
-                    start_cnt=self.get_current_count(),
+                    start_cnt=self.start_count,
                     end_cnt=0,
                     candle='',
                 )
@@ -93,7 +94,9 @@ class TradingBot:
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"
                  f"     instrument - {self.client.instrument}\n"
-                 f"     cur_used_cnt - {self.get_current_count()}\n"
+                 f"     cur_used_cnt - {self.start_count}\n"
+                 f"     last_price - {self.start_price}\n"
+                 f"     depo - {self.get_max_start_depo()}\n"
                  f"     instrument_id - {self.config.instrument_id}\n"
                  f"     run_instance - {self.run_state}"
                  )

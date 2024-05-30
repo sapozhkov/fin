@@ -1,4 +1,4 @@
-from tinkoff.invest import Client, InvestError, Quotation, Account
+from tinkoff.invest import Client, InvestError, Quotation
 
 from config import Config
 
@@ -28,6 +28,16 @@ class TinkoffApi:
                     out[figi] = price
             finally:
                 return out
+
+    @staticmethod
+    def get_last_price(figi: str) -> float:
+        """
+        Отдает последнюю цену для указанного инструмента (по figi)
+        :param figi: str
+        :return: float
+        """
+        prices = TinkoffApi.get_last_prices([figi])
+        return prices.get(figi, None)
 
     @staticmethod
     def get_first_account_id() -> str:
