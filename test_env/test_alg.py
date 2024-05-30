@@ -293,11 +293,11 @@ class TestAlgorithm:
             auto_conf_prev_days: int,
             original_config: ConfigDTO,
             last_config: ConfigDTO | None
-    ) -> ConfigDTO:
+    ) -> (ConfigDTO, float):
         need_run = self.is_nth_day_from_start(start_date, test_date, auto_conf_days_freq)
 
         if not need_run:
-            return copy.copy(last_config) if last_config is not None else copy.copy(original_config)
+            return copy.copy(last_config) if last_config is not None else copy.copy(original_config), 1
 
         conf_list = self.make_config_variants(original_config)
 
@@ -336,10 +336,10 @@ class TestAlgorithm:
                 best_conf.use_shares = last_config.use_shares
             # print(f"Best of {len(sorted_results)}/{len(conf_list)} {test_date} - {best_conf}")
             # print(f"{best_conf} with profit_p {best_res['profit_p']}")
-            return best_conf
+            return best_conf, best_res['profit_p']
         else:
             print(f"Ошибка при получении лучшей конфигурации")
-            return copy.copy(original_config)
+            return copy.copy(original_config), 0.01
 
     @staticmethod
     def make_config_variants(config: ConfigDTO) -> list[ConfigDTO]:
