@@ -22,6 +22,10 @@ class TradingBot:
     STATE_WORKING = 2
     STATE_FINISHED = 3
 
+    RETRY_DEFAULT = 1
+    RETRY_ON_START = 3
+    RETRY_SLEEP = 5
+
     # количество секунд задержки старта работы в начале торгового дня. хак, чтобы не влететь в отсечку утром
     START_SEC_SHIFT = 1
 
@@ -194,12 +198,18 @@ class TradingBot:
 
         return True, 0
 
-    def place_order(self, order_type: int, direction: int, lots: int, price: float | None = None) \
+    def place_order(self, order_type: int, direction: int, lots: int, price: float | None = None, retry=RETRY_DEFAULT) \
             -> PostOrderResponse | None:
 
         order = self.client.place_order(lots, direction, price, order_type)
         if order is None:
-            return None
+            if retry > 0:
+                self.logger.error(f"RETRY order. {lots}, {direction}, {price}, {order_type}, "
+                                  f"sleep {self.RETRY_SLEEP}, retry num={retry}")
+                self.time.sleep(self.RETRY_SLEEP)
+                return self.place_order(order_type, direction, lots, price, retry-1)
+            else:
+                return None
 
         self.accounting.add_order(order)
         avg_price = self.order_helper.get_avg_price(order)
@@ -225,17 +235,17 @@ class TradingBot:
 
         return order
 
-    def buy(self, lots: int = 1) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_BUY, lots, None)
+    def buy(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
+        return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_BUY, lots, None, retry)
 
-    def sell(self, lots: int = 1) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_SELL, lots, None)
+    def sell(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
+        return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_SELL, lots, None, retry)
 
-    def sell_limit(self, price: float, lots: int = 1) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_SELL, lots, price)
+    def sell_limit(self, price: float, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
+        return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_SELL, lots, price, retry)
 
-    def buy_limit(self, price: float, lots: int = 1) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_BUY, lots, price)
+    def buy_limit(self, price: float, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
+        return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_BUY, lots, price, retry)
 
     def equivalent_prices(self, quotation_price: Quotation | MoneyValue, float_price: float) -> bool:
         rounded_quotation_price = self.client.quotation_to_float(quotation_price)
@@ -494,10 +504,10 @@ class TradingBot:
 
         # докупаем недостающие по рыночной цене
         if need_operations > 0:
-            self.buy(need_operations)
+            self.buy(need_operations, self.RETRY_ON_START)
 
         if self.config.majority_trade and need_operations < 0:
-            self.sell(-need_operations)
+            self.sell(-need_operations, self.RETRY_ON_START)
 
     def run_iteration(self):
         can_trade, sleep_sec = self.can_trade()

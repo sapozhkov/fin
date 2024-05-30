@@ -74,6 +74,10 @@ class ClientTestEnvHelper(AbstractProxyClient):
     def place_order(self, lots: int, direction, price: float | None,
                     order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
 
+        # if random.randint(1, 3) == 1:
+        #     print('----- Падение запроса ------')
+        #     return None
+
         # покупка по рыночной цене
         if order_type == OrderType.ORDER_TYPE_MARKET:
             # считаем сразу исполненной по указанной цене минус комиссия
