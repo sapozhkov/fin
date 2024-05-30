@@ -37,4 +37,5 @@ class TaskProgress:
         if self.current_iteration == self.total_iterations:
             print('\r' + ' ' * 100, end='\r')
             duration = timedelta(seconds=round(elapsed_time))
-            print(f'Закончено в {datetime.now().strftime("%H:%M")}, длительность {duration}', end='\n')
+            print(f'Закончено в {datetime.now().strftime("%H:%M")}, количество {self.total_iterations}'
+                  f', длительность {duration}', end='\n')
