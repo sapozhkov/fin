@@ -506,7 +506,8 @@ class TradingBot:
         if need_operations > 0:
             self.buy(need_operations, self.RETRY_ON_START)
 
-        if self.config.majority_trade and need_operations < 0:
+        # или продаем лишние. в минус без мажоритарки уйти не должны - учтено в конфиге
+        if need_operations < 0:
             self.sell(-need_operations, self.RETRY_ON_START)
 
     def run_iteration(self):
