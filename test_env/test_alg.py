@@ -293,6 +293,25 @@ class TestAlgorithm:
             auto_conf_prev_days: int,
             original_config: ConfigDTO,
             last_config: ConfigDTO | None
+    ) -> ConfigDTO:
+        config, _ = self.make_best_config_with_profit(
+            start_date,
+            test_date,
+            auto_conf_days_freq,
+            auto_conf_prev_days,
+            original_config,
+            last_config
+        )
+        return config
+
+    def make_best_config_with_profit(
+            self,
+            start_date: str,
+            test_date: str,
+            auto_conf_days_freq: int,
+            auto_conf_prev_days: int,
+            original_config: ConfigDTO,
+            last_config: ConfigDTO | None
     ) -> (ConfigDTO, float):
         need_run = self.is_nth_day_from_start(start_date, test_date, auto_conf_days_freq)
 

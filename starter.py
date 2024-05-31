@@ -109,7 +109,7 @@ def get_best_config(stock):
         except ValueError:
             print(f"Не удалось разобрать конфиг {prev_run}")
 
-    best_conf, profit_p = test_alg.make_best_config(
+    best_conf, profit_p = test_alg.make_best_config_with_profit(
         start_date=TimeHelper.get_current_date(),
         test_date=TimeHelper.get_current_date(),
         auto_conf_days_freq=pretest_freq,
