@@ -559,7 +559,7 @@ class TradingBot:
             return False
 
         profit = self.get_current_profit()
-        max_portfolio = self.start_price * self.config.step_max_cnt * self.config.step_lots
+        max_portfolio = self.get_max_start_depo()
 
         need_profit = self.round(max_portfolio * self.config.stop_up_p)
         if self.config.stop_up_p and profit > need_profit:
