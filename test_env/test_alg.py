@@ -241,13 +241,13 @@ class TestAlgorithm:
         return {
             'profit': profit,
             'profit_p': profit_p,
+            'pot_p': potential_profit_p,
             'config': config,
             # 'maj_com': round(total_maj_commission, 2),
 
             # 'profit_avg': round(sum(balance_change_list) / test_days_num, 2),
             #
             # 'pot_profit': potential_profit,
-            # 'pot_profit_p': potential_profit_p,
             #
             # 'days': test_days_num,
             # 'success_days': success_days,
