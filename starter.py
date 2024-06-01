@@ -3,7 +3,7 @@ import datetime
 import os
 
 from app import create_app
-from app.lib.tinkoff_api import TinkoffApi
+from app.lib import TinkoffApi
 from app.models import Instrument, Run
 from app.config import RunConfig
 from lib.ticker_cache import TickerCache
