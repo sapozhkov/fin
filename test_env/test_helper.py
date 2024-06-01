@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Tuple
 
 from common.config import RunConfig
-from lib.ticker_cache import TickerCache
+from bot.db import TickerCache
 from test_env.accounting_test_env import AccountingTestEnvHelper
 from test_env.client_test_env import ClientTestEnvHelper
 from test_env.logger_test_env import LoggerTestEnvHelper

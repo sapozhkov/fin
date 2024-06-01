@@ -1,9 +1,10 @@
 import sqlite3
 from datetime import datetime, timedelta
-from tinkoff.invest import Client, GetCandlesResponse, CandleInterval, Quotation, HistoricCandle
 
-from common.config import AppConfig
+from tinkoff.invest import Quotation, GetCandlesResponse, HistoricCandle, Client, CandleInterval
+
 from bot.dto import InstrumentDTO
+from common.config import AppConfig
 from common.helper import TimeHelper
 
 

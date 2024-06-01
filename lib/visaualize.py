@@ -3,8 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
 from bot.dto import DealDTO, OrderDTO
-from lib.ticker_cache import TickerCache
-from bot.db import HistoricalTrade
+from bot.db import HistoricalTrade, TickerCache
 from bot.vis import OrderVisHelper
 
 

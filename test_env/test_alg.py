@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from tinkoff.invest import OrderDirection
 
 from common.config import AppConfig, RunConfig
-from lib.ticker_cache import TickerCache
+from bot.db import TickerCache
 from common.helper import TimeHelper
 from bot.helper import OrderHelper
 from lib.trading_bot import TradingBot
