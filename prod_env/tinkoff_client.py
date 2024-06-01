@@ -6,7 +6,7 @@ from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandle
     CandleInterval, PostOrderResponse, MoneyValue, OrderState, OrderDirection
 
 from common.lib import TinkoffApi
-from common.dto import InstrumentDTO
+from bot.dto import InstrumentDTO
 from lib.ticker_cache import TickerCache
 from prod_env.logger_helper import AbstractLoggerHelper
 from prod_env.time_helper import AbstractTimeHelper

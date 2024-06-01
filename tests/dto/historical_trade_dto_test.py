@@ -1,6 +1,6 @@
 import unittest
 
-from common.dto import HistoricalTradeDTO
+from bot.dto import HistoricalTradeDTO
 
 
 class TestHistoricalTradeDTO(unittest.TestCase):

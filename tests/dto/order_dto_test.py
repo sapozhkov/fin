@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timezone
 from dateutil import parser
 
-from common.dto import OrderDTO
+from bot.dto import OrderDTO
 
 
 class TestOrderDTO(unittest.TestCase):
