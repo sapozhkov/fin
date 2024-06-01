@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from tinkoff.invest import Client, GetCandlesResponse, CandleInterval, Quotation, HistoricCandle
 
 from app import AppConfig
-from dto.instrument_dto import InstrumentDTO
+from app.dto import InstrumentDTO
 from lib.time_helper import TimeHelper
 
 
