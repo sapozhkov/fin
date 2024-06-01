@@ -1,11 +1,11 @@
-from datetime import datetime
 import sqlite3
+from datetime import datetime
 from itertools import groupby
 
 from tinkoff.invest import OrderDirection
 
+from bot.dto import HistoricalTradeDTO, DealDTO
 from common.config import AppConfig
-from bot.dto import DealDTO, HistoricalTradeDTO
 
 
 class HistoricalTrade:

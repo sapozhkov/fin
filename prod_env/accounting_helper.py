@@ -5,7 +5,7 @@ from pathlib import Path
 import pytz
 from tinkoff.invest import OrderDirection, PostOrderResponse
 
-from lib.historical_trade import HistoricalTrade
+from bot.db import HistoricalTrade
 from lib.order_helper import OrderHelper
 from prod_env.tinkoff_client import AbstractProxyClient
 
