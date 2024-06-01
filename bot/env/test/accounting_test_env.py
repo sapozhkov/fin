@@ -1,8 +1,7 @@
-from tinkoff.invest import OrderDirection, PostOrderResponse, OrderType
+from tinkoff.invest import PostOrderResponse, OrderType, OrderDirection
 
 from bot.dto import DealDTO, OrderDTO
-from prod_env.accounting_helper import AbstractAccountingHelper
-
+from bot.env import AbstractAccountingHelper
 from bot.vis import OrderVisHelper
 from test_env.client_test_env import ClientTestEnvHelper
 
