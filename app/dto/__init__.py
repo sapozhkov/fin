@@ -1,1 +1,2 @@
 from deal_dto import DealDTO
+from historical_trade_dto import HistoricalTradeDTO
