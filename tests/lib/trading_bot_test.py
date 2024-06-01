@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 
 from bot import TradingBot
-from test_env.test_helper import TestHelper
+from bot.helper import TestHelper
 
 
 class MyTestCase(unittest.TestCase):
