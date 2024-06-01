@@ -5,7 +5,7 @@ import matplotlib.dates as mdates
 from bot.dto import DealDTO, OrderDTO
 from lib.ticker_cache import TickerCache
 from bot.db import HistoricalTrade
-from lib.order_vis_helper import OrderVisHelper
+from bot.vis import OrderVisHelper
 
 
 class Visualize:

@@ -3,7 +3,7 @@ from tinkoff.invest import OrderDirection, PostOrderResponse, OrderType
 from bot.dto import DealDTO, OrderDTO
 from prod_env.accounting_helper import AbstractAccountingHelper
 
-from lib.order_vis_helper import OrderVisHelper
+from bot.vis import OrderVisHelper
 from test_env.client_test_env import ClientTestEnvHelper
 
 
