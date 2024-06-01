@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from tinkoff.invest import OrderDirection, PostOrderResponse
 
 from bot.helper import OrderHelper
-from prod_env.tinkoff_client import AbstractProxyClient
+from bot.env import AbstractProxyClient
 
 
 class AbstractAccountingHelper(ABC):

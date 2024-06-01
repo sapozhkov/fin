@@ -1,6 +1,6 @@
 from tinkoff.invest import PostOrderResponse, OrderState
 
-from prod_env.tinkoff_client import AbstractProxyClient
+from bot.env import AbstractProxyClient
 
 
 class OrderHelper:

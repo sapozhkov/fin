@@ -1,12 +1,12 @@
-from datetime import time as datetime_time, datetime, timedelta
+from datetime import time as datetime_time, timedelta, datetime
 from typing import Tuple
 
-from tinkoff.invest import OrderType, PostOrderResponse, OrderDirection, MoneyValue, HistoricCandle, \
-    GetCandlesResponse, OrderState, OrderExecutionReportStatus
+from tinkoff.invest import HistoricCandle, PostOrderResponse, MoneyValue, OrderType, GetCandlesResponse, OrderState, \
+    OrderDirection, OrderExecutionReportStatus
 
-from common.helper import TimeHelper
-from prod_env.tinkoff_client import AbstractProxyClient
+from bot.env import AbstractProxyClient
 from bot.env.test import TimeTestEnvHelper
+from common.helper import TimeHelper
 
 
 class ClientTestEnvHelper(AbstractProxyClient):
