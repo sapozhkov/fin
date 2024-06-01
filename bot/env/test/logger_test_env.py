@@ -1,4 +1,4 @@
-from prod_env.logger_helper import AbstractLoggerHelper
+from bot.env import AbstractLoggerHelper
 from test_env.time_test_env import TimeTestEnvHelper
 
 

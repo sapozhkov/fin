@@ -8,7 +8,7 @@ from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandle
 from common.lib import TinkoffApi
 from bot.dto import InstrumentDTO
 from bot.db import TickerCache
-from prod_env.logger_helper import AbstractLoggerHelper
+from bot.env import AbstractLoggerHelper
 from prod_env.time_helper import AbstractTimeHelper
 
 

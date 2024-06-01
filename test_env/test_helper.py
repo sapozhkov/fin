@@ -3,9 +3,8 @@ from typing import Tuple
 
 from common.config import RunConfig
 from bot.db import TickerCache
-from bot.env.test import AccountingTestEnvHelper
+from bot.env.test import AccountingTestEnvHelper, LoggerTestEnvHelper
 from test_env.client_test_env import ClientTestEnvHelper
-from test_env.logger_test_env import LoggerTestEnvHelper
 from test_env.time_test_env import TimeTestEnvHelper
 
 
