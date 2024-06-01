@@ -5,7 +5,7 @@ from typing import Tuple
 from tinkoff.invest import Client, RequestError, Quotation, OrderType, GetCandlesResponse, OrderExecutionReportStatus, \
     CandleInterval, PostOrderResponse, MoneyValue, OrderState, OrderDirection
 
-from app.lib import TinkoffApi
+from common.lib import TinkoffApi
 from common.dto import InstrumentDTO
 from lib.ticker_cache import TickerCache
 from prod_env.logger_helper import AbstractLoggerHelper

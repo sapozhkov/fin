@@ -1,4 +1,4 @@
-from tinkoff.invest import Client, InvestError, Quotation
+from tinkoff.invest import Quotation, Client, InvestError
 
 from common.config import AppConfig
 

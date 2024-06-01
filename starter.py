@@ -3,7 +3,7 @@ import datetime
 import os
 
 from app import create_app
-from app.lib import TinkoffApi
+from common.lib import TinkoffApi
 from app.models.run import Run
 from app.models.instrument import Instrument
 from common.config import RunConfig
