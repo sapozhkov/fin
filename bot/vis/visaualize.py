@@ -1,9 +1,8 @@
+from matplotlib import pyplot as plt, dates as mdates
 from tinkoff.invest import Quotation
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 
+from bot.db import TickerCache, HistoricalTrade
 from bot.dto import DealDTO, OrderDTO
-from bot.db import HistoricalTrade, TickerCache
 from bot.vis import OrderVisHelper
 
 
