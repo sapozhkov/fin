@@ -3,7 +3,8 @@ from typing import Optional
 from flask_login import UserMixin
 from sqlalchemy import desc
 
-from app import login, db, RunStatus
+from app import login, db
+from app.constants import RunStatus
 from lib.time_helper import TimeHelper
 
 
