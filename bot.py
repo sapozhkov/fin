@@ -4,7 +4,7 @@ from signal import *
 
 from app import create_app
 from common.config import AppConfig, RunConfig
-from lib.trading_bot import TradingBot
+from bot import TradingBot
 
 if __name__ == '__main__':
     app = create_app()

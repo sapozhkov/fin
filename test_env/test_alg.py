@@ -7,7 +7,7 @@ from common.config import AppConfig, RunConfig
 from bot.db import TickerCache
 from common.helper import TimeHelper
 from bot.helper import OrderHelper
-from lib.trading_bot import TradingBot
+from bot import TradingBot
 from test_env.accounting_test_env import AccountingTestEnvHelper
 from test_env.client_test_env import ClientTestEnvHelper
 from test_env.logger_test_env import LoggerTestEnvHelper

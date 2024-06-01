@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime
 
-from lib.trading_bot import TradingBot
+from bot import TradingBot
 from test_env.test_helper import TestHelper
 
 
