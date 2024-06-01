@@ -6,7 +6,7 @@ import pandas as pd
 from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, OrderState, PostOrderResponse
 
 from app import db
-from app.models import Run, Instrument
+from common.models import Instrument, Run
 from common.constants import RunStatus
 from common.config import RunConfig
 from lib.order_helper import OrderHelper

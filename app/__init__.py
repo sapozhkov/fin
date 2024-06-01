@@ -33,7 +33,9 @@ def create_app(config_class=AppConfig):
             return redirect(url_for('common.login'))
 
     with app.app_context():
-        from app.models import Instrument, Run, Deal
+        from common.models import Run
+        from common.models import Instrument
+        from common.models import Deal
         from app.routes import register_blueprints
         register_blueprints(app)
         from app.views import InstrumentView, IndexView, RunView, LogoutView

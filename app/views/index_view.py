@@ -2,7 +2,7 @@ from flask_admin import AdminIndexView, expose
 from flask_login import login_required
 
 from common.lib import TinkoffApi
-from app.models import Run
+from common.models import Run
 from lib.time_helper import TimeHelper
 
 

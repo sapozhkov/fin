@@ -4,7 +4,7 @@ from sqlalchemy import desc
 
 from app import db
 from common.constants import RunStatus
-from app.models import Instrument
+from common.models import Instrument
 from lib.time_helper import TimeHelper
 
 
