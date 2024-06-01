@@ -33,8 +33,8 @@ def create_app(config_class=AppConfig):
             return redirect(url_for('common.login'))
 
     with app.app_context():
-        from app.routes import common
-        app.register_blueprint(common.bp)
+        from app.routes import register_blueprints
+        register_blueprints(app)
 
     # Импортируем модели после создания приложения и расширений, иначе циклится
     from app import models
