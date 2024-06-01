@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Tuple
 
-from app.config.run_config import RunConfig
+from app.config import RunConfig
 from lib.ticker_cache import TickerCache
 from test_env.accounting_test_env import AccountingTestEnvHelper
 from test_env.client_test_env import ClientTestEnvHelper

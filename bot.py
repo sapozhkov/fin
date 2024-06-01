@@ -3,7 +3,7 @@ import traceback
 from signal import *
 
 from app import create_app, AppConfig
-from app.config.run_config import RunConfig
+from app.config import RunConfig
 from lib.trading_bot import TradingBot
 
 if __name__ == '__main__':
