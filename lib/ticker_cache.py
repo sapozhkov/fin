@@ -4,7 +4,7 @@ from tinkoff.invest import Client, GetCandlesResponse, CandleInterval, Quotation
 
 from common.config import AppConfig
 from bot.dto import InstrumentDTO
-from lib.time_helper import TimeHelper
+from common.helper import TimeHelper
 
 
 class TickerCache:

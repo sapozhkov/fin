@@ -3,7 +3,7 @@ from flask_login import login_required
 
 from common.lib import TinkoffApi
 from common.models import Run
-from lib.time_helper import TimeHelper
+from common.helper import TimeHelper
 
 
 class IndexView(AdminIndexView):

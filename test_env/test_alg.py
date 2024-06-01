@@ -5,7 +5,7 @@ from tinkoff.invest import OrderDirection
 
 from common.config import AppConfig, RunConfig
 from lib.ticker_cache import TickerCache
-from lib.time_helper import TimeHelper
+from common.helper import TimeHelper
 from lib.order_helper import OrderHelper
 from lib.trading_bot import TradingBot
 from test_env.accounting_test_env import AccountingTestEnvHelper

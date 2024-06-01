@@ -4,7 +4,7 @@ from typing import Tuple
 from tinkoff.invest import OrderType, PostOrderResponse, OrderDirection, MoneyValue, HistoricCandle, \
     GetCandlesResponse, OrderState, OrderExecutionReportStatus
 
-from lib.time_helper import TimeHelper
+from common.helper import TimeHelper
 from prod_env.tinkoff_client import AbstractProxyClient
 from test_env.time_test_env import TimeTestEnvHelper
 

@@ -10,7 +10,7 @@ from common.models import Instrument, Run
 from common.constants import RunStatus
 from common.config import RunConfig
 from lib.order_helper import OrderHelper
-from lib.time_helper import TimeHelper
+from common.helper import TimeHelper
 from prod_env.accounting_helper import AbstractAccountingHelper, AccountingHelper
 from prod_env.logger_helper import LoggerHelper, AbstractLoggerHelper
 from prod_env.time_helper import TimeProdEnvHelper, AbstractTimeHelper
