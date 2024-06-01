@@ -2,7 +2,7 @@ from tinkoff.invest import Quotation
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-from dto.deal_dto import DealDTO
+from app.dto import DealDTO
 from dto.order_dto import OrderDTO
 from lib.ticker_cache import TickerCache
 from lib.historical_trade import HistoricalTrade

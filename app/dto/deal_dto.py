@@ -1,4 +1,5 @@
-from datetime import timezone, datetime
+from datetime import datetime, timezone
+
 from dateutil import parser
 
 
