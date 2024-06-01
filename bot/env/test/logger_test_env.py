@@ -1,5 +1,5 @@
 from bot.env import AbstractLoggerHelper
-from test_env.time_test_env import TimeTestEnvHelper
+from bot.env.test import TimeTestEnvHelper
 
 
 class LoggerTestEnvHelper(AbstractLoggerHelper):

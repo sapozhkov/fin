@@ -8,10 +8,8 @@ from bot.db import TickerCache
 from common.helper import TimeHelper
 from bot.helper import OrderHelper
 from bot import TradingBot
-from bot.env.test import AccountingTestEnvHelper, LoggerTestEnvHelper
+from bot.env.test import AccountingTestEnvHelper, LoggerTestEnvHelper, TimeTestEnvHelper
 from test_env.client_test_env import ClientTestEnvHelper
-
-from test_env.time_test_env import TimeTestEnvHelper
 
 
 class TestAlgorithm:

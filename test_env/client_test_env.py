@@ -6,7 +6,7 @@ from tinkoff.invest import OrderType, PostOrderResponse, OrderDirection, MoneyVa
 
 from common.helper import TimeHelper
 from prod_env.tinkoff_client import AbstractProxyClient
-from test_env.time_test_env import TimeTestEnvHelper
+from bot.env.test import TimeTestEnvHelper
 
 
 class ClientTestEnvHelper(AbstractProxyClient):

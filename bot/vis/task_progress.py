@@ -1,7 +1,7 @@
 import time
 from datetime import datetime, timedelta
 
-from prod_env.time_helper import AbstractTimeHelper
+from bot.env import AbstractTimeHelper
 
 
 class TaskProgress:

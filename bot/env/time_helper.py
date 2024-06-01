@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone, timedelta
-import time
+from datetime import datetime, timedelta
 
 
 class AbstractTimeHelper(ABC):
@@ -39,11 +38,3 @@ class AbstractTimeHelper(ABC):
         parts.append(f"{int(seconds):02}s")
 
         return " ".join(parts[:2])
-
-
-class TimeProdEnvHelper(AbstractTimeHelper):
-    def now(self):
-        return datetime.now(timezone.utc)
-
-    def sleep(self, seconds):
-        time.sleep(seconds)
