@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime, timezone
 from dateutil import parser
 
-from app.dto import DealDTO
+from common.dto import DealDTO
 
 
 class TestDealDTO(unittest.TestCase):

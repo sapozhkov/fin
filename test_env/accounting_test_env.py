@@ -1,6 +1,6 @@
 from tinkoff.invest import OrderDirection, PostOrderResponse, OrderType
 
-from app.dto import DealDTO, OrderDTO
+from common.dto import DealDTO, OrderDTO
 from prod_env.accounting_helper import AbstractAccountingHelper
 
 from lib.order_vis_helper import OrderVisHelper
