@@ -7,7 +7,7 @@ from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, Ord
 
 from app import db
 from app.models import Run, Instrument
-from app.constants import RunStatus
+from common.constants import RunStatus
 from common.config import RunConfig
 from lib.order_helper import OrderHelper
 from lib.time_helper import TimeHelper

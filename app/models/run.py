@@ -3,7 +3,7 @@ from typing import Optional
 from sqlalchemy import desc
 
 from app import db
-from app.constants import RunStatus
+from common.constants import RunStatus
 from app.models import Instrument
 from lib.time_helper import TimeHelper
 
