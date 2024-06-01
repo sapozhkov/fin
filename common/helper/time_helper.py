@@ -1,6 +1,6 @@
 from datetime import datetime, timezone, time, timedelta
 
-from lib.day_exclusions import DayExclusions
+from .day_exclusions import DayExclusions
 
 
 class TimeHelper:
