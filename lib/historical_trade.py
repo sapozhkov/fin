@@ -4,7 +4,7 @@ from itertools import groupby
 
 from tinkoff.invest import OrderDirection
 
-from config import Config
+from app import AppConfig
 from dto.deal_dto import DealDTO
 from dto.historical_trade_dto import HistoricalTradeDTO
 
@@ -14,7 +14,7 @@ class HistoricalTrade:
     TYPE_SELL = OrderDirection.ORDER_DIRECTION_SELL
 
     def __init__(self):
-        self.db_file = f'{Config.BASE_DIR}/db/trading_bot.db'
+        self.db_file = f'{AppConfig.BASE_DIR}/db/trading_bot.db'
         self.create_table_if_not_exists()
 
     def create_table_if_not_exists(self):

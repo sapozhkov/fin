@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from tinkoff.invest import OrderDirection
 
-from config import Config
+from app import AppConfig
 from lib.ticker_cache import TickerCache
 from lib.time_helper import TimeHelper
 from lib.order_helper import OrderHelper
@@ -22,7 +22,7 @@ class TestAlgorithm:
             config: ConfigDTO,
             do_printing=False
     ):
-        self.token = Config.TOKEN
+        self.token = AppConfig.TOKEN
         self.config = config
         self.time_helper = TimeTestEnvHelper()
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)

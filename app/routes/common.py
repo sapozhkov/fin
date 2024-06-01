@@ -4,11 +4,11 @@ from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import current_user, login_user, logout_user
 from app.models import User
-from config import Config
+from app import AppConfig
 
 bp = Blueprint('common', __name__)
 
-LOG_FILE = f"{Config.BASE_DIR}/log/login_attempts.log"
+LOG_FILE = f"{AppConfig.BASE_DIR}/log/login_attempts.log"
 
 
 def log_failed_attempt(password):
@@ -35,7 +35,7 @@ def login():
             return redirect(url_for('common.login'))
 
         password = request.form.get('password')
-        if password == Config.PASSWORD:
+        if password == AppConfig.PASSWORD:
             user = User()
             login_user(user)
             open(LOG_FILE, 'w').close()

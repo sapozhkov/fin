@@ -1,6 +1,6 @@
 from tinkoff.invest import Client, InvestError, Quotation
 
-from config import Config
+from app import AppConfig
 
 
 class TinkoffApi:
@@ -17,7 +17,7 @@ class TinkoffApi:
         :return: {figi: float, ...}
         """
         out = {}
-        with Client(Config.TOKEN) as client:
+        with Client(AppConfig.TOKEN) as client:
             try:
                 # Получаем последние цены для каждого инструмента в списке FIGI
                 response = client.market_data.get_last_prices(figi=figi_list)
@@ -45,7 +45,7 @@ class TinkoffApi:
         Получает идентификатор первого аккаунта пользователя
         :return: идентификатор первого аккаунта
         """
-        with Client(Config.TOKEN) as client:
+        with Client(AppConfig.TOKEN) as client:
             accounts = client.users.get_accounts().accounts
             if accounts:
                 first_account_id = accounts[0].id
@@ -60,7 +60,7 @@ class TinkoffApi:
     #     :return: Словарь с балансом счета
     #     """
     #     account_id = TinkoffApi.get_first_account_id()
-    #     with Client(Config.TOKEN) as client:
+    #     with Client(AppConfig.TOKEN) as client:
     #         try:
     #             response = client.operations.get_portfolio(account_id=account_id)
     #             balance = {}
@@ -83,7 +83,7 @@ class TinkoffApi:
         :return: Баланс счета в рублях
         """
         account_id = TinkoffApi.get_first_account_id()
-        with Client(Config.TOKEN) as client:
+        with Client(AppConfig.TOKEN) as client:
             try:
                 response = client.operations.get_portfolio(account_id=account_id)
                 return TinkoffApi.q2f(response.total_amount_portfolio)

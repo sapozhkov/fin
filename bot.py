@@ -2,8 +2,7 @@ import sys
 import traceback
 from signal import *
 
-from app import create_app
-from config import Config
+from app import create_app, AppConfig
 from dto.config_dto import ConfigDTO
 from lib.trading_bot import TradingBot
 
@@ -34,7 +33,7 @@ if __name__ == '__main__':
         else:
             config_dto = ConfigDTO.from_string(sys.argv[1])
 
-        bot = TradingBot(Config.TOKEN, config_dto)
+        bot = TradingBot(AppConfig.TOKEN, config_dto)
 
         if len(sys.argv) > 1:
             bot.log(f"Config string: {sys.argv[1]}")

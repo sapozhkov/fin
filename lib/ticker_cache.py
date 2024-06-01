@@ -2,16 +2,16 @@ import sqlite3
 from datetime import datetime, timedelta
 from tinkoff.invest import Client, GetCandlesResponse, CandleInterval, Quotation, HistoricCandle
 
-from config import Config
+from app import AppConfig
 from dto.instrument_dto import InstrumentDTO
 from lib.time_helper import TimeHelper
 
 
 class TickerCache:
     def __init__(self, ticker):
-        self.token = Config.TOKEN
+        self.token = AppConfig.TOKEN
         self.ticker = ticker
-        self.db_file = f"{Config.BASE_DIR}/db/c_{ticker}.db"
+        self.db_file = f"{AppConfig.BASE_DIR}/db/c_{ticker}.db"
         self.create_database()
         self.instrument: InstrumentDTO | None = None
 

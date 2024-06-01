@@ -8,7 +8,7 @@ from flask_admin import Admin, AdminIndexView, expose, BaseView
 from flask_admin.contrib.sqla import ModelView
 
 from app.constants.run_status import RunStatus
-from config import Config
+from app.config.app_config import AppConfig
 
 # Инициализация расширений
 db = SQLAlchemy()
@@ -17,10 +17,10 @@ login = LoginManager()
 login.login_view = 'common.login'
 
 
-def create_app(config_class=Config):
+def create_app(config_class=AppConfig):
     app = Flask(__name__)
     app.config.from_object(config_class)
-    app.config['FLASK_ADMIN_SWATCH'] = 'cosmo' if Config.DEBUG_MODE else 'cerulean'
+    app.config['FLASK_ADMIN_SWATCH'] = 'cosmo' if AppConfig.DEBUG_MODE else 'cerulean'
 
     # Инициализация расширений с приложением
     db.init_app(app)

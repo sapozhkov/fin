@@ -1,12 +1,14 @@
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+basedir = os.path.abspath(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-basedir = os.path.abspath(os.path.dirname(__file__))
+# Определяем путь к .env файлу
+dotenv_path = os.path.join(basedir, '.env')
+load_dotenv(dotenv_path)
 
 
-class Config:
+class AppConfig:
     BASE_DIR = basedir
     TOKEN = os.environ.get('INVEST_TOKEN')
     PASSWORD = os.environ.get('PASSWORD')
