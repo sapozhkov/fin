@@ -12,14 +12,14 @@ from test_env.accounting_test_env import AccountingTestEnvHelper
 from test_env.client_test_env import ClientTestEnvHelper
 from test_env.logger_test_env import LoggerTestEnvHelper
 
-from dto.config_dto import ConfigDTO
+from app.config.run_config import RunConfig
 from test_env.time_test_env import TimeTestEnvHelper
 
 
 class TestAlgorithm:
     def __init__(
             self,
-            config: ConfigDTO,
+            config: RunConfig,
             do_printing=False
     ):
         self.token = AppConfig.TOKEN
@@ -291,9 +291,9 @@ class TestAlgorithm:
             test_date: str,
             auto_conf_days_freq: int,
             auto_conf_prev_days: int,
-            original_config: ConfigDTO,
-            last_config: ConfigDTO | None
-    ) -> ConfigDTO:
+            original_config: RunConfig,
+            last_config: RunConfig | None
+    ) -> RunConfig:
         config, _ = self.make_best_config_with_profit(
             start_date,
             test_date,
@@ -310,9 +310,9 @@ class TestAlgorithm:
             test_date: str,
             auto_conf_days_freq: int,
             auto_conf_prev_days: int,
-            original_config: ConfigDTO,
-            last_config: ConfigDTO | None
-    ) -> (ConfigDTO, float):
+            original_config: RunConfig,
+            last_config: RunConfig | None
+    ) -> (RunConfig, float):
         need_run = self.is_nth_day_from_start(start_date, test_date, auto_conf_days_freq)
 
         if not need_run:
@@ -361,9 +361,9 @@ class TestAlgorithm:
             return copy.copy(original_config), 0.01
 
     @staticmethod
-    def make_config_variants(config: ConfigDTO) -> list[ConfigDTO]:
+    def make_config_variants(config: RunConfig) -> list[RunConfig]:
         return [
-            (ConfigDTO(
+            (RunConfig(
                 name=config.name,
                 ticker=config.ticker,
 

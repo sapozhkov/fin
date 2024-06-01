@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Tuple
 
-from dto.config_dto import ConfigDTO
+from app.config.run_config import RunConfig
 from lib.ticker_cache import TickerCache
 from test_env.accounting_test_env import AccountingTestEnvHelper
 from test_env.client_test_env import ClientTestEnvHelper
@@ -28,7 +28,7 @@ class TestHelper:
     @staticmethod
     def get_client(
             token,
-            config: ConfigDTO,
+            config: RunConfig,
             logger_helper: LoggerTestEnvHelper,
             time_helper: TimeTestEnvHelper,
     ) -> ClientTestEnvHelper:
@@ -44,9 +44,9 @@ class TestHelper:
 
     @staticmethod
     def get_helper_pack(token='', ticker=DEF_TICKER, do_printing=False) -> \
-            Tuple[ConfigDTO, TimeTestEnvHelper, LoggerTestEnvHelper,
+            Tuple[RunConfig, TimeTestEnvHelper, LoggerTestEnvHelper,
                   ClientTestEnvHelper, AccountingTestEnvHelper]:
-        config = ConfigDTO(ticker=ticker, pretest_period=0)
+        config = RunConfig(ticker=ticker, pretest_period=0)
         time_helper = TestHelper.get_time()
         logger_helper = TestHelper.get_logger(time_helper, do_printing)
         client_helper = TestHelper.get_client(token, config, logger_helper, time_helper)

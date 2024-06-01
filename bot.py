@@ -3,14 +3,14 @@ import traceback
 from signal import *
 
 from app import create_app, AppConfig
-from dto.config_dto import ConfigDTO
+from app.config.run_config import RunConfig
 from lib.trading_bot import TradingBot
 
 if __name__ == '__main__':
     app = create_app()
     with app.app_context():
         if len(sys.argv) == 1:
-            config_dto = ConfigDTO(
+            config_dto = RunConfig(
                 ticker='RNFT',
 
                 step_max_cnt=5,
@@ -22,7 +22,7 @@ if __name__ == '__main__':
                 use_shares=0,
 
                 pretest_period=0,
-                pretest_type=ConfigDTO.PRETEST_NONE,
+                pretest_type=RunConfig.PRETEST_NONE,
 
                 threshold_sell_steps=0,
                 threshold_buy_steps=6,
@@ -31,7 +31,7 @@ if __name__ == '__main__':
                 stop_down_p=.15,
             )
         else:
-            config_dto = ConfigDTO.from_string(sys.argv[1])
+            config_dto = RunConfig.from_string(sys.argv[1])
 
         bot = TradingBot(AppConfig.TOKEN, config_dto)
 

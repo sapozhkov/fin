@@ -5,7 +5,7 @@ import os
 from app import create_app
 from app.lib.tinkoff_api import TinkoffApi
 from app.models import Instrument, Run
-from dto.config_dto import ConfigDTO
+from app.config.run_config import RunConfig
 from lib.ticker_cache import TickerCache
 from lib.time_helper import TimeHelper
 from test_env.test_alg import TestAlgorithm
@@ -33,7 +33,7 @@ async def run_command(command):
 
 class Stock:
     instrument_id: int = 0
-    config: ConfigDTO | None = None
+    config: RunConfig | None = None
     ticker: str = ''
     figi: str = ''
     price: float = 0
@@ -91,7 +91,7 @@ def get_best_config(stock):
         config=conf,
     )
 
-    if conf.pretest_type == ConfigDTO.PRETEST_PRE:
+    if conf.pretest_type == RunConfig.PRETEST_PRE:
         pretest_freq = 1
         pretest_days = conf.pretest_period
     else:
@@ -104,7 +104,7 @@ def get_best_config(stock):
     prev_run = Run.get_prev_run(stock.instrument_id)
     if prev_run:
         try:
-            last_config = ConfigDTO.from_repr_string(prev_run.config)
+            last_config = RunConfig.from_repr_string(prev_run.config)
             print(f"{datetime.datetime.now()} + пред {last_config} от {prev_run.date}")
         except ValueError:
             print(f"Не удалось разобрать конфиг {prev_run}")
@@ -135,7 +135,7 @@ async def main():
         stocks = []
         instruments = Instrument.query.filter_by(status=1).all()
         for instrument in instruments:
-            config = ConfigDTO.from_repr_string(instrument.config)
+            config = RunConfig.from_repr_string(instrument.config)
             ticker = config.ticker
             ticker_cache = TickerCache(ticker)
             figi = ticker_cache.get_instrument().figi

@@ -1,7 +1,7 @@
 import re
 
 
-class ConfigDTO:
+class RunConfig:
     PRETEST_NONE = ''
     PRETEST_RSI = 'rsi'  # прогон по RSI
     PRETEST_PRE = 'pre'  # анализ и выбор лучшего варианта том же алгоритме за pretest_period дней с вариациями конфига
@@ -144,13 +144,13 @@ class ConfigDTO:
             values['stop_down_p'] = float(values['stop_down_p'] or 0)
             values['majority_trade'] = values['majority_trade'] == '+'
 
-            return ConfigDTO(**values)
+            return RunConfig(**values)
         else:
-            raise ValueError(f"Cannot create ConfigDTO from string '{input_string}'")
+            raise ValueError(f"Cannot create RunConfig from string '{input_string}'")
 
     def to_string(self):
         args = []
-        base_conf = ConfigDTO()
+        base_conf = RunConfig()
         for key, value in self.__dict__.items():
             if value != base_conf.__dict__[key]:
                 if value is None:
@@ -175,7 +175,7 @@ class ConfigDTO:
         return cls(**d)
 
     def __eq__(self, other):
-        if not isinstance(other, ConfigDTO):
+        if not isinstance(other, RunConfig):
             raise TypeError
         return (
                 self.name == other.name and

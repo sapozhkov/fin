@@ -8,7 +8,7 @@ from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, Ord
 from app import db
 from app.models import Run, get_instrument_by_id
 from app.constants.run_status import RunStatus
-from dto.config_dto import ConfigDTO
+from app.config.run_config import RunConfig
 from lib.order_helper import OrderHelper
 from lib.time_helper import TimeHelper
 from prod_env.accounting_helper import AbstractAccountingHelper, AccountingHelper
@@ -32,7 +32,7 @@ class TradingBot:
     def __init__(
             self,
             token,
-            config: ConfigDTO,
+            config: RunConfig,
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
             client_helper: AbstractProxyClient | None = None,
@@ -124,7 +124,7 @@ class TradingBot:
             return
 
         # пока работает только для RSI внутри бота. PRE запускается снаружи до
-        if self.config.pretest_type != ConfigDTO.PRETEST_RSI:
+        if self.config.pretest_type != RunConfig.PRETEST_RSI:
             return
 
         current_trend = self.get_rsi_trend_val(self.config.pretest_period)

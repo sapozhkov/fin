@@ -1,7 +1,7 @@
 from flask_admin.contrib.sqla import ModelView
 from wtforms import ValidationError
 
-from dto.config_dto import ConfigDTO
+from app.config.run_config import RunConfig
 
 
 class InstrumentView(ModelView):
@@ -24,7 +24,7 @@ class InstrumentView(ModelView):
 
     def on_model_change(self, form, model, is_created):
         try:
-            ConfigDTO.from_repr_string(model.config)
+            RunConfig.from_repr_string(model.config)
         except ValueError as e:
             raise ValidationError(e)
 

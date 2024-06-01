@@ -1,22 +1,22 @@
 import unittest
 
-from dto.config_dto import ConfigDTO
+from app.config.run_config import RunConfig
 
 
 class MyTestCase(unittest.TestCase):
     def test_string_transferring(self):
         config_list = [
             # пустой набор - всё стандартное
-            ConfigDTO(),
+            RunConfig(),
 
             # те, что с None взаимодействуют
-            ConfigDTO(
+            RunConfig(
                 step_base_cnt=None,
                 use_shares=3,
             ),
 
             # полный набор - всё не стандартное. новые поля докидывать сюда
-            ConfigDTO(
+            RunConfig(
                 start_time='07:13',
                 end_time='12:21',
 
@@ -29,7 +29,7 @@ class MyTestCase(unittest.TestCase):
                 step_max_cnt=21,
                 step_base_cnt=8,
 
-                pretest_type=ConfigDTO.PRETEST_RSI,
+                pretest_type=RunConfig.PRETEST_RSI,
                 pretest_period=22,
 
                 majority_trade=False,
@@ -46,27 +46,27 @@ class MyTestCase(unittest.TestCase):
         ]
 
         for c in config_list:
-            self.assertEqual(c, ConfigDTO.from_string(c.to_string()))
+            self.assertEqual(c, RunConfig.from_string(c.to_string()))
 
     # падение с ошибкой при наличии левых параметров.
     # пусть сразу завалится и высветит, чем будет работать не пойми как
     def test_additional_string_parameters(self):
         with self.assertRaises(TypeError):
-            config = ConfigDTO(
+            config = RunConfig(
                 stop_up_p=.2,
                 stop_down_p=.34,
             )
 
             to_string = config.to_string()
-            ConfigDTO.from_string(to_string + ',qwe=321,a=,de=123')
+            RunConfig.from_string(to_string + ',qwe=321,a=,de=123')
 
     def test_param_modify(self):
 
-        config_normal = ConfigDTO(
+        config_normal = RunConfig(
             step_max_cnt=5,
             step_base_cnt=2,
         )
-        config_none = ConfigDTO(
+        config_none = RunConfig(
             step_max_cnt=5,
             step_base_cnt=None,
         )
@@ -74,7 +74,7 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(config_normal, config_none)
         self.assertEqual(str(config_normal), str(config_none))
 
-        config_max = ConfigDTO(
+        config_max = RunConfig(
             step_max_cnt=5,
             step_base_cnt=7,
             step_set_orders_cnt=5,
@@ -82,7 +82,7 @@ class MyTestCase(unittest.TestCase):
             threshold_sell_steps=5,
 
         )
-        config_over = ConfigDTO(
+        config_over = RunConfig(
             step_max_cnt=5,
             step_base_cnt=5,
             step_set_orders_cnt=5,
@@ -94,35 +94,35 @@ class MyTestCase(unittest.TestCase):
 
     def test_failing(self):
         with self.assertRaises(ValueError):
-            ConfigDTO(
+            RunConfig(
                 step_max_cnt='hello'
             )
 
     def test_qe_fail(self):
         with self.assertRaises(TypeError):
-            c = ConfigDTO()
+            c = RunConfig()
             a = []
             return c == a
 
     def test_hash(self):
         configs = [
-            ConfigDTO(step_max_cnt=3),
-            ConfigDTO(step_max_cnt=2),
-            ConfigDTO(step_max_cnt=3),
+            RunConfig(step_max_cnt=3),
+            RunConfig(step_max_cnt=2),
+            RunConfig(step_max_cnt=3),
         ]
         unique_configs = set(configs)
         self.assertEqual(len(unique_configs), 2)
 
     def test_eq_method_uses_all_fields(self):
-        method_code = ConfigDTO.__eq__.__code__
-        fields = vars(ConfigDTO())
+        method_code = RunConfig.__eq__.__code__
+        fields = vars(RunConfig())
         for field in fields:
             self.assertIn(field, method_code.co_names,
                           f"Field '{field}' is not used in __eq__ method")
 
     def test_hash_method_uses_all_fields(self):
-        method_code = ConfigDTO.__hash__.__code__
-        fields = vars(ConfigDTO())
+        method_code = RunConfig.__hash__.__code__
+        fields = vars(RunConfig())
         for field in fields:
             self.assertIn(field, method_code.co_names,
                           f"Field '{field}' is not used in __hash__ method")
@@ -137,35 +137,35 @@ class MyTestCase(unittest.TestCase):
 
         config_list = [
             # пустой набор - всё стандартное
-            ConfigDTO(),
+            RunConfig(),
 
-            ConfigDTO(pretest_period=0),
-            ConfigDTO(ticker="TEST"),
-            ConfigDTO(step_base_cnt=-3),
+            RunConfig(pretest_period=0),
+            RunConfig(ticker="TEST"),
+            RunConfig(step_base_cnt=-3),
 
             # те, что с None взаимодействуют
-            ConfigDTO(
+            RunConfig(
                 step_base_cnt=None,
             ),
 
             # разные варианты претестов
-            ConfigDTO(
-                pretest_type=ConfigDTO.PRETEST_NONE,
+            RunConfig(
+                pretest_type=RunConfig.PRETEST_NONE,
                 pretest_period=12,
             ),
 
-            ConfigDTO(
-                pretest_type=ConfigDTO.PRETEST_RSI,
+            RunConfig(
+                pretest_type=RunConfig.PRETEST_RSI,
                 pretest_period=13,
             ),
 
-            ConfigDTO(
-                pretest_type=ConfigDTO.PRETEST_PRE,
+            RunConfig(
+                pretest_type=RunConfig.PRETEST_PRE,
                 pretest_period=14,
             ),
 
             # # полный набор - всё не стандартное. новые поля докидывать сюда
-            ConfigDTO(
+            RunConfig(
                 ticker='TEST',
 
                 stop_up_p=.2,
@@ -173,7 +173,7 @@ class MyTestCase(unittest.TestCase):
 
                 step_max_cnt=21,
                 step_base_cnt=8,
-                pretest_type=ConfigDTO.PRETEST_RSI,
+                pretest_type=RunConfig.PRETEST_RSI,
                 pretest_period=22,
 
                 majority_trade=False,
@@ -188,8 +188,8 @@ class MyTestCase(unittest.TestCase):
         ]
 
         for c in config_list:
-            self.assertEqual(c,ConfigDTO.from_repr_string(str(c)), str(c))
-            self.assertEqual(c, ConfigDTO.from_repr_string(str(c).strip()), f"'{str(c).strip()}'")
+            self.assertEqual(c, RunConfig.from_repr_string(str(c)), str(c))
+            self.assertEqual(c, RunConfig.from_repr_string(str(c).strip()), f"'{str(c).strip()}'")
 
 
 if __name__ == '__main__':
