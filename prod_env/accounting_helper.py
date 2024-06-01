@@ -6,7 +6,7 @@ import pytz
 from tinkoff.invest import OrderDirection, PostOrderResponse
 
 from bot.db import HistoricalTrade
-from lib.order_helper import OrderHelper
+from bot.helper import OrderHelper
 from prod_env.tinkoff_client import AbstractProxyClient
 
 
