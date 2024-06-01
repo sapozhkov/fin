@@ -8,7 +8,7 @@ from common.models import Instrument, Run
 from common.config import RunConfig
 from bot.db import TickerCache
 from common.helper import TimeHelper
-from test_env.test_alg import TestAlgorithm
+from bot import TestAlgorithm
 
 date = TimeHelper.get_next_date() if TimeHelper.is_evening() else TimeHelper.get_current_date()
 if not TimeHelper.is_working_day(date):

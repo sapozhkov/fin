@@ -3,12 +3,12 @@ from datetime import datetime, timezone
 
 from tinkoff.invest import OrderDirection
 
-from common.config import AppConfig, RunConfig
-from bot.db import TickerCache
-from common.helper import TimeHelper
-from bot.helper import OrderHelper
 from bot import TradingBot
-from bot.env.test import AccountingTestEnvHelper, LoggerTestEnvHelper, TimeTestEnvHelper, ClientTestEnvHelper
+from bot.db import TickerCache
+from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
+from bot.helper import OrderHelper
+from common.config import RunConfig, AppConfig
+from common.helper import TimeHelper
 
 
 class TestAlgorithm:
