@@ -6,7 +6,7 @@ import pandas as pd
 from tinkoff.invest import OrderDirection, OrderType, Quotation, MoneyValue, OrderState, PostOrderResponse
 
 from app import db
-from app.models import Run, get_instrument_by_id
+from app.models import Run, Instrument
 from app.constants import RunStatus
 from app.config import RunConfig
 from lib.order_helper import OrderHelper
@@ -75,7 +75,7 @@ class TradingBot:
 
         self.run_state: Run | None = None
         if self.config.instrument_id:
-            instrument = get_instrument_by_id(self.config.instrument_id)
+            instrument = Instrument.get_by_id(self.config.instrument_id)
             if instrument:
                 self.run_state = Run(
                     instrument=instrument.id,
@@ -506,7 +506,7 @@ class TradingBot:
         if need_operations > 0:
             self.buy(need_operations, self.RETRY_ON_START)
 
-        # или продаем лишние. в минус без мажоритарки уйти не должны - учтено в конфиге
+        # или продаем лишние. в минус без мажоритарной уйти не должны - учтено в конфиге
         if need_operations < 0:
             self.sell(-need_operations, self.RETRY_ON_START)
 

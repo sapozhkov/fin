@@ -4,7 +4,8 @@ import os
 
 from app import create_app
 from app.lib import TinkoffApi
-from app.models import Instrument, Run
+from app.models.run import Run
+from app.models.instrument import Instrument
 from app.config import RunConfig
 from lib.ticker_cache import TickerCache
 from lib.time_helper import TimeHelper

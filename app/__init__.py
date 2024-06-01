@@ -33,12 +33,12 @@ def create_app(config_class=AppConfig):
             return redirect(url_for('common.login'))
 
     with app.app_context():
+        from app.models import Instrument, Run, Deal
         from app.routes import register_blueprints
         register_blueprints(app)
+        from app.views import InstrumentView, IndexView, RunView, LogoutView
 
     # Импортируем модели после создания приложения и расширений, иначе циклится
-    from app import models
-    from app.views import InstrumentView, IndexView, RunView, LogoutView
 
     def format_time(value, _format='%H:%M'):
         """Форматирование даты и времени в указанный формат."""
@@ -56,9 +56,9 @@ def create_app(config_class=AppConfig):
 
     admin = Admin(app, name='FinHub', template_mode='bootstrap3', url='/', index_view=IndexView(url='/'))
 
-    admin.add_view(InstrumentView(app.models.instrument.Instrument, db.session))
-    admin.add_view(RunView(app.models.run.Run, db.session))
-    admin.add_view(ModelView(app.models.deal.Deal, db.session))
+    admin.add_view(InstrumentView(Instrument, db.session))
+    admin.add_view(RunView(Run, db.session))
+    admin.add_view(ModelView(Deal, db.session))
     admin.add_view(LogoutView(name="Logout", endpoint='logout'))
 
     return app
