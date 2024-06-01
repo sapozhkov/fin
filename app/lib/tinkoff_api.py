@@ -1,6 +1,6 @@
 from tinkoff.invest import Client, InvestError, Quotation
 
-from app import AppConfig
+from common.config import AppConfig
 
 
 class TinkoffApi:

@@ -1,4 +1,5 @@
-from app import create_app, AppConfig
+from app import create_app
+from common.config import AppConfig
 
 app = create_app()
 

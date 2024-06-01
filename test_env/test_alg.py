@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from tinkoff.invest import OrderDirection
 
-from app import AppConfig
+from common.config import AppConfig, RunConfig
 from lib.ticker_cache import TickerCache
 from lib.time_helper import TimeHelper
 from lib.order_helper import OrderHelper
@@ -12,7 +12,6 @@ from test_env.accounting_test_env import AccountingTestEnvHelper
 from test_env.client_test_env import ClientTestEnvHelper
 from test_env.logger_test_env import LoggerTestEnvHelper
 
-from app.config import RunConfig
 from test_env.time_test_env import TimeTestEnvHelper
 
 

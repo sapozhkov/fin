@@ -1,7 +1,7 @@
 from flask_admin.contrib.sqla import ModelView
 from wtforms import ValidationError
 
-from app.config import RunConfig
+from common.config import RunConfig
 
 
 class InstrumentView(ModelView):

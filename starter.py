@@ -6,7 +6,7 @@ from app import create_app
 from app.lib import TinkoffApi
 from app.models.run import Run
 from app.models.instrument import Instrument
-from app.config import RunConfig
+from common.config import RunConfig
 from lib.ticker_cache import TickerCache
 from lib.time_helper import TimeHelper
 from test_env.test_alg import TestAlgorithm

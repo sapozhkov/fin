@@ -7,7 +7,7 @@ from flask_login import LoginManager, current_user
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 
-from app.config import AppConfig
+from common.config import AppConfig
 
 db = SQLAlchemy()
 migrate = Migrate()
