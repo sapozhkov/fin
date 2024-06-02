@@ -153,11 +153,11 @@ class TestAlgorithm:
                         continue
                     avg_price = self.client_helper.round(OrderHelper.get_avg_price(order))
                     if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
-                        low_buy_price = self.client_helper.quotation_to_float(candle.low)
+                        low_buy_price = self.client_helper.q2f(candle.low)
                         order_executed = avg_price >= low_buy_price
                         # order_executed_on_border = price == low_buy_price
                     else:
-                        high_sell_price = self.client_helper.quotation_to_float(candle.high)
+                        high_sell_price = self.client_helper.q2f(candle.high)
                         order_executed = avg_price <= high_sell_price
                         # order_executed_on_border = price == high_sell_price
 

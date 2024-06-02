@@ -5,6 +5,7 @@ from tinkoff.invest import Client, RequestError, OrderType, PostOrderResponse, O
     CandleInterval, OrderState, OrderExecutionReportStatus
 
 from bot.env import AbstractProxyClient
+from common import f2q
 from common.lib import TinkoffApi
 
 
@@ -47,7 +48,7 @@ class TinkoffProxyClient(AbstractProxyClient):
     def place_order(self, lots: int, direction, price: float | None,
                     order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
         try:
-            price_quotation = self.float_to_quotation(price=price) if price else None
+            price_quotation = f2q(price) if price else None
             with Client(self.token) as client:
                 return client.orders.post_order(
                     order_id=str(datetime.now(timezone.utc)),

@@ -144,7 +144,7 @@ class TradingBot:
 
         candles = self.client.get_day_candles(from_date, to_date)
 
-        closing_prices = pd.Series([self.client.quotation_to_float(candle.close) for candle in candles.candles])
+        closing_prices = pd.Series([self.client.q2f(candle.close) for candle in candles.candles])
 
         delta = closing_prices.diff()
         gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
@@ -247,7 +247,7 @@ class TradingBot:
         return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_BUY, lots, price, retry)
 
     def equivalent_prices(self, quotation_price: Quotation | MoneyValue, float_price: float) -> bool:
-        rounded_quotation_price = self.client.quotation_to_float(quotation_price)
+        rounded_quotation_price = self.client.q2f(quotation_price)
         rounded_float_price = self.round(float_price)
         return rounded_quotation_price == rounded_float_price
 

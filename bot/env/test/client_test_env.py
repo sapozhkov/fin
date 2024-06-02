@@ -6,6 +6,7 @@ from tinkoff.invest import HistoricCandle, PostOrderResponse, MoneyValue, OrderT
 
 from bot.env import AbstractProxyClient
 from bot.env.test import TimeTestEnvHelper
+from common import f2q
 from common.helper import TimeHelper
 
 
@@ -51,7 +52,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
     def set_current_candle(self, candle: HistoricCandle):
         self.current_candle = candle
-        self.set_current_price(self.quotation_to_float(candle.close))
+        self.set_current_price(self.q2f(candle.close))
 
     def get_candle(self, dt) -> HistoricCandle | None:
         return self.candles_1_min_dict.get((dt.hour, dt.minute), None)
@@ -165,7 +166,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         open_ = None
         high = 0
         low = 1000000000
-        close = self.float_to_quotation(0)
+        close = f2q(0)
         volume = 0
         is_complete = True
 
@@ -180,17 +181,17 @@ class ClientTestEnvHelper(AbstractProxyClient):
                 continue
             if open_ is None:
                 open_ = t1.open
-            high = max(high, self.quotation_to_float(t1.high))
-            low = min(low, self.quotation_to_float(t1.low))
+            high = max(high, self.q2f(t1.high))
+            low = min(low, self.q2f(t1.low))
             close = t1.close
             volume += t1.volume
 
         if open_ is None:
-            open_ = self.float_to_quotation(0)
+            open_ = f2q(0)
 
         return HistoricCandle(
-            high=self.float_to_quotation(high),
-            low=self.float_to_quotation(low),
+            high=f2q(high),
+            low=f2q(low),
             open=open_,
             close=close,
             volume=volume,
@@ -373,9 +374,9 @@ class ClientTestEnvHelper(AbstractProxyClient):
         #   order_request_id = '2024-04-22 14:41:39.559532 00:00')
 
         is_executed = order.order_id in self.executed_orders_ids or order.order_type == OrderType.ORDER_TYPE_MARKET
-        price_0 = self.float_to_quotation(0)
+        price_0 = f2q(0)
         avg_init_price = self.float_to_money_value(
-            self.quotation_to_float(order.initial_order_price) / order.lots_requested)
+            self.q2f(order.initial_order_price) / order.lots_requested)
         return OrderState(
             order_id=order.order_id,
             order_type=order.order_type,

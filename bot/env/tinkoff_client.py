@@ -8,6 +8,7 @@ from tinkoff.invest import CandleInterval, Quotation, MoneyValue, OrderType, Pos
 from bot.db import TickerCache
 from bot.dto import InstrumentDTO
 from bot.env import AbstractTimeHelper, AbstractLoggerHelper
+from common import q2f
 
 
 class AbstractProxyClient(ABC):
@@ -39,13 +40,10 @@ class AbstractProxyClient(ABC):
     def can_trade(self):
         pass
 
-    def float_to_quotation(self, price) -> Quotation:
-        return Quotation(units=int(price), nano=int((self.round(price - int(price))) * 1e9))
-
-    def quotation_to_float(self, quotation: Quotation | MoneyValue, digits=None):
+    def q2f(self, quotation: Quotation | MoneyValue, digits=None):
         if digits is None:
             digits = self.instrument.round_signs
-        return round(quotation.units + quotation.nano * 1e-9, digits)
+        return q2f(quotation, digits)
 
     def round(self, price):
         return round(round(price / self.instrument.min_increment) * self.instrument.min_increment,

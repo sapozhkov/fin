@@ -1,9 +1,10 @@
 import sqlite3
 from datetime import datetime, timedelta
 
-from tinkoff.invest import Quotation, GetCandlesResponse, HistoricCandle, Client, CandleInterval
+from tinkoff.invest import GetCandlesResponse, HistoricCandle, Client, CandleInterval
 
 from bot.dto import InstrumentDTO
+from common import q2f, f2q
 from common.config import AppConfig
 from common.helper import TimeHelper
 
@@ -109,16 +110,6 @@ class TickerCache:
 
         return out
 
-    @staticmethod
-    def q2f(quotation: Quotation, digits=2):
-        return round(quotation.units + quotation.nano * 1e-9, digits)
-
-    @staticmethod
-    def f2q(value):
-        units = int(value)
-        nano = int(round(value - units, 2) * 1e9)
-        return Quotation(units=units, nano=nano)
-
     def get_candles(self, date, force_cache=False):
         if TimeHelper.is_today(date):
             # Запрос к API для сегодняшней даты всегда к API и без сохранения, если нет принудительного флага
@@ -139,10 +130,10 @@ class TickerCache:
                 date, open_, high, low, close, volume = row
                 candle = HistoricCandle(
                     time=datetime.strptime(date, "%Y-%m-%d %H:%M:%S+00:00"),
-                    open=self.f2q(open_),
-                    high=self.f2q(high),
-                    low=self.f2q(low),
-                    close=self.f2q(close),
+                    open=f2q(open_),
+                    high=f2q(high),
+                    low=f2q(low),
+                    close=f2q(close),
                     volume=volume,
                     is_complete=True
                 )
@@ -174,10 +165,10 @@ class TickerCache:
                         VALUES (?, ?, ?, ?, ?, ?)
                         ''', (
                             candle.time,
-                            self.q2f(candle.open),
-                            self.q2f(candle.high),
-                            self.q2f(candle.low),
-                            self.q2f(candle.close),
+                            q2f(candle.open),
+                            q2f(candle.high),
+                            q2f(candle.low),
+                            q2f(candle.close),
                             candle.volume
                         ))
                     conn.commit()
@@ -215,10 +206,10 @@ class TickerCache:
                 if open_ > 0:
                     candle = HistoricCandle(
                         time=datetime.strptime(date, "%Y-%m-%d"),
-                        open=self.f2q(open_),
-                        high=self.f2q(high),
-                        low=self.f2q(low),
-                        close=self.f2q(close),
+                        open=f2q(open_),
+                        high=f2q(high),
+                        low=f2q(low),
+                        close=f2q(close),
                         volume=volume,
                         is_complete=True
                     )
@@ -242,10 +233,10 @@ class TickerCache:
                                     'VALUES (?, ?, ?, ?, ?, ?)',
                                     (
                                         candle.time.date(),
-                                        self.q2f(candle.open),
-                                        self.q2f(candle.high),
-                                        self.q2f(candle.low),
-                                        self.q2f(candle.close),
+                                        q2f(candle.open),
+                                        q2f(candle.high),
+                                        q2f(candle.low),
+                                        q2f(candle.close),
                                         candle.volume
                                     ))
                                 conn.commit()

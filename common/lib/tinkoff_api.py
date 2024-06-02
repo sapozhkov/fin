@@ -1,14 +1,10 @@
-from tinkoff.invest import Quotation, Client, InvestError
+from tinkoff.invest import Client, InvestError
 
+from common import q2f
 from common.config import AppConfig
 
 
 class TinkoffApi:
-    # Функция для преобразования Quotation в float
-    @staticmethod
-    def q2f(quotation: Quotation, digits=2):
-        return round(quotation.units + quotation.nano * 1e-9, digits)
-
     @staticmethod
     def get_last_prices(figi_list: list) -> dict:
         """
@@ -24,7 +20,7 @@ class TinkoffApi:
 
                 for last_price in response.last_prices:
                     figi = last_price.figi
-                    price = TinkoffApi.q2f(last_price.price)
+                    price = q2f(last_price.price)
                     out[figi] = price
             finally:
                 return out
@@ -67,9 +63,9 @@ class TinkoffApi:
     #             for position in response.positions:
     #                 balance[position.figi] = {
     #                     "figi": position.figi,
-    #                     "quantity": TinkoffApi.q2f(position.quantity),
-    #                     "current_price": TinkoffApi.q2f(position.current_price),
-    #                     "average_position_price": TinkoffApi.q2f(position.average_position_price)
+    #                     "quantity": q2f(position.quantity),
+    #                     "current_price": q2f(position.current_price),
+    #                     "average_position_price": q2f(position.average_position_price)
     #                 }
     #             return balance
     #         except InvestError as e:
@@ -86,7 +82,7 @@ class TinkoffApi:
         with Client(AppConfig.TOKEN) as client:
             try:
                 response = client.operations.get_portfolio(account_id=account_id)
-                return TinkoffApi.q2f(response.total_amount_portfolio)
+                return q2f(response.total_amount_portfolio)
             except InvestError as e:
                 print(f"Ошибка при получении баланса: {e}")
                 return 0

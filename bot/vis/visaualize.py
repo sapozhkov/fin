@@ -1,19 +1,14 @@
 from matplotlib import pyplot as plt, dates as mdates
-from tinkoff.invest import Quotation
 
 from bot.db import TickerCache, HistoricalTrade
 from bot.dto import DealDTO, OrderDTO
 from bot.vis import OrderVisHelper
+from common import q2f
 
 
 class Visualize:
     def __init__(self, ticker_cache: TickerCache):
         self.ticker_cache = ticker_cache
-
-    # Функция для преобразования Quotation в float
-    @staticmethod
-    def q2f(quotation: Quotation, digits=2):
-        return round(quotation.units + quotation.nano * 1e-9, digits)
 
     def draw(self, date, deals: list[DealDTO], orders: list[OrderDTO] = list, title=None):
 
@@ -21,7 +16,7 @@ class Visualize:
 
         # Подготовка данных для графика
         times = [candle.time for candle in candles.candles]  # Время каждой свечи
-        close_prices = [self.q2f(candle.close) for candle in candles.candles]  # Цены закрытия каждой свечи
+        close_prices = [q2f(candle.close) for candle in candles.candles]  # Цены закрытия каждой свечи
 
         # Визуализация
         fig, ax = plt.subplots(figsize=(14, 7))
@@ -30,8 +25,8 @@ class Visualize:
         plt.plot(times, close_prices, label='Close Price', alpha=0.75)
 
         # # бары
-        # low_prices = [self.q2f(candle.low) for candle in candles.candles]
-        # high_prices = [self.q2f(candle.high) for candle in candles.candles]
+        # low_prices = [q2f(candle.low) for candle in candles.candles]
+        # high_prices = [q2f(candle.high) for candle in candles.candles]
         # plt.plot([times, times], [low_prices, high_prices], color='grey', linewidth=1)
 
         labels_added = set()
