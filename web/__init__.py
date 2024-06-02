@@ -42,7 +42,7 @@ def create_web(app):
     # Импортируем модели после создания приложения и расширений, иначе циклится
     from web.routes import register_blueprints
     from web.views import InstrumentView, IndexView, RunView, LogoutView
-    from common.models import Run, Instrument, Deal
+    from app.models import Run, Instrument, Deal
 
     register_blueprints(app)
 

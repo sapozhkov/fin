@@ -1,7 +1,7 @@
 from tinkoff.invest import Client, InvestError
 
-from common import q2f
-from common.config import AppConfig
+from app import q2f
+from app.config import AppConfig
 
 
 class TinkoffApi:

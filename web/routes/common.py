@@ -3,8 +3,8 @@ from datetime import datetime
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import current_user, login_user, logout_user
-from common.models import User
-from common.config import AppConfig
+from app.models import User
+from app.config import AppConfig
 
 bp = Blueprint('common', __name__)
 

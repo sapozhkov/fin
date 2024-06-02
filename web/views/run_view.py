@@ -1,7 +1,7 @@
 from flask_admin.contrib.sqla import ModelView
 
-from common.constants import RunStatus
-from common.models import Instrument
+from app.constants import RunStatus
+from app.models import Instrument
 
 
 class RunView(ModelView):

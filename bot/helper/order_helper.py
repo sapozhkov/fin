@@ -1,6 +1,6 @@
 from tinkoff.invest import PostOrderResponse, OrderState
 
-from common import q2f
+from app import q2f
 
 
 class OrderHelper:

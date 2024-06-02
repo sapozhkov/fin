@@ -3,7 +3,7 @@ from typing import Tuple
 
 from bot.db import TickerCache
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
-from common.config import RunConfig
+from app.config import RunConfig
 
 
 class TestHelper:

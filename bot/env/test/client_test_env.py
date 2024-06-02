@@ -6,8 +6,8 @@ from tinkoff.invest import HistoricCandle, PostOrderResponse, MoneyValue, OrderT
 
 from bot.env import AbstractProxyClient
 from bot.env.test import TimeTestEnvHelper
-from common import f2q
-from common.helper import TimeHelper
+from app import f2q
+from app.helper import TimeHelper
 
 
 class ClientTestEnvHelper(AbstractProxyClient):

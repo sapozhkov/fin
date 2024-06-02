@@ -3,11 +3,11 @@ import datetime
 import os
 
 from app import create_app
-from common.lib import TinkoffApi
-from common.models import Instrument, Run
-from common.config import RunConfig
+from app.lib import TinkoffApi
+from app.models import Instrument, Run
+from app.config import RunConfig
 from bot.db import TickerCache
-from common.helper import TimeHelper
+from app.helper import TimeHelper
 from bot import TestAlgorithm
 
 date = TimeHelper.get_next_date() if TimeHelper.is_evening() else TimeHelper.get_current_date()

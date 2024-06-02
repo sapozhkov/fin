@@ -7,8 +7,8 @@ from bot import TradingBot
 from bot.db import TickerCache
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
 from bot.helper import OrderHelper
-from common.config import RunConfig, AppConfig
-from common.helper import TimeHelper
+from app.config import RunConfig, AppConfig
+from app.helper import TimeHelper
 
 
 class TestAlgorithm:

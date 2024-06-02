@@ -1,9 +1,9 @@
 from flask_admin import AdminIndexView, expose
 from flask_login import login_required
 
-from common.lib import TinkoffApi
-from common.models import Run
-from common.helper import TimeHelper
+from app.lib import TinkoffApi
+from app.models import Run
+from app.helper import TimeHelper
 
 
 class IndexView(AdminIndexView):

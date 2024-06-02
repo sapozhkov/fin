@@ -5,7 +5,7 @@ from itertools import groupby
 from tinkoff.invest import OrderDirection
 
 from bot.dto import HistoricalTradeDTO, DealDTO
-from common.config import AppConfig
+from app.config import AppConfig
 
 
 class HistoricalTrade:

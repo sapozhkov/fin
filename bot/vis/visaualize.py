@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt, dates as mdates
 from bot.db import TickerCache, HistoricalTrade
 from bot.dto import DealDTO, OrderDTO
 from bot.vis import OrderVisHelper
-from common import q2f
+from app import q2f
 
 
 class Visualize:

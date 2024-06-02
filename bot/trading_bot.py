@@ -7,10 +7,10 @@ from tinkoff.invest import PostOrderResponse, OrderType, OrderDirection, Quotati
 
 from app import db
 from bot.helper import OrderHelper
-from common.config import RunConfig
-from common.constants import RunStatus
-from common.helper import TimeHelper
-from common.models import Run, Instrument
+from app.config import RunConfig
+from app.constants import RunStatus
+from app.helper import TimeHelper
+from app.models import Run, Instrument
 from bot.env.prod import AccountingHelper, LoggerHelper, TimeProdEnvHelper, TinkoffProxyClient
 from bot.env import AbstractAccountingHelper, AbstractLoggerHelper, AbstractTimeHelper, AbstractProxyClient
 

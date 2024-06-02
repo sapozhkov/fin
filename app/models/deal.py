@@ -1,5 +1,5 @@
 from app import db
-from common.models import Instrument
+from app.models import Instrument
 
 
 class Deal(db.Model):

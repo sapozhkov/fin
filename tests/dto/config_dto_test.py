@@ -1,6 +1,6 @@
 import unittest
 
-from common.config import RunConfig
+from app.config import RunConfig
 
 
 class MyTestCase(unittest.TestCase):

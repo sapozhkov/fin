@@ -1,6 +1,6 @@
 from app import create_app
 from web import create_web
-from common.config import AppConfig
+from app.config import AppConfig
 
 app = create_app()
 web = create_web(app)
