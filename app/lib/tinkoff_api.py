@@ -1,6 +1,6 @@
 from tinkoff.invest import Client, InvestError
 
-from app import q2f
+from app.helper import q2f
 from app.config import AppConfig
 
 

@@ -8,7 +8,7 @@ from tinkoff.invest import CandleInterval, Quotation, MoneyValue, OrderType, Pos
 from bot.db import TickerCache
 from bot.dto import InstrumentDTO
 from bot.env import AbstractTimeHelper, AbstractLoggerHelper
-from app import q2f
+from app.helper import q2f
 
 
 class AbstractProxyClient(ABC):

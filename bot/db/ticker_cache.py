@@ -4,9 +4,8 @@ from datetime import datetime, timedelta
 from tinkoff.invest import GetCandlesResponse, HistoricCandle, Client, CandleInterval
 
 from bot.dto import InstrumentDTO
-from app import q2f, f2q
 from app.config import AppConfig
-from app.helper import TimeHelper
+from app.helper import TimeHelper, q2f, f2q
 
 
 class TickerCache:

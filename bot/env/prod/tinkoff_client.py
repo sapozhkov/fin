@@ -5,7 +5,7 @@ from tinkoff.invest import Client, RequestError, OrderType, PostOrderResponse, O
     CandleInterval, OrderState, OrderExecutionReportStatus
 
 from bot.env import AbstractProxyClient
-from app import f2q
+from app.helper import f2q
 from app.lib import TinkoffApi
 
 
