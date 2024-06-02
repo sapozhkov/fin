@@ -34,8 +34,7 @@ class TradingBot:
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
             client_helper: AbstractProxyClient | None = None,
-            accounting_helper: AbstractAccountingHelper | None = None,
-            order_helper: OrderHelper | None = None
+            accounting_helper: AbstractAccountingHelper | None = None
     ):
         # хелперы и DTO
         self.config = config
@@ -43,7 +42,6 @@ class TradingBot:
         self.logger = logger_helper or LoggerHelper(__name__, config.name or config.ticker)
         self.client = client_helper or TinkoffProxyClient(token, self.config.ticker, self.time, self.logger)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
-        self.order_helper = order_helper or OrderHelper(self.client)
 
         if not self.is_trading_day():
             self.log("Не торговый день. Завершаем работу.")
@@ -168,6 +166,9 @@ class TradingBot:
     def round(self, price) -> float:
         return self.client.round(price)
 
+    def get_order_avg_price(self, order: PostOrderResponse | OrderState) -> float:
+        return self.round(OrderHelper.get_avg_price(order))
+
     def can_trade(self) -> Tuple[bool, int]:
         """
         Проверяет доступна ли торговля.
@@ -210,7 +211,7 @@ class TradingBot:
                 return None
 
         self.accounting.add_order(order)
-        avg_price = self.order_helper.get_avg_price(order)
+        avg_price = self.get_order_avg_price(order)
 
         if order_type == OrderType.ORDER_TYPE_MARKET:
             self.accounting.add_deal_by_order(order)
@@ -251,13 +252,13 @@ class TradingBot:
         return rounded_quotation_price == rounded_float_price
 
     def set_sell_order_by_buy_order(self, order: OrderState):
-        price = self.order_helper.get_avg_price(order)
+        price = self.get_order_avg_price(order)
         price += self.config.step_size
         self.sell_limit(price, self.config.step_lots)
 
     def apply_order_execution(self, order: OrderState):
-        lots = self.order_helper.get_lots(order)
-        avg_price = self.order_helper.get_avg_price(order)
+        lots = OrderHelper.get_lots(order)
+        avg_price = self.get_order_avg_price(order)
         type_text = 'BUY' if order.direction == OrderDirection.ORDER_DIRECTION_BUY else 'SELL'
         self.accounting.add_deal_by_order(order)
         self.log(f"{type_text} order executed, {lots} x {avg_price} {self.get_cur_count_for_log()}")
@@ -330,11 +331,11 @@ class TradingBot:
         return self.get_current_count() % self.config.step_lots
 
     def get_existing_buy_order_prices(self) -> list[float]:
-        return [self.order_helper.get_avg_price(order)
+        return [self.get_order_avg_price(order)
                 for order_id, order in self.active_buy_orders.items()]
 
     def get_existing_sell_order_prices(self) -> list[float]:
-        return [self.order_helper.get_avg_price(order)
+        return [self.get_order_avg_price(order)
                 for order_id, order in self.active_sell_orders.items()]
 
     def place_buy_orders(self):
@@ -431,8 +432,8 @@ class TradingBot:
 
         if res:
             prefix = "Buy" if order.direction == OrderDirection.ORDER_DIRECTION_BUY else "Sell"
-            lots = self.order_helper.get_lots(order)
-            avg_price = self.order_helper.get_avg_price(order)
+            lots = OrderHelper.get_lots(order)
+            avg_price = self.get_order_avg_price(order)
             self.log(f"{prefix} order canceled, {lots} x {avg_price} {self.get_cur_count_for_log()}")
 
     def cancel_orders_by_limits(self):
@@ -447,7 +448,7 @@ class TradingBot:
 
             # перебираем активные заявки на покупку и закрываем всё, что ниже
             for order_id, order in self.active_buy_orders.copy().items():
-                order_price = self.order_helper.get_avg_price(order)
+                order_price = self.get_order_avg_price(order)
                 if order_price <= threshold_price:
                     self.cancel_order(order)
 
@@ -456,7 +457,7 @@ class TradingBot:
 
             # перебираем активные заявки на продажу и закрываем всё, что ниже
             for order_id, order in self.active_sell_orders.copy().items():
-                order_price = self.order_helper.get_avg_price(order)
+                order_price = self.get_order_avg_price(order)
                 if order_price >= threshold_price:
                     self.cancel_order(order)
 

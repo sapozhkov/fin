@@ -23,7 +23,6 @@ class TestAlgorithm:
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
         self.client_helper = ClientTestEnvHelper(self.token, config.ticker, self.logger_helper, self.time_helper)
         self.accounting_helper = AccountingTestEnvHelper(self.client_helper)
-        self.order_helper = OrderHelper(self.client_helper)
 
     def test(
         self,
@@ -152,7 +151,7 @@ class TestAlgorithm:
                 for order_id, order in self.client_helper.orders.items():
                     if order_id in self.client_helper.executed_orders_ids:
                         continue
-                    avg_price = self.order_helper.get_avg_price(order)
+                    avg_price = self.client_helper.round(OrderHelper.get_avg_price(order))
                     if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
                         low_buy_price = self.client_helper.quotation_to_float(candle.low)
                         order_executed = avg_price >= low_buy_price

@@ -1,16 +1,11 @@
 from tinkoff.invest import PostOrderResponse, OrderState
 
-from bot.env import AbstractProxyClient
+from common import q2f
 
 
 class OrderHelper:
-    def __init__(
-            self,
-            client: AbstractProxyClient | None = None,
-    ):
-        self.client = client
-
-    def get_avg_price(self, order: PostOrderResponse | OrderState) -> float:
+    @staticmethod
+    def get_avg_price(order: PostOrderResponse | OrderState) -> float:
         """
         Отдает среднюю цену для одного лота в заказе
         Если есть executed - её, нет - вычисляет из initial
@@ -22,9 +17,9 @@ class OrderHelper:
         lots = OrderHelper.get_lots(order)
 
         if isinstance(order, PostOrderResponse):
-            price = self.client.quotation_to_float(order.executed_order_price)
+            price = q2f(order.executed_order_price)
         elif isinstance(order, OrderState):
-            price = self.client.round(self.client.quotation_to_float(order.executed_order_price) / lots)
+            price = q2f(order.executed_order_price) / lots
         else:
             raise TypeError
 
@@ -32,8 +27,8 @@ class OrderHelper:
             return price
 
         # initial_order_price - а вот тут средняя умноженная на лоты
-        price = self.client.quotation_to_float(order.initial_order_price)
-        return self.client.round(price / lots)
+        price = q2f(order.initial_order_price)
+        return price / lots
 
     @staticmethod
     def get_lots(order: PostOrderResponse | OrderState) -> int:
@@ -45,7 +40,8 @@ class OrderHelper:
         """
         return order.lots_requested
 
-    def get_commission(self, order: PostOrderResponse | OrderState):
+    @staticmethod
+    def get_commission(order: PostOrderResponse | OrderState):
         """
         Отдает комиссию для заказа
         Комиссия учитывается полная - для всех лотов в заказе сразу
@@ -55,7 +51,7 @@ class OrderHelper:
         :param order:
         :return:
         """
-        commission = self.client.quotation_to_float(order.executed_commission)
+        commission = q2f(order.executed_commission)
         if commission == 0:
-            commission = self.client.quotation_to_float(order.initial_commission)
+            commission = q2f(order.initial_commission)
         return commission

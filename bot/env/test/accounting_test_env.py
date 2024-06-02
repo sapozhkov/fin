@@ -2,6 +2,7 @@ from tinkoff.invest import PostOrderResponse, OrderType, OrderDirection
 
 from bot.dto import DealDTO, OrderDTO
 from bot.env import AbstractAccountingHelper
+from bot.helper import OrderHelper
 from bot.vis import OrderVisHelper
 from bot.env.test import ClientTestEnvHelper
 
@@ -36,8 +37,8 @@ class AccountingTestEnvHelper(AbstractAccountingHelper):
         return self.orders
 
     def add_order(self, order: PostOrderResponse):
-        lots = self.order_helper.get_lots(order)
-        avg_price = self.order_helper.get_avg_price(order)
+        lots = OrderHelper.get_lots(order)
+        avg_price = self.client.round(OrderHelper.get_avg_price(order))
         if order.order_type == OrderType.ORDER_TYPE_MARKET:
             type_ = OrderVisHelper.OPEN_BUY_MARKET if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
                 else OrderVisHelper.OPEN_SELL_MARKET
@@ -54,8 +55,8 @@ class AccountingTestEnvHelper(AbstractAccountingHelper):
         ))
 
     def del_order(self, order: PostOrderResponse):
-        lots = self.order_helper.get_lots(order)
-        avg_price = self.order_helper.get_avg_price(order)
+        lots = OrderHelper.get_lots(order)
+        avg_price = self.client.round(OrderHelper.get_avg_price(order))
         type_ = OrderVisHelper.CANCEL_BUY_LIMIT if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
             else OrderVisHelper.CANCEL_SELL_LIMIT
 

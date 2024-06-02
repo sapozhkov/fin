@@ -1,6 +1,6 @@
 import unittest
 
-from tinkoff.invest import OrderDirection, OrderType, OrderExecutionReportStatus
+from tinkoff.invest import OrderDirection, OrderType, OrderExecutionReportStatus, PostOrderResponse, OrderState
 
 from bot.helper import OrderHelper, TestHelper
 
@@ -11,7 +11,9 @@ class TestOrderHelper(unittest.TestCase):
 
         self.config, self.time_helper, self.logger_helper, self.client_helper, self.accounting_helper = \
             TestHelper.get_helper_pack()
-        self.order_helper = OrderHelper(self.client_helper)
+
+    def get_order_avg_price(self, order: PostOrderResponse | OrderState) -> float:
+        return self.client_helper.round(OrderHelper.get_avg_price(order))
 
     def test_get_avg_price_on_post(self):
         price = 100
@@ -22,28 +24,28 @@ class TestOrderHelper(unittest.TestCase):
         # покупка по рыночной цене
         order = self.client_helper.place_order(lots, OrderDirection.ORDER_DIRECTION_BUY,
                                                None, OrderType.ORDER_TYPE_MARKET)
-        self.assertEqual(self.order_helper.get_avg_price(order), price)
-        self.assertEqual(self.order_helper.get_lots(order), lots)
+        self.assertEqual(self.get_order_avg_price(order), price)
+        self.assertEqual(OrderHelper.get_lots(order), lots)
 
         # продажа по рыночной цене
         order = self.client_helper.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL,
                                                None, OrderType.ORDER_TYPE_MARKET)
-        self.assertEqual(self.order_helper.get_avg_price(order), price)
+        self.assertEqual(self.get_order_avg_price(order), price)
 
         # лимитная покупка
         order = self.client_helper.place_order(lots, OrderDirection.ORDER_DIRECTION_BUY,
                                                price, OrderType.ORDER_TYPE_LIMIT)
-        self.assertEqual(self.order_helper.get_avg_price(order), price)
+        self.assertEqual(self.get_order_avg_price(order), price)
 
         # лимитная продажа
         order = self.client_helper.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL,
                                                price, OrderType.ORDER_TYPE_LIMIT)
-        self.assertEqual(self.order_helper.get_avg_price(order), price)
+        self.assertEqual(self.get_order_avg_price(order), price)
 
         # лимитная продажа
         order = self.client_helper.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL,
                                                price, OrderType.ORDER_TYPE_LIMIT)
-        self.assertEqual(self.order_helper.get_avg_price(order), price)
+        self.assertEqual(self.get_order_avg_price(order), price)
 
     def test_get_avg_price_on_state(self):
         price = 100
@@ -58,8 +60,8 @@ class TestOrderHelper(unittest.TestCase):
         # открытая
         order_state = self.client_helper.get_order_state(order)
         self.assertEqual(OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_NEW, order_state.execution_report_status)
-        self.assertEqual(self.order_helper.get_avg_price(order_state), price)
-        self.assertEqual(self.order_helper.get_lots(order_state), lots)
+        self.assertEqual(self.get_order_avg_price(order_state), price)
+        self.assertEqual(OrderHelper.get_lots(order_state), lots)
 
         # закрываем
         self.client_helper.executed_orders_ids.append(order.order_id)
@@ -67,8 +69,8 @@ class TestOrderHelper(unittest.TestCase):
         # закрытая
         order_state = self.client_helper.get_order_state(order)
         self.assertEqual(OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL, order_state.execution_report_status)
-        self.assertEqual(self.order_helper.get_avg_price(order_state), price)
-        self.assertEqual(self.order_helper.get_lots(order_state), lots)
+        self.assertEqual(self.get_order_avg_price(order_state), price)
+        self.assertEqual(OrderHelper.get_lots(order_state), lots)
 
 
 if __name__ == '__main__':

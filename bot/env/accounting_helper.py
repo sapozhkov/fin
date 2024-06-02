@@ -12,12 +12,11 @@ class AbstractAccountingHelper(ABC):
         self.num = 0
         self.operations_cnt = 0
         self.client: AbstractProxyClient = client
-        self.order_helper = OrderHelper(self.client)
 
     def add_deal_by_order(self, order):
-        lots = self.order_helper.get_lots(order)
-        avg_price = self.order_helper.get_avg_price(order)
-        commission = self.order_helper.get_commission(order)
+        lots = OrderHelper.get_lots(order)
+        avg_price = self.client.round(OrderHelper.get_avg_price(order))
+        commission = OrderHelper.get_commission(order)
 
         if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
             avg_price = -avg_price
