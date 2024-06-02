@@ -53,7 +53,7 @@ After=network.target
 User=sapsan
 Group=www-data
 WorkingDirectory=/home/sapsan/fin
-ExecStart=/home/sapsan/.local/bin/gunicorn -c gunicorn_config.py web:app
+ExecStart=/home/sapsan/.local/bin/gunicorn -c gunicorn_config.py web_server:app
 
 [Install]
 WantedBy=multi-user.target

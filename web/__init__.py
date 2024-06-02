@@ -6,12 +6,10 @@ from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_login import LoginManager, current_user
 
-from app import create_app, db
+from app import db
 
 login = LoginManager()
 login.login_view = 'common.login'
-
-app = create_app()
 
 
 def format_time(value, _format='%H:%M'):
