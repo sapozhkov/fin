@@ -14,10 +14,7 @@ class Instrument(db.Model):
 
     @classmethod
     def get_by_id(cls, instrument_id) -> Optional['Instrument']:
-        instrument = cls.query.get(instrument_id)
-        if instrument is None:
-            return None  # Объект не найден
-        return instrument  # Объект найден
+        return cls.query.get(instrument_id)
 
     def __repr__(self):
         return f"<Instrument {self.id} '{self.config}' [{self.account}] {'On' if self.status else 'Off'}>"

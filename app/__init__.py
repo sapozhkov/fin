@@ -17,3 +17,5 @@ def create_app(config_class=AppConfig):
     migrate.init_app(app, db)
 
     return app
+
+# import app.models
