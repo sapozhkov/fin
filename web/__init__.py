@@ -7,9 +7,17 @@ from flask_admin.contrib.sqla import ModelView
 from flask_login import LoginManager, current_user
 
 from app import db
+from app.models import User
 
 login = LoginManager()
 login.login_view = 'common.login'
+
+
+@login.user_loader
+def load_user(user_id):
+    if user_id == "1":
+        return User()
+    return None
 
 
 def format_time(value, _format='%H:%M'):
