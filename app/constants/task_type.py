@@ -1,2 +1,0 @@
-class TaskType:
-    UPD_INSTRUMENT_BASE_CONFIG = 1

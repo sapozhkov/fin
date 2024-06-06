@@ -81,3 +81,13 @@ python web_server.py
 
 для тестов алгоритмов можно поиграть в файлах t_year_m.ipynb (на длинном промежутке)
 или t_day_vis.ipynb (в рамках одного дня, но с визуализацией текущего алгоритма и реальных торгов)
+
+## Проблемы с установкой требуемых библиотек
+
+помогла пачка команд
+
+```
+python -m ensurepip --upgrade
+python -m pip install --upgrade setuptools
+pip install --upgrade setuptools
+```

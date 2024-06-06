@@ -18,4 +18,4 @@ def create_app(config_class=AppConfig):
 
     return app
 
-# import app.models
+import app.models
