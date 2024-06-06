@@ -1,4 +1,4 @@
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from typing import Optional, List
 
 from app import db
@@ -13,7 +13,7 @@ class Instrument(db.Model):
     config = db.Column(db.String(256), nullable=False)
     status = db.Column(db.Integer, nullable=False)
     expected_profit = db.Column(db.Float, default=0)
-    updated_at = db.Column(db.DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC))
+    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     def save(self):
         db.session.add(self)

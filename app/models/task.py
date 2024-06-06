@@ -1,4 +1,4 @@
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from app import db
@@ -14,8 +14,8 @@ class Task(db.Model):
     name = db.Column(db.String, nullable=False, index=True)
     data = db.Column(db.Text, nullable=True)
     error = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.now(UTC))
-    updated_at = db.Column(db.DateTime, default=datetime.now(UTC), onupdate=datetime.now(UTC))
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     def save(self):
         db.session.add(self)
@@ -33,7 +33,7 @@ class Task(db.Model):
 
     @classmethod
     def clear_tasks_by_timeout(cls):
-        timeout_threshold = datetime.now(UTC) - timedelta(days=1)
+        timeout_threshold = datetime.now() - timedelta(days=1)
 
         timed_out_tasks = cls.query.filter(
             cls.status == TaskStatus.IN_PROGRESS,
