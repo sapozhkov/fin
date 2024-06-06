@@ -14,3 +14,7 @@ class AbstractTask(ABC):
     @abstractmethod
     def run(task: Task) -> bool:
         pass
+
+    @staticmethod
+    def log(text):
+        print(text)
