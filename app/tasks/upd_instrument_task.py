@@ -1,3 +1,4 @@
+import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from app.config import RunConfig
@@ -79,7 +80,7 @@ class UpdInstrumentTask(AbstractTask):
         results = []
         progress = TaskProgress(len(unique_configs))
 
-        with ThreadPoolExecutor(max_workers=1) as executor:
+        with ThreadPoolExecutor(max_workers=min(multiprocessing.cpu_count(), 4)) as executor:
             future_to_params = {executor.submit(run_test, config): config for config in unique_configs}
 
             for future in as_completed(future_to_params):
