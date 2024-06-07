@@ -59,6 +59,34 @@ ExecStart=/home/sapsan/.local/bin/gunicorn -c gunicorn_config.py web_server:app
 WantedBy=multi-user.target
 ```
 
+## База данных
+
+```shell
+sudo apt update
+sudo apt install postgresql postgresql-contrib
+sudo -i -u postgres
+```
+
+```psql```
+
+```postgresql
+CREATE USER fin_user WITH PASSWORD 'XXX_your_password_XXX';
+CREATE DATABASE fin_db;
+GRANT ALL PRIVILEGES ON DATABASE fin_db TO fin_user;
+\q
+```
+
+выходим из пользователя postgres
+```shell
+exit
+```
+
+это уже от имени обычного пользователя в директории проекта 
+```shell
+pip install psycopg2-binary
+```
+
+
 sudo systemctl daemon-reload
 sudo systemctl start myapp
 sudo systemctl enable myapp
