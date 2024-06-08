@@ -47,7 +47,7 @@ def create_web(app):
 
     # Импортируем модели после создания приложения и расширений, иначе циклится
     from web.routes import register_blueprints
-    from web.views import InstrumentView, IndexView, RunView, LogoutView
+    from web.views import InstrumentView, IndexView, RunView, LogoutView, TaskView
     from app.models import Run, Instrument, Deal, Task
 
     register_blueprints(app)
@@ -61,7 +61,7 @@ def create_web(app):
     admin.add_view(InstrumentView(Instrument, db.session))
     admin.add_view(RunView(Run, db.session))
     admin.add_view(ModelView(Deal, db.session))
-    admin.add_view(ModelView(Task, db.session))
+    admin.add_view(TaskView(Task, db.session))
     admin.add_view(LogoutView(name="Logout", endpoint='logout'))
 
     return app

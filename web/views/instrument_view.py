@@ -5,13 +5,8 @@ from app.config import RunConfig
 
 
 class InstrumentView(ModelView):
-    def scaffold_list_columns(self):
-        # Получаем все колонки модели
-        columns = super(InstrumentView, self).scaffold_list_columns()
-        # Убедитесь, что 'id' включен в список колонок
-        if 'id' not in columns:
-            columns.insert(0, 'id')
-        return columns
+    column_display_pk = True
+    column_default_sort = ('id', False)
 
     column_editable_list = ['status']
     column_filters = ['status']

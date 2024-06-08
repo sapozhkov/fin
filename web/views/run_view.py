@@ -5,17 +5,9 @@ from app.models import Instrument
 
 
 class RunView(ModelView):
+    column_default_sort = [('date', True), ('id', False)]
     column_filters = ('instrument', 'instrument_rel', 'status', 'date')
-    column_list = (
-        'id', 'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
-        'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at',
-        'error_cnt', 'operations_cnt'
-    )
-    form_columns = (
-        'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
-        'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at',
-        'error_cnt', 'operations_cnt'
-    )
+    column_display_pk = True
     form_choices = {'status': RunStatus.get_list()}
     column_choices = {'status': RunStatus.get_list()}
 
