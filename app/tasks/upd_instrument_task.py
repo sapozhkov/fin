@@ -46,7 +46,7 @@ class UpdInstrumentTask(AbstractTask):
 
                 majority_trade=t_config.majority_trade,
                 pretest_period=pretest_period,
-                pretest_type=t_config.pretest_type,
+                pretest_type=RunConfig.PRETEST_PRE,
 
                 threshold_buy_steps=0,
                 threshold_sell_steps=0,
