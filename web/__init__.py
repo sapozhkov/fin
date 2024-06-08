@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from flask import redirect, url_for, request
 from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
+# from flask_admin.contrib.sqla import ModelView
 from flask_login import LoginManager, current_user
 
 from app import db
@@ -48,7 +48,7 @@ def create_web(app):
     # Импортируем модели после создания приложения и расширений, иначе циклится
     from web.routes import register_blueprints
     from web.views import InstrumentView, IndexView, RunView, LogoutView, TaskView
-    from app.models import Run, Instrument, Deal, Task
+    from app.models import Run, Instrument, Task
 
     register_blueprints(app)
 
@@ -60,7 +60,7 @@ def create_web(app):
 
     admin.add_view(InstrumentView(Instrument, db.session))
     admin.add_view(RunView(Run, db.session))
-    admin.add_view(ModelView(Deal, db.session))
+    # admin.add_view(ModelView(Deal, db.session))
     admin.add_view(TaskView(Task, db.session))
     admin.add_view(LogoutView(name="Logout", endpoint='logout'))
 
