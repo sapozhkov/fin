@@ -5,7 +5,7 @@ from tinkoff.invest import GetCandlesResponse, HistoricCandle, Client, CandleInt
 
 from bot.dto import InstrumentDTO
 from app.config import AppConfig
-from app.helper import TimeHelper, q2f, f2q
+from app.helper import TimeHelper, q2f, f2q, LocalCache
 
 
 class TickerCache:
@@ -15,6 +15,7 @@ class TickerCache:
         self.db_file = f"{AppConfig.BASE_DIR}/db/c_{ticker}.db"
         self.create_database()
         self.instrument: InstrumentDTO | None = None
+        self.cache = {}
 
     def create_database(self):
         conn = sqlite3.connect(self.db_file)
@@ -114,6 +115,12 @@ class TickerCache:
             # Запрос к API для сегодняшней даты всегда к API и без сохранения, если нет принудительного флага
             return self.fetch_candles_from_api(date, force_cache)
 
+        cache_key = f"candle_{self.ticker}_{date}"
+        cache_val = LocalCache.get(cache_key)
+
+        if cache_val is not None:
+            return cache_val
+
         conn = sqlite3.connect(self.db_file)
         cursor = conn.cursor()
         cursor.execute('SELECT * FROM candles WHERE date(date) = ?', (date,))
@@ -122,7 +129,9 @@ class TickerCache:
 
         if rows:
             if len(rows) == 1:
-                return GetCandlesResponse(candles=[])
+                val = GetCandlesResponse(candles=[])
+                LocalCache.set(cache_key, val)
+                return val
 
             candles = []
             for row in rows:
@@ -137,7 +146,9 @@ class TickerCache:
                     is_complete=True
                 )
                 candles.append(candle)
-            return GetCandlesResponse(candles=candles)
+            val = GetCandlesResponse(candles=candles)
+            LocalCache.set(cache_key, val)
+            return val
         else:
             # Запрос к API, если нет данных в базе
             return self.fetch_candles_from_api(date, True)
