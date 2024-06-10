@@ -63,7 +63,7 @@
 - `SECRET_KEY` ключ для генерации cookies админки 
 
 Только на проде
-- `DATABASE_URL`=postgresql://fin_user:pass@localhost/fin_db'
+- `DATABASE_URL`=postgresql://fin_user:pass@localhost/fin_db
 
 ## Запуск
 
