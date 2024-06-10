@@ -68,7 +68,7 @@ class UpdInstrumentTask(AbstractTask):
             test_alg = TestAlgorithm(do_printing=False, config=config)
             return test_alg.test(
                 last_test_date=None,  # будет взята текущая дата
-                test_days_num=14,
+                test_days_num=10,
                 shares_count=0,
 
                 auto_conf_days_freq=1,
