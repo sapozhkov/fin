@@ -78,7 +78,7 @@ class UpdInstrumentTask(AbstractTask):
         unique_configs = set(test_configs)
 
         results = []
-        progress = TaskProgress(len(unique_configs))
+        progress = TaskProgress(len(unique_configs), skip_flow=True)
 
         with ThreadPoolExecutor(max_workers=min(multiprocessing.cpu_count(), 4)) as executor:
             future_to_params = {executor.submit(run_test, config): config for config in unique_configs}
