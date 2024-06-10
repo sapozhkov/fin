@@ -86,6 +86,17 @@ exit
 pip install psycopg2-binary
 ```
 
+## cron
+
+```shell
+crontab -e
+```
+
+```
+30 6 * * 1-6 python3 ~/fin/starter.py >> ~/log/starter.log 2>&1
+45 15 * * 1-6 python3 ~/fin/task_set_upd_instr.py >> ~/log/task_set.log 2>&1
+*/5 * * * * python3 ~/fin/task_worker.py >> ~/log/tasks.log 2>&1
+```
 
 sudo systemctl daemon-reload
 sudo systemctl start myapp

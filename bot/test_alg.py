@@ -8,14 +8,15 @@ from bot.db import TickerCache
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
 from bot.helper import OrderHelper
 from app.config import RunConfig, AppConfig
-from app.helper import TimeHelper
+from app.helper import TimeHelper, LocalCache
 
 
 class TestAlgorithm:
     def __init__(
             self,
             config: RunConfig,
-            do_printing=False
+            do_printing=False,
+            use_cache=True,
     ):
         self.token = AppConfig.TOKEN
         self.config = config
@@ -23,6 +24,7 @@ class TestAlgorithm:
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
         self.client_helper = ClientTestEnvHelper(self.token, config.ticker, self.logger_helper, self.time_helper)
         self.accounting_helper = AccountingTestEnvHelper(self.client_helper)
+        self.use_cache = use_cache
 
     def test(
         self,
@@ -47,12 +49,9 @@ class TestAlgorithm:
             else:
                 last_test_date = TimeHelper.get_current_date()
 
-        if test_days_num < 7:
-            # несколько дней - берутся только рабочие
-            days_list = TickerCache.get_days_list_working_only(last_test_date, test_days_num)
-        else:
-            # на большом промежутке берутся все
-            days_list = TickerCache.get_days_list(last_test_date, test_days_num)
+        # #162 #159 тип выбора предыдущих дней - рабочие/все. может пригодиться для тестирования/экспериментов
+        # days_list = TickerCache.get_days_list(last_test_date, test_days_num)
+        days_list = TickerCache.get_days_list_working_only(last_test_date, test_days_num)
 
         self.accounting_helper.set_num(shares_count)
 
@@ -90,98 +89,134 @@ class TestAlgorithm:
             # дальше текущего времени не убегаем
             config.end_time = self.get_end_time(test_date, config.end_time)
 
-            # прогоняем по дню (-3 часа для компенсации часового сдвига)
+            # прогоняем по дню (время в UTC)
             date_from = datetime.strptime(test_date + ' ' + config.start_time, "%Y-%m-%d %H:%M")
             date_to = datetime.strptime(test_date + ' ' + config.end_time, "%Y-%m-%d %H:%M")
 
             # задаем параметры дня
             self.time_helper.set_current_time(date_from)
 
-            # создаем бота с настройками
-            bot = TradingBot(
-                self.token,
-                config=config,
-                time_helper=self.time_helper,
-                logger_helper=self.logger_helper,
-                client_helper=self.client_helper,
-                accounting_helper=self.accounting_helper,
-            )
-
-            if bot.state == bot.STATE_FINISHED:
-                # print(f"{test_date} - skip, finished status on start")
-                continue
+            # сбрасываем все заказы и заявки
+            self.accounting_helper.reset()
 
             normal_trade_day = self.client_helper.set_candles_list_by_date(test_date)
             if not normal_trade_day:
                 # print(f"{test_date} - skip, no candles")
                 continue
 
-            self.accounting_helper.reset()
+            cache_name = f"b_{test_date}-{config}-{self.accounting_helper.get_num()}"
+            cached_val = LocalCache.get(cache_name) if self.use_cache else None
 
-            started = False
-            start_price = 0
-            start_cnt = 0
+            # Ищем в кэше обходов, если нашли, берем значения оттуда
+            # if False and cached_val:
+            if cached_val:
+                LocalCache.inc_counter('cache_find')
 
-            # Использование итератора для вывода каждой пары час-минута
-            for dt in self.time_helper.get_hour_minute_pairs(date_from, date_to):
-                if not bot.continue_trading():
-                    break
+                operations = cached_val['operations']
+                end_price = cached_val['end_price']
+                end_cnt = cached_val['end_cnt']
+                start_price = cached_val['start_price']
+                start_cnt = cached_val['start_cnt']
+                day_sum = cached_val['day_sum']
 
-                # задаем время
-                self.time_helper.set_time(dt)
+                self.accounting_helper.set_num(end_cnt)
 
-                candle = self.client_helper.get_candle(dt)
-                if candle is None:
-                    self.logger_helper.error(f"No candle for {dt}")
+            else:
+
+                # создаем бота с настройками
+                bot = TradingBot(
+                    self.token,
+                    config=config,
+                    time_helper=self.time_helper,
+                    logger_helper=self.logger_helper,
+                    client_helper=self.client_helper,
+                    accounting_helper=self.accounting_helper,
+                )
+
+                if bot.state == bot.STATE_FINISHED:
+                    # print(f"{test_date} - skip, finished status on start")
                     continue
 
-                # задаем текущее значение свечи
-                self.client_helper.set_current_candle(candle)
+                started = False
+                start_price = 0
+                start_cnt = 0
 
-                # при первом запуске
-                if not started:
-                    started = True
-                    start_price = self.client_helper.get_current_price()
-                    start_cnt = self.accounting_helper.get_num()
+                # Использование итератора для вывода каждой пары час-минута
+                for dt in self.time_helper.get_hour_minute_pairs(date_from, date_to):
+                    if not bot.continue_trading():
+                        break
 
-                    if not started_t:
-                        started_t = True
-                        start_price_t = start_price
+                    # задаем время
+                    self.time_helper.set_time(dt)
 
-                for order_id, order in self.client_helper.orders.items():
-                    if order_id in self.client_helper.executed_orders_ids:
+                    candle = self.client_helper.get_candle(dt)
+                    if candle is None:
+                        self.logger_helper.error(f"No candle for {dt}")
                         continue
-                    avg_price = self.client_helper.round(OrderHelper.get_avg_price(order))
-                    if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
-                        low_buy_price = self.client_helper.q2f(candle.low)
-                        order_executed = avg_price >= low_buy_price
-                        # order_executed_on_border = price == low_buy_price
-                    else:
-                        high_sell_price = self.client_helper.q2f(candle.high)
-                        order_executed = avg_price <= high_sell_price
-                        # order_executed_on_border = price == high_sell_price
 
-                    if order_executed:
-                        self.client_helper.executed_orders_ids.append(order_id)
+                    # задаем текущее значение свечи
+                    self.client_helper.set_current_candle(candle)
 
-                # если пора просыпаться
-                if self.time_helper.is_time_to_awake():
-                    # print(dt.strftime("%H:%M"))
-                    # запускаем итерацию торгового алгоритма
-                    bot.run_iteration()
+                    # при первом запуске
+                    if not started:
+                        started = True
+                        start_price = self.client_helper.get_current_price()
+                        start_cnt = self.accounting_helper.get_num()
 
-            bot.stop()
+                        if not started_t:
+                            started_t = True
+                            start_price_t = start_price
 
-            operations = len(self.accounting_helper.get_deals())
+                    for order_id, order in self.client_helper.orders.items():
+                        if order_id in self.client_helper.executed_orders_ids:
+                            continue
+                        avg_price = self.client_helper.round(OrderHelper.get_avg_price(order))
+                        if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
+                            low_buy_price = self.client_helper.q2f(candle.low)
+                            order_executed = avg_price >= low_buy_price
+                            # order_executed_on_border = price == low_buy_price
+                        else:
+                            high_sell_price = self.client_helper.q2f(candle.high)
+                            order_executed = avg_price <= high_sell_price
+                            # order_executed_on_border = price == high_sell_price
+
+                        if order_executed:
+                            self.client_helper.executed_orders_ids.append(order_id)
+
+                    # если пора просыпаться
+                    if self.time_helper.is_time_to_awake():
+                        # print(dt.strftime("%H:%M"))
+                        # запускаем итерацию торгового алгоритма
+                        bot.run_iteration()
+
+                bot.stop()
+
+                operations = len(self.accounting_helper.get_deals())
+                end_price = self.client_helper.get_current_price()
+                end_cnt = self.accounting_helper.get_instrument_count()
+                day_sum = self.accounting_helper.get_sum()
+
+                to_cache = {
+                    'operations': operations,
+                    'end_price': end_price,
+                    'end_cnt': end_cnt,
+                    'start_price': start_price,
+                    'start_cnt': start_cnt,
+                    'day_sum': day_sum,
+                }
+
+                if self.use_cache:
+                    LocalCache.set(cache_name, to_cache)
+                    LocalCache.inc_counter('cache_miss')
+
+                # конец не кэшированной части
+
             operations_cnt += operations
             operations_cnt_list.append(operations)
 
-            end_price = self.client_helper.get_current_price()
-            end_cnt = self.accounting_helper.get_instrument_count()
-
             balance_change = (
                     - start_price * start_cnt
-                    + self.accounting_helper.get_sum()
+                    + day_sum
                     + end_price * end_cnt
                     + maj_commission
             )
@@ -323,7 +358,7 @@ class TestAlgorithm:
 
         # запускаем получение результатов работы всех вариантов конфигурации
         for config in unique_conf_list:
-            test_alg = TestAlgorithm(do_printing=False, config=config)
+            test_alg = TestAlgorithm(do_printing=False, config=config, use_cache=self.use_cache)
             res = test_alg.test(
                 last_test_date=TimeHelper.get_previous_date(TimeHelper.to_datetime(test_date)),
                 test_days_num=auto_conf_prev_days,

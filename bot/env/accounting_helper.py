@@ -54,6 +54,7 @@ class AbstractAccountingHelper(ABC):
 
     def reset(self):
         self.sum = 0
+        self.operations_cnt = 0
 
     def get_num(self):
         return self.num
