@@ -2,11 +2,15 @@ from flask_admin.contrib.sqla import ModelView
 from wtforms import ValidationError
 
 from app.config import RunConfig
+from web.formater import view_format_datetime
 
 
 class InstrumentView(ModelView):
     column_display_pk = True
     column_default_sort = ('id', False)
+    column_formatters = {
+        'updated_at': view_format_datetime
+    }
 
     column_editable_list = ['status']
     column_filters = ['status']
@@ -31,4 +35,3 @@ class InstrumentView(ModelView):
 
         # Вызываем родительский метод для продолжения стандартной обработки
         super(InstrumentView, self).on_model_change(form, model, is_created)
-

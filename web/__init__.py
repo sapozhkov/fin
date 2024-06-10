@@ -1,5 +1,4 @@
 import os
-from datetime import datetime, timedelta
 
 from flask import redirect, url_for, request
 from flask_admin import Admin
@@ -8,6 +7,7 @@ from flask_login import LoginManager, current_user
 
 from app import db
 from app.models import User
+from web.formater import view_format_datetime, format_currency, format_time
 
 login = LoginManager()
 login.login_view = 'common.login'
@@ -18,18 +18,6 @@ def load_user(user_id):
     if user_id == "1":
         return User()
     return None
-
-
-def format_time(value, _format='%H:%M'):
-    """Форматирование даты и времени в указанный формат."""
-    if isinstance(value, datetime):
-        value += timedelta(hours=3)  # Добавляем 3 часа
-        return value.strftime(_format)
-    return value  # Если значение не является datetime, возвращаем его без изменений
-
-
-def format_currency(value):
-    return f"{value:,.0f}"
 
 
 def create_web(app):
