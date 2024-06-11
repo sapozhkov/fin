@@ -163,10 +163,6 @@ class TestAlgorithm:
                         start_price = self.client_helper.get_current_price()
                         start_cnt = self.accounting_helper.get_num()
 
-                        if not started_t:
-                            started_t = True
-                            start_price_t = start_price
-
                     for order_id, order in self.client_helper.orders.items():
                         if order_id in self.client_helper.executed_orders_ids:
                             continue
@@ -210,6 +206,10 @@ class TestAlgorithm:
                     LocalCache.inc_counter('cache_miss')
 
                 # конец не кэшированной части
+
+            if not started_t:
+                started_t = True
+                start_price_t = start_price
 
             operations_cnt += operations
             operations_cnt_list.append(operations)
