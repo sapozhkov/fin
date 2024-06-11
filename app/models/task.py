@@ -18,6 +18,7 @@ class Task(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
     def save(self):
+        self.updated_at = datetime.now(timezone.utc)
         db.session.add(self)
         db.session.commit()
 
