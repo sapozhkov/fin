@@ -109,7 +109,7 @@ class RunConfig:
         stops = f"|u{self.stop_up_p} d{self.stop_down_p}| " \
             if self.stop_up_p or self.stop_down_p else ''
         return (f"{self.ticker}{'+' if self.majority_trade else '-'} "
-                f"{self.step_max_cnt}/{base}/{self.step_set_orders_cnt} x l{self.step_lots} x {self.step_size}¤ "
+                f"{self.step_max_cnt}/{base}/{self.step_set_orders_cnt} x l{self.step_lots} x {round(self.step_size, 2)}¤ "
                 f"{thresholds}{stops}"
                 )
 
