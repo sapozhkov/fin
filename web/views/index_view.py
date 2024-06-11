@@ -10,7 +10,7 @@ class IndexView(AdminIndexView):
     @staticmethod
     def _get_runs():
         return Run.query.filter(Run.date == TimeHelper.get_current_date()) \
-            .order_by(Run.config).all()
+            .order_by(Run.status, Run.config).all()
 
     @staticmethod
     def _get_balance():
