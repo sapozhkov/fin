@@ -7,7 +7,6 @@ from app.constants import TaskStatus
 from app.models import Instrument, Task
 from app.tasks import AbstractTask
 from bot import TestAlgorithm
-from bot.vis import TaskProgress
 
 
 class UpdInstrumentTask(AbstractTask):
