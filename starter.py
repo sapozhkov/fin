@@ -127,7 +127,7 @@ def get_best_config(stock):
 async def main():
     app = create_app()
     with app.app_context():
-        balance_correction = 1  # 1 ничего не меняем, 0.9 - -10%, 2 - х2 для мажоритарной
+        balance_correction = 0.9  # 1 ничего не меняем, 0.9 - -10%, 2 - х2 для мажоритарной
         commands = []
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
