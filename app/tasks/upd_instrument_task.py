@@ -1,6 +1,7 @@
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from app import AppConfig
 from app.config import RunConfig
 from app.constants import TaskStatus
 from app.models import Instrument, Task
@@ -78,7 +79,6 @@ class UpdInstrumentTask(AbstractTask):
         unique_configs = set(test_configs)
 
         results = []
-        progress = TaskProgress(len(unique_configs), skip_flow=True)
 
         with ThreadPoolExecutor(max_workers=min(multiprocessing.cpu_count(), 4)) as executor:
             future_to_params = {executor.submit(run_test, config): config for config in unique_configs}
@@ -87,7 +87,6 @@ class UpdInstrumentTask(AbstractTask):
                 res = future.result()
                 if res:
                     results.append(res)
-                progress.update_progress()
 
         # Вывод результатов или их дальнейшая обработка
         sorted_results = sorted(results, key=lambda x: (x['config'].ticker, -float(x['profit_p'])), reverse=False)
@@ -97,10 +96,23 @@ class UpdInstrumentTask(AbstractTask):
             print(item)
 
         best_res = sorted_results[0]
-        print(f"Сохраним вот это: {best_res['config']}, profit {best_res['profit_p']}")
+        new_config = best_res['config']
+        new_profit = int(best_res['profit_p'])
 
-        instrument.config = str(best_res['config'])
-        instrument.expected_profit = round(best_res['profit_p'], 2)
+        print(f"Сохраним вот это: {new_config}, profit {new_profit}")
+
+        cur_status = bool(instrument.status)
+        new_status = new_profit >= AppConfig.INSTRUMENT_ON_THRESHOLD
+
+        print(f"Порог прибыли {AppConfig.INSTRUMENT_ON_THRESHOLD}, расчетная прибыль {new_profit}")
+        if cur_status != new_status:
+            print(f"Изменяем статус активности на {new_status}")
+            instrument.status = 1 if new_status else 0
+        else:
+            print("Активность не меняем")
+
+        instrument.config = str(new_config)
+        instrument.expected_profit = round(new_profit, 2)
         instrument.save()
 
         return True

@@ -16,3 +16,4 @@ class AppConfig:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'db', 'db.sqlite'))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    INSTRUMENT_ON_THRESHOLD = int(os.environ.get('INSTRUMENT_ON_THRESHOLD', 3))

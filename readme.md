@@ -61,6 +61,7 @@
 - `PASSWORD` Пароль для доступа в админку
 - `DEBUG` флаг дебаг режима админки
 - `SECRET_KEY` ключ для генерации cookies админки 
+- `INSTRUMENT_ON_THRESHOLD` % профита, на котором инструмент активируется после ежедневного теста 
 
 Только на проде
 - `DATABASE_URL`=postgresql://fin_user:pass@localhost/fin_db
