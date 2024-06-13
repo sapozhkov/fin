@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import os
 
-from app import create_app
+from app import create_app, AppConfig
 from app.lib import TinkoffApi
 from app.models import Instrument, Run
 from app.config import RunConfig
@@ -127,7 +127,6 @@ def get_best_config(stock):
 async def main():
     app = create_app()
     with app.app_context():
-        balance_correction = 0.9  # 1 ничего не меняем, 0.9 - -10%, 2 - х2 для мажоритарной
         commands = []
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -175,7 +174,7 @@ async def main():
         balance = TinkoffApi.get_account_balance_rub()
 
         # коррекция суммы
-        balance *= balance_correction
+        balance *= AppConfig.ACC_BALANCE_CORRECTION
 
         # распределение ресурсов
         distribute_budget(stocks, balance)
