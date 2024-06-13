@@ -33,7 +33,7 @@ async def run_command(command):
 
 class Stock:
     instrument_id: int = 0
-    config: RunConfig | None = None
+    config: RunConfig
     ticker: str = ''
     figi: str = ''
     price: float = 0
@@ -77,9 +77,6 @@ def distribute_budget(stocks: list[Stock], budget):
     # обновляем конфиги
     for stock in stocks:
         stock.config.step_lots = stock.lots
-
-    print(f"Запланировано использование бюджета {round(budget - remaining_budget)} / {round(budget)} "
-          f"({round((budget - remaining_budget)/budget, 2)}%)")
 
 
 def get_best_config(stock):
@@ -178,6 +175,11 @@ async def main():
 
         # распределение ресурсов
         distribute_budget(stocks, balance)
+
+        sum_used = round(sum([stock.lots * stock.budget for stock in stocks]))
+
+        print(f"Запланировано использование бюджета {sum_used} / {round(balance)} "
+              f"({round(sum_used / balance, 2)}%)")
 
         print('Конфигурации на запуск')
         for stock in stocks:
