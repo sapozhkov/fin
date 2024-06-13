@@ -23,6 +23,6 @@ def view_format_datetime(view, context, model, name):
     if value >= today:
         return value.strftime('%H:%M')
     elif diff < timedelta(days=7):
-        return value.strftime('%a %H:%M')
+        return value.strftime('%a, %H:%M')
     else:
         return value.strftime('%Y-%m-%d %H:%M')
