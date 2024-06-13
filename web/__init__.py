@@ -2,6 +2,7 @@ import os
 
 from flask import redirect, url_for, request
 from flask_admin import Admin
+from flask_admin.menu import MenuLink
 # from flask_admin.contrib.sqla import ModelView
 from flask_login import LoginManager, current_user
 
@@ -35,7 +36,7 @@ def create_web(app):
 
     # Импортируем модели после создания приложения и расширений, иначе циклится
     from web.routes import register_blueprints
-    from web.views import InstrumentView, IndexView, RunView, LogoutView, TaskView
+    from web.views import InstrumentView, IndexView, RunView, TaskView
     from app.models import Run, Instrument, Task
 
     register_blueprints(app)
@@ -50,6 +51,6 @@ def create_web(app):
     admin.add_view(RunView(Run, db.session))
     # admin.add_view(ModelView(Deal, db.session))
     admin.add_view(TaskView(Task, db.session))
-    admin.add_view(LogoutView(name="Logout", endpoint='logout'))
+    admin.add_link(MenuLink(name='Logout', url='/logout'))
 
     return app
