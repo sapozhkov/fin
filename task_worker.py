@@ -23,13 +23,11 @@ def main():
 
     # Выйти, если есть активные задачи
     if Task.has_tasks_in_progress():
-        print_log("Есть активные задачи. Выход.")
         return
 
     # Взять первую задачу, подходящую по условию
     task = Task.get_next()
     if not task:
-        print_log("Нет задач для выполнения. Выход.")
         return
 
     # Захватить задачу
