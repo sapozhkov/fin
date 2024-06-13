@@ -26,23 +26,42 @@ server {
 ```
 
 # добавить файл к выполнению
+```shell
 sudo ln -s /etc/nginx/sites-available/your_project /etc/nginx/sites-enabled
 sudo systemctl restart nginx
+```
 
 # статус сервера
+```shell
 systemctl status nginx.service
+```
 
 # логи
+
+```shell
 sudo tail -f /var/log/nginx/access.log
 sudo tail -f /var/log/nginx/error.log
+```
 
 # сертификат
+
+```shell
 sudo apt update
 sudo apt install certbot python3-certbot-nginx
 sudo certbot --nginx
+```
+
+## Установка локали
+
+```shell
+sudo locale-gen ru_RU.UTF-8
+```
 
 # настройка автозапуска
+
+```shell
 sudo nano /etc/systemd/system/myapp.service
+```
 
 ```
 [Unit]
@@ -57,6 +76,14 @@ ExecStart=/home/sapsan/.local/bin/gunicorn -c gunicorn_config.py web_server:app
 
 [Install]
 WantedBy=multi-user.target
+```
+
+## Ручной запуск сервера
+
+удобно накатке свежих обновлений, когда все разваливается
+
+```shell
+/home/sapsan/.local/bin/gunicorn -c gunicorn_config.py web_server:app
 ```
 
 ## База данных
