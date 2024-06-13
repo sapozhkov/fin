@@ -60,7 +60,7 @@
 - `INVEST_TOKEN`: Токен доступа к Tinkoff Invest API.
 - `PASSWORD` Пароль для доступа в админку
 - `DEBUG` флаг дебаг режима админки
-- `SECRET_KEY` rk.x lkz utythfwbb сщщлшуы flvbyrb 
+- `SECRET_KEY` ключ для генерации cookies админки 
 - `INSTRUMENT_ON_THRESHOLD` % профита, на котором инструмент активируется после ежедневного теста 
 - `ACC_BALANCE_CORRECTION` какую часть баланса аккаунта использовать в торговле. 
                            1 ничего не меняем, 0.9 - -10%, 2 - х2 для мажоритарной
