@@ -178,6 +178,10 @@ async def main():
 
         sum_used = round(sum([stock.lots * stock.budget for stock in stocks]))
 
+        for stock in stocks:
+            print(f"{stock.config.ticker}: {stock.lots} lots * {stock.config.step_max_cnt} steps * {stock.price} "
+                  f"= {round(stock.budget * stock.lots, 2)}")
+
         print(f"Запланировано использование бюджета {sum_used} / {round(balance)} "
               f"({round(sum_used / balance, 2)}%)")
 
