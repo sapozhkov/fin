@@ -23,6 +23,7 @@ class Run(db.Model):
     depo = db.Column(db.Float, nullable=False)
     profit = db.Column(db.Float, nullable=False)
     data = db.Column(db.Text, nullable=True)
+    instrument_data = db.Column(db.Text, nullable=True)
     config = db.Column(db.String, nullable=False)
     start_cnt = db.Column(db.Integer, nullable=False)
     end_cnt = db.Column(db.Integer, nullable=False)

@@ -58,7 +58,7 @@ class TestAlgorithm:
         # для расчета прибыли за весь период. купил в начале, в конце продал
         started_t = False
         start_price_t = 0
-        end_price_t = 0
+        # end_price_t = 0
 
         original_config = copy.copy(self.config)
         maj_commission = 0
@@ -224,26 +224,9 @@ class TestAlgorithm:
             total_maj_commission += maj_commission
             maj_commission = 0
 
-            end_price_t = end_price
+            # end_price_t = end_price
 
             profit = round(profit + balance_change, 2)
-
-            # if bot.config.pretest_period > 0:
-            #     rsi = bot.get_rsi_trend_val(bot.config.pretest_period)
-            #     if rsi is not None:
-            #         rsi_text = f"rsi - {round(rsi, 2)} {'^' if rsi > .5 else 'v'} "
-            #     else:
-            #         rsi_text = 'no rsi '
-            # else:
-            #     rsi_text = ''
-            # print(f"{test_date} "
-            #       f"{rsi_text}"
-            #       f"change: {round(balance_change, 2)}, "
-            #       f"num: {bot.get_current_count()}")
-
-            # #51 для перебирания дат с потерями
-            # if balance_change < 0:
-            #     print(f"{test_date} - {round(balance_change, 2)}")
 
             if balance_change > 0:
                 success_days += 1
@@ -262,16 +245,17 @@ class TestAlgorithm:
         profit_p = round(100 * profit / (start_price_t * config.step_max_cnt * config.step_lots * maj_k), 2) \
             if start_price_t and config.step_max_cnt else 0
 
-        # это для обычной торговли. купил в начале, в конце продал
-        potential_profit = round((end_price_t - start_price_t) * config.step_max_cnt * config.step_lots, 2)
-        # сколько от обычной торговли в процентах ты сделал
-        potential_profit_p = round(profit / potential_profit, 2) if potential_profit > 0 else 0
+        # # это для обычной торговли. купил в начале, в конце продал
+        # potential_profit = round((end_price_t - start_price_t) * config.step_max_cnt * config.step_lots, 2)
+        # # сколько от обычной торговли в процентах ты сделал
+        # potential_profit_p = round(profit / potential_profit, 2) if potential_profit > 0 else 0
 
         return {
             'profit': profit,
-            'profit_p': profit_p,
-            'pot_p': potential_profit_p,
-            'config': config,
+            'profit_p': profit_p,  # не удалять
+            'profit_p_avg': round(profit_p / test_days_num, 2),  # не удалять
+            # 'pot_p': potential_profit_p,
+            'config': config,  # не удалять
             # 'maj_com': round(total_maj_commission, 2),
 
             # 'profit_avg': round(sum(balance_change_list) / test_days_num, 2),

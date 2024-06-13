@@ -12,6 +12,7 @@ class Instrument(db.Model):
     account = db.Column(db.Integer, nullable=False)
     config = db.Column(db.String(256), nullable=False)
     status = db.Column(db.Integer, nullable=False)
+    data = db.Column(db.Text, nullable=True)
     expected_profit = db.Column(db.Float, default=0)
     updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 

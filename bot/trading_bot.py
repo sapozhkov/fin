@@ -84,6 +84,7 @@ class TradingBot:
                     depo=self.get_max_start_depo(),
                     profit=0,
                     data='',
+                    instrument_data=f"{instrument.data}, exp {instrument.expected_profit}",
                     config=str(self.config),
                     start_cnt=self.start_count,
                     end_cnt=0,

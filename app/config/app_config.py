@@ -29,8 +29,11 @@ class AppConfig:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    INSTRUMENT_ON_THRESHOLD = int(os.environ.get('INSTRUMENT_ON_THRESHOLD', 3))
-    """% профита, на котором инструмент активируется после ежедневного теста """
+    INSTRUMENT_ON_THRESHOLD = float(os.environ.get('INSTRUMENT_ON_THRESHOLD', 0.3))
+    """% профита, на котором инструмент активируется после ежедневного теста (средний дневной уровень)"""
+
+    INSTRUMENT_TEST_DAYS = 10
+    """Количество дней для тестирования"""
 
     ACC_BALANCE_CORRECTION = float(os.environ.get('ACC_BALANCE_CORRECTION', 0.95))
     """

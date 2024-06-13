@@ -68,7 +68,7 @@ class UpdInstrumentTask(AbstractTask):
             test_alg = TestAlgorithm(do_printing=False, config=config)
             return test_alg.test(
                 last_test_date=None,  # будет взята текущая дата
-                test_days_num=10,
+                test_days_num=AppConfig.INSTRUMENT_TEST_DAYS,
                 shares_count=0,
 
                 auto_conf_days_freq=1,
@@ -88,7 +88,7 @@ class UpdInstrumentTask(AbstractTask):
                     results.append(res)
 
         # Вывод результатов или их дальнейшая обработка
-        sorted_results = sorted(results, key=lambda x: (x['config'].ticker, -float(x['profit_p'])), reverse=False)
+        sorted_results = sorted(results, key=lambda x: float(x['profit_p']), reverse=True)
 
         print()
         for item in sorted_results:
@@ -96,7 +96,7 @@ class UpdInstrumentTask(AbstractTask):
 
         best_res = sorted_results[0]
         new_config = best_res['config']
-        new_profit = int(best_res['profit_p'])
+        new_profit = float(best_res['profit_p_avg'])
 
         print(f"Сохраним вот это: {new_config}, profit {new_profit}")
 
@@ -112,6 +112,15 @@ class UpdInstrumentTask(AbstractTask):
 
         instrument.config = str(new_config)
         instrument.expected_profit = round(new_profit, 2)
+
+        all_avg_profit = [x['profit_p_avg'] for x in sorted_results]
+        if len(all_avg_profit):
+            min_avg_profit = min(all_avg_profit)
+            max_avg_profit = max(all_avg_profit)
+            avg_avg_profit = round(sum(all_avg_profit) / len(all_avg_profit), 2)
+            instrument.data = f"profit: min {min_avg_profit}, avg {avg_avg_profit}, max {max_avg_profit}"
+            print(f"Data: {instrument.data}")
+
         instrument.save()
 
         return True
