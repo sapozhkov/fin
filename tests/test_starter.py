@@ -66,6 +66,22 @@ class TestDistributeBudget(unittest.TestCase):
         expected = {"A": 2, "B": 1, "C": 2, "D": 1}
         self.assertEqual(expected, result)
 
+    def test_fair_distribution(self):
+        stocks = self.create_stocks([("A", 51), ("B", 52), ("C", 53), ("D", 54), ("E", 55)])
+        budget = 500
+        distribute_budget(stocks, budget)
+        result = {stock.config.name: stock.lots for stock in stocks}
+        expected = {'A': 1, 'B': 2, 'C': 2, 'D': 2, 'E': 2}
+        self.assertEqual(expected, result)
+
+    def test_fair_distribution_2(self):
+        stocks = self.create_stocks([("A", 26), ("B", 27), ("C", 28), ("D", 29), ("E", 30)])
+        budget = 500
+        distribute_budget(stocks, budget)
+        result = {stock.config.name: stock.lots for stock in stocks}
+        expected = {'A': 3, 'B': 3, 'C': 3, 'D': 4, 'E': 4}
+        self.assertEqual(expected, result)
+
 
 if __name__ == '__main__':
     unittest.main()

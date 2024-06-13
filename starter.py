@@ -61,18 +61,18 @@ def distribute_budget(stocks: list[Stock], budget):
         stock.lots = count
         remaining_budget -= count * stock.budget
 
-    # Если есть оставшиеся средства, распределяем их начиная с самых дорогих акций
-    if remaining_budget > 0:
+    max_iterations = 3
+
+    for i in range(1, max_iterations+1):
         for stock in stocks:
             if remaining_budget < stock.budget:
                 continue
 
-            count = int(remaining_budget // stock.budget)
+            # на последней итерации "сколько влезает", а так по одному шагу добавляем
+            count = int(remaining_budget // stock.budget) if i == max_iterations else 1
+
             stock.lots += count
             remaining_budget -= count * stock.budget
-
-            if remaining_budget <= 0:
-                break
 
     # обновляем конфиги
     for stock in stocks:
