@@ -7,20 +7,29 @@ from web.formater import view_format_datetime
 
 class InstrumentView(ModelView):
     column_display_pk = True
-    column_default_sort = ('id', False)
+    column_default_sort = [('account', False), ('id', False)]
+    column_list = ('id', 'name', 'account_rel.name', 'config', 'status', 'expected_profit', 'updated_at')
+    column_sortable_list = ('id', 'name', 'account_rel.name', 'config', 'status', 'expected_profit', 'updated_at')
     column_formatters = {
-        'updated_at': view_format_datetime
+        'updated_at': view_format_datetime,
     }
-
     column_editable_list = ['status']
-    column_filters = ['status']
-    form_choices = {
+    column_filters = [
+        'status',
+        'account_rel.name'
+    ]
+    column_choices = {
         'status': [
             (0, 'Off'),
             (1, 'Active')
         ]
     }
-    column_choices = {
+    column_labels = {
+        'account_rel.name': 'Account',
+    }
+
+    form_columns = ('name', 'account_rel', 'config', 'status', 'data', 'expected_profit')
+    form_choices = {
         'status': [
             (0, 'Off'),
             (1, 'Active')

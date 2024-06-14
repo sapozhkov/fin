@@ -1,0 +1,18 @@
+from datetime import datetime, timezone
+
+from app import db
+
+
+class Account(db.Model):
+    __tablename__ = 'accounts'
+
+    id = db.Column(db.Integer, primary_key=True)
+    status = db.Column(db.Integer, nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+
+    instruments = db.relationship('Instrument', back_populates='account_rel')
+
+    def __repr__(self):
+        return f"<Account {self.name} ({self.id}) {'On' if self.status else 'Off'}>"

@@ -1,3 +1,4 @@
+from .account_view import AccountView
 from .index_view import IndexView
 from .instrument_view import InstrumentView
 from .instrument_log_view import InstrumentLogView

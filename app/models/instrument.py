@@ -9,12 +9,14 @@ class Instrument(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    account = db.Column(db.Integer, nullable=False)
+    account = db.Column(db.Integer, db.ForeignKey('accounts.id', name='fk_instruments_account'), nullable=False)
     config = db.Column(db.String(256), nullable=False)
     status = db.Column(db.Integer, nullable=False)
     data = db.Column(db.Text, nullable=True)
     expected_profit = db.Column(db.Float, default=0)
     updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
+
+    account_rel = db.relationship('Account', back_populates='instruments')
 
     def save(self):
         self.updated_at = datetime.now(timezone.utc)
