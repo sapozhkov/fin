@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from app import AppConfig
 from app.config import RunConfig
 from app.constants import TaskStatus
-from app.models import Instrument, Task
+from app.models import Instrument, Task, InstrumentLog
 from app.tasks import AbstractTask
 from bot import TestAlgorithm
 
@@ -122,5 +122,7 @@ class UpdInstrumentTask(AbstractTask):
             print(f"Data: {instrument.data}")
 
         instrument.save()
+
+        InstrumentLog.add_by_instrument(instrument)
 
         return True
