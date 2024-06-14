@@ -9,7 +9,7 @@ class Instrument(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
-    account = db.Column(db.Integer, db.ForeignKey('accounts.id', name='fk_instruments_account'), nullable=False)
+    account = db.Column(db.BigInteger, db.ForeignKey('accounts.id', name='fk_instruments_account'), nullable=False)
     config = db.Column(db.String(256), nullable=False)
     status = db.Column(db.Integer, nullable=False)
     data = db.Column(db.Text, nullable=True)

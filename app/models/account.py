@@ -6,7 +6,7 @@ from app import db
 class Account(db.Model):
     __tablename__ = 'accounts'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.BigInteger, primary_key=True)
     status = db.Column(db.Integer, nullable=False)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
