@@ -6,7 +6,7 @@ from flask_admin.menu import MenuLink
 # from flask_admin.contrib.sqla import ModelView
 from flask_login import LoginManager, current_user
 
-from app import db
+from app import db, AppConfig
 from app.models import User
 from web.formater import view_format_datetime, format_currency, format_time
 
@@ -24,6 +24,7 @@ def load_user(user_id):
 def create_web(app):
     app.config['FLASK_ADMIN_SWATCH'] = 'cosmo' if app.config['DEBUG_MODE'] else 'cerulean'
     app.template_folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'templates')
+    app.static_folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static')
 
     login.init_app(app)
 
@@ -33,6 +34,10 @@ def create_web(app):
     def require_login():
         if not current_user.is_authenticated and request.endpoint not in ['common.login']:
             return redirect(url_for('common.login'))
+
+    @app.context_processor
+    def inject_favicon_path():
+        return {'favicon_path': '/static/favicon/favicon_' + ('dev' if AppConfig.DEBUG_MODE else 'prod') + '.ico'}
 
     # Импортируем модели после создания приложения и расширений, иначе циклится
     from web.routes import register_blueprints
