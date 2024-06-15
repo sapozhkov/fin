@@ -73,15 +73,15 @@ class TinkoffApi:
     #             return None
 
     @staticmethod
-    def get_account_balance_rub() -> float:
+    def get_account_balance_rub(account_id=None) -> float:
         """
         Получает баланс первого аккаунта пользователя в рублях
         :return: Баланс счета в рублях
         """
-        account_id = TinkoffApi.get_first_account_id()
+        account_id = account_id or TinkoffApi.get_first_account_id()
         with Client(AppConfig.TOKEN) as client:
             try:
-                response = client.operations.get_portfolio(account_id=account_id)
+                response = client.operations.get_portfolio(account_id=str(account_id))
                 return q2f(response.total_amount_portfolio)
             except InvestError as e:
                 print(f"Ошибка при получении баланса: {e}")

@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import os
+from collections import defaultdict
 
 from app import create_app, AppConfig
 from app.lib import TinkoffApi
@@ -128,70 +129,90 @@ async def main():
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
         # набор инструментов
-        stocks = []
         instruments = Instrument.query.filter_by(status=1).all()
+
+        # Сгруппируем инструменты по полю account
+        grouped_instruments = defaultdict(list)
         for instrument in instruments:
-            config = RunConfig.from_repr_string(instrument.config)
-            ticker = config.ticker
-            ticker_cache = TickerCache(ticker)
-            figi = ticker_cache.get_instrument().figi
+            grouped_instruments[instrument.account].append(instrument)
 
-            stock = Stock()
-            stock.instrument_id = instrument.id
-            stock.config = config
-            stock.ticker = ticker
-            stock.figi = figi
+        for account_id, instruments in grouped_instruments.items():
+            print(f"Account ID: {account_id}")
+            print()
 
-            stocks.append(stock)
+            stocks = []
+            for instrument in instruments:
+                print(f"Instrument ID: {instrument.id}, Name: {instrument.name}")
+                config = RunConfig.from_repr_string(instrument.config)
+                ticker = config.ticker
+                ticker_cache = TickerCache(ticker)
+                figi = ticker_cache.get_instrument().figi
 
-        # определение лучшего конфига
-        for stock in stocks:
+                stock = Stock()
+                stock.instrument_id = instrument.id
+                stock.config = config
+                stock.ticker = ticker
+                stock.figi = figi
 
-            best_conf = get_best_config(stock)
+                stocks.append(stock)
 
-            # проброс в конфиг значения номера инструмента (будет привязка при запуске)
-            best_conf.instrument_id = stock.instrument_id
+            print()
 
-            stock.config = best_conf
+            # определение лучшего конфига
+            for stock in stocks:
 
-        # последние цены и базовый бюджет
-        last_prices = TinkoffApi.get_last_prices(figi_list=[s.figi for s in stocks])
-        for s in stocks:
-            if s.figi in last_prices:
-                price = last_prices[s.figi]
-                maj_k = 2 if s.config.majority_trade else 1
+                best_conf = get_best_config(stock)
 
-                s.price = price
-                s.budget = round(price * s.config.step_max_cnt * maj_k, 2)
+                # проброс в конфиг значения номера инструмента (будет привязка при запуске)
+                best_conf.instrument_id = stock.instrument_id
 
-        # отфильтровываем нулевые цены
-        stocks = [stock for stock in stocks if stock.price != 0]
+                stock.config = best_conf
 
-        # баланс целевого аккаунта
-        balance = TinkoffApi.get_account_balance_rub()
+            # последние цены и базовый бюджет
+            last_prices = TinkoffApi.get_last_prices(figi_list=[s.figi for s in stocks])
+            for s in stocks:
+                if s.figi in last_prices:
+                    price = last_prices[s.figi]
+                    maj_k = 2 if s.config.majority_trade else 1
 
-        # коррекция суммы
-        balance *= AppConfig.ACC_BALANCE_CORRECTION
+                    s.price = price
+                    s.budget = round(price * s.config.step_max_cnt * maj_k, 2)
 
-        # распределение ресурсов
-        distribute_budget(stocks, balance)
+            # отфильтровываем нулевые цены
+            stocks = [stock for stock in stocks if stock.price != 0]
 
-        sum_used = round(sum([stock.lots * stock.budget for stock in stocks]))
+            # баланс целевого аккаунта
+            balance = TinkoffApi.get_account_balance_rub(account_id)
+            print(f"Баланс {balance}")
 
-        for stock in stocks:
-            print(f"{stock.config.ticker}: {stock.lots} lots * {stock.config.step_max_cnt} steps * {stock.price} "
-                  f"= {round(stock.budget * stock.lots, 2)}")
+            # коррекция суммы
+            balance *= AppConfig.ACC_BALANCE_CORRECTION
+            print(f"Баланс с коррекцией {balance}")
 
-        print(f"Запланировано использование бюджета {sum_used} / {round(balance)} "
-              f"({round(sum_used / balance, 2)}%)")
+            if balance <= 0:
+                print(f"Баланс с меньше 0, выходим")
+                continue
 
-        print('Конфигурации на запуск')
-        for stock in stocks:
-            print(stock)
-        print()
+            # распределение ресурсов
+            distribute_budget(stocks, balance)
 
-        for stock in stocks:
-            commands.append(f"python3 {current_dir}/bot.py {stock.config.to_string()} >> log/all.log 2>&1")
+            sum_used = round(sum([stock.lots * stock.budget for stock in stocks]))
+
+            for stock in stocks:
+                print(f"{stock.config.ticker}: {stock.lots} lots * {stock.config.step_max_cnt} steps * {stock.price} "
+                      f"= {round(stock.budget * stock.lots, 2)}")
+
+            print(f"Запланировано использование бюджета {sum_used} / {round(balance)} "
+                  f"({round(sum_used / balance, 2)}%)")
+            print()
+
+            print('Конфигурации на запуск')
+            for stock in stocks:
+                print(stock)
+            print()
+
+            for stock in stocks:
+                commands.append(f"python3 {current_dir}/bot.py {stock.config.to_string()} >> log/all.log 2>&1")
 
         for command in commands:
             tasks = [run_command(command)]

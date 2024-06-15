@@ -10,18 +10,9 @@ from app.lib import TinkoffApi
 
 
 class TinkoffProxyClient(AbstractProxyClient):
-    def __init__(self, token, ticker, time, logger):
+    def __init__(self, token, ticker, time, logger, account_id: str):
         super().__init__(token, ticker, time, logger)
-        self.account_id = self.get_account_id()
-
-    def get_account_id(self):
-        with Client(self.token) as client:
-            accounts = client.users.get_accounts().accounts
-            if accounts:
-                first_account_id = accounts[0].id
-                return first_account_id
-            else:
-                raise Exception("No accounts found")
+        self.account_id: str = account_id
 
     def get_current_price(self) -> float | None:
         """

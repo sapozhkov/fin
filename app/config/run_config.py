@@ -101,6 +101,9 @@ class RunConfig:
         if self.threshold_sell_steps and self.threshold_sell_steps <= self.step_set_orders_cnt:
             self.threshold_sell_steps = self.step_set_orders_cnt + 1
 
+        if self.step_lots <= 0:
+            self.step_lots = 1
+
     def __repr__(self):
         base = f"{self.pretest_type}{self.pretest_period}:{self.step_base_cnt}" \
             if self.pretest_type else f"{self.step_base_cnt}"

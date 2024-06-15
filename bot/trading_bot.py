@@ -38,9 +38,18 @@ class TradingBot:
     ):
         # хелперы и DTO
         self.config = config
+
+        instrument = None
+        account_id = ''
+        self.run_state: Run | None = None
+        if self.config.instrument_id:
+            instrument = Instrument.get_by_id(self.config.instrument_id)
+            if instrument:
+                account_id = str(instrument.account)
+
         self.time = time_helper or TimeProdEnvHelper()
         self.logger = logger_helper or LoggerHelper(__name__, config.name or config.ticker)
-        self.client = client_helper or TinkoffProxyClient(token, self.config.ticker, self.time, self.logger)
+        self.client = client_helper or TinkoffProxyClient(token, self.config.ticker, self.time, self.logger, account_id)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
         if not self.is_trading_day():
@@ -70,27 +79,25 @@ class TradingBot:
         self.validate_and_modify_config()
 
         self.run_state: Run | None = None
-        if self.config.instrument_id:
-            instrument = Instrument.get_by_id(self.config.instrument_id)
-            if instrument:
-                self.run_state = Run(
-                    instrument=instrument.id,
-                    date=self.time.now().date(),
-                    created_at=self.time.now(),
-                    status=RunStatus.NEW,
-                    exit_code=0,
-                    last_error='',
-                    total=0,
-                    depo=self.get_max_start_depo(),
-                    profit=0,
-                    data='',
-                    instrument_data=f"{instrument.data}, exp {instrument.expected_profit}",
-                    config=str(self.config),
-                    start_cnt=self.start_count,
-                    end_cnt=0,
-                    candle='',
-                )
-                self.save_run_state()
+        if instrument:
+            self.run_state = Run(
+                instrument=instrument.id,
+                date=self.time.now().date(),
+                created_at=self.time.now(),
+                status=RunStatus.NEW,
+                exit_code=0,
+                last_error='',
+                total=0,
+                depo=self.get_max_start_depo(),
+                profit=0,
+                data='',
+                instrument_data=f"{instrument.data}, exp {instrument.expected_profit}",
+                config=str(self.config),
+                start_cnt=self.start_count,
+                end_cnt=0,
+                candle='',
+            )
+            self.save_run_state()
 
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"
@@ -325,6 +332,8 @@ class TradingBot:
 
     # количество полных наборов лотов в портфеле
     def get_current_step_count(self) -> int:
+        if self.config.step_lots == 0:
+            return 0
         return self.get_current_count() // self.config.step_lots
 
     # остаток количества акций - сколько ЛИШНИХ от количества полных лотов
