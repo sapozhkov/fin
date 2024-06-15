@@ -1,6 +1,8 @@
+from collections import defaultdict
 from typing import Optional
 
 from sqlalchemy import desc
+from sqlalchemy.orm import joinedload
 
 from app import db
 from app.constants import RunStatus
@@ -54,3 +56,21 @@ class Run(db.Model):
 
     def get_status_title(self):
         return RunStatus.get_title(self.status)
+
+    @staticmethod
+    def get_current_runs_on_accounts():
+        # Запрос для получения всех текущих запусков с предзагрузкой связанных данных
+        all_runs = Run.query.filter(Run.date == TimeHelper.get_current_date()) \
+            .options(joinedload(Run.instrument_rel).joinedload(Instrument.account_rel)) \
+            .order_by(Run.status, Run.config).all()
+
+        # Группировка запусков по аккаунтам
+        grouped_runs = defaultdict(list)
+        for run in all_runs:
+            grouped_runs[run.instrument_rel.account_rel.id].append(run)
+
+        # Формирование результирующего списка
+        result = [{'account': runs[0].instrument_rel.account_rel, 'runs': runs}
+                  for account_id, runs in grouped_runs.items()]
+
+        return result
