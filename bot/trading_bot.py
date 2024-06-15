@@ -48,7 +48,12 @@ class TradingBot:
                 account_id = str(instrument.account)
 
         self.time = time_helper or TimeProdEnvHelper()
-        self.logger = logger_helper or LoggerHelper(__name__, config.name or config.ticker)
+
+        log_name = config.name or config.ticker
+        if instrument:
+            log_name = f"{instrument.account_rel.name}_{log_name}"
+        self.logger = logger_helper or LoggerHelper(__name__, log_name)
+
         self.client = client_helper or TinkoffProxyClient(token, self.config.ticker, self.time, self.logger, account_id)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
