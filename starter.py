@@ -3,9 +3,11 @@ import datetime
 import os
 from collections import defaultdict
 
+from sqlalchemy.orm import joinedload
+
 from app import create_app, AppConfig
 from app.lib import TinkoffApi
-from app.models import Instrument, Run
+from app.models import Instrument, Run, Account
 from app.config import RunConfig
 from bot.db import TickerCache
 from app.helper import TimeHelper
@@ -129,7 +131,10 @@ async def main():
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
         # набор инструментов
-        instruments = Instrument.query.filter_by(status=1).all()
+        instruments = Instrument.query.join(Account).filter(
+            Instrument.status == 1,
+            Account.status == 1
+        ).options(joinedload(Instrument.account_rel)).all()
 
         # Сгруппируем инструменты по полю account
         grouped_instruments = defaultdict(list)
@@ -137,7 +142,7 @@ async def main():
             grouped_instruments[instrument.account].append(instrument)
 
         for account_id, instruments in grouped_instruments.items():
-            print(f"Account ID: {account_id}")
+            print(f"Account ID: {account_id}, {instruments[0].account_rel.name}")
             print()
 
             stocks = []
