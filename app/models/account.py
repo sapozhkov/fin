@@ -7,8 +7,8 @@ class Account(db.Model):
     __tablename__ = 'accounts'
 
     id = db.Column(db.BigInteger, primary_key=True)
-    status = db.Column(db.Integer, nullable=False)
     name = db.Column(db.String(100), nullable=False)
+    status = db.Column(db.Integer, nullable=False)
     description = db.Column(db.Text, nullable=True)
     updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
