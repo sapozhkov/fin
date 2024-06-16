@@ -1,3 +1,7 @@
+{% if not accounts %}
+    <p>No runs for today</p>
+{% endif %}
+
 {% for acc in accounts %}
     <h2>{{ acc.account.name }}</h2>
     <div class="card-body">
