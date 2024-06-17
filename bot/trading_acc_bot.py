@@ -1,4 +1,3 @@
-import random
 from datetime import time as datetime_time
 from typing import Tuple
 
@@ -8,7 +7,7 @@ from app.lib import TinkoffApi
 from bot import AbstractBot
 from app.constants import RunStatus
 from app.helper import TimeHelper
-from app.models import AccRun, Account
+from app.models import AccRun, Account, AccRunBalance
 from bot.env.prod import LoggerHelper, TimeProdEnvHelper
 from bot.env import AbstractLoggerHelper, AbstractTimeHelper
 
@@ -165,6 +164,8 @@ class TradingAccountBot(AbstractBot):
 
         self.cur_balance = self.get_current_balance()
 
+        self.save_balance_to_log()
+
         self.start()
 
         if self.check_need_stop():
@@ -238,3 +239,12 @@ class TradingAccountBot(AbstractBot):
     @staticmethod
     def round(val):
         return round(val, 2)
+
+    def save_balance_to_log(self):
+        row = AccRunBalance(
+            acc_run=self.run_state.id,
+            balance=self.cur_balance,
+            datetime=self.time.now()
+        )
+        db.session.add(row)
+        db.session.commit()
