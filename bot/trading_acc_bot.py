@@ -1,8 +1,9 @@
+import random
 from datetime import time as datetime_time
 from typing import Tuple
 
 from app import db
-from app.config import RunConfig
+from app.config import AccConfig
 from app.lib import TinkoffApi
 from bot import AbstractBot
 from app.constants import RunStatus
@@ -23,7 +24,7 @@ class TradingAccountBot(AbstractBot):
 
     def __init__(
             self,
-            config: RunConfig,
+            config: AccConfig,
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
     ):
@@ -31,11 +32,11 @@ class TradingAccountBot(AbstractBot):
         self.config = config
         self.time = time_helper or TimeProdEnvHelper()
 
-        # todo
-        account_id = ''
+        account_id = self.config.account_id
         self.account = Account.get_by_id(account_id)
-        # todo нет - вылет с ошибкой
-        
+        if not self.account:
+            raise ValueError(f"Не найден account c account_id='{account_id}'")
+
         self.logger = logger_helper or LoggerHelper(__name__, self.account.name)
 
         if not self.is_trading_day():
@@ -145,11 +146,7 @@ class TradingAccountBot(AbstractBot):
 
         self.state = self.STATE_WORKING
         
-        # todo сбор данных при первом запуске
-        
-        self.log(f"START \n"
-                 f"     start vals"
-                 )
+        self.log(f"START")
 
         if self.run_state:
             self.run_state.status = RunStatus.WORKING
@@ -171,17 +168,8 @@ class TradingAccountBot(AbstractBot):
         self.start()
 
         if self.check_need_stop():
-            self.stop(True)
+            self.stop(to_zero=True)
             return
-
-        # todo обновление состояния в базе
-        if self.run_state:
-            self.run_state.data = self.get_status_str()
-            self.run_state.status = RunStatus.WORKING
-            self.run_state.last_error = f"{self.time.now()} - {self.logger.last_error}" \
-                if self.logger.last_error else ''
-            self.run_state.error_cnt = self.logger.error_cnt
-            self.save_run_state()
 
         self.time.sleep(self.config.sleep_trading)
 
@@ -203,7 +191,7 @@ class TradingAccountBot(AbstractBot):
 
         return False
 
-    def stop(self, to_zero=False):
+    def stop(self, to_zero=False, exit_code=0):
         if self.state == self.STATE_FINISHED:
             return
 
@@ -211,28 +199,39 @@ class TradingAccountBot(AbstractBot):
 
         self.log("Остановка бота...")
 
-        # todo to_zero - надо "занулиться" при выходе
+        # todo #186 to_zero - надо "занулиться" при выходе
 
         if self.run_state:
-            self.run_state.status = RunStatus.FINISHED
-            self.run_state.data = self.get_status_str()
-            self.run_state.last_error = f"{self.time.now()} - {self.logger.last_error}" \
-                if self.logger.last_error else ''
-            self.run_state.error_cnt = self.logger.error_cnt
+            self.run_state.exit_code = exit_code
+            self.run_state.status = RunStatus.FINISHED if not exit_code else RunStatus.FAILED
+
+            self.save_run_state()
 
     def save_run_state(self):
-        if self.run_state is None:
+        state = self.run_state
+
+        if state is None:
             return
 
-        if not self.run_state.id:
-            db.session.add(self.run_state)
+        if not state.id:
+            db.session.add(state)
 
-        self.run_state.updated_at = self.time.now()
-        self.run_state.close = self.cur_balance
-        if self.cur_balance > self.run_state.high:
-            self.run_state.high = self.cur_balance
-        if self.cur_balance < self.run_state.low:
-            self.run_state.low = self.cur_balance
+        state.updated_at = self.time.now()
+        state.close = self.cur_balance
+        if self.cur_balance > state.high:
+            state.high = self.cur_balance
+        if self.cur_balance < state.low:
+            state.low = self.cur_balance
+
+        if state.open:
+            state.profit = self.round(100 * (state.close - state.open) / state.open)
+        state.profit_n = self.round(1 + state.profit / 100)
+
+        state.data = self.get_status_str()
+
+        state.last_error = f"{self.time.now()} - {self.logger.last_error}" \
+            if self.logger.last_error else ''
+        state.error_cnt = self.logger.error_cnt
 
         db.session.commit()
 

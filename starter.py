@@ -2,13 +2,14 @@ import asyncio
 import datetime
 import os
 from collections import defaultdict
+from time import sleep
 
 from sqlalchemy.orm import joinedload
 
 from app import create_app, AppConfig
 from app.lib import TinkoffApi
 from app.models import Instrument, Run, Account
-from app.config import RunConfig
+from app.config import RunConfig, AccConfig
 from bot.db import TickerCache
 from app.helper import TimeHelper
 from bot import TestAlgorithm
@@ -128,6 +129,7 @@ async def main():
     app = create_app()
     with app.app_context():
         commands = []
+        commands_acc = []
         current_dir = os.path.dirname(os.path.abspath(__file__))
 
         # набор инструментов
@@ -142,7 +144,8 @@ async def main():
             grouped_instruments[instrument.account].append(instrument)
 
         for account_id, instruments in grouped_instruments.items():
-            print(f"Account ID: {account_id}, {instruments[0].account_rel.name}")
+            account = instruments[0].account_rel
+            print(f"Account ID: {account_id}, {account.name}")
             print()
 
             stocks = []
@@ -201,6 +204,9 @@ async def main():
             # распределение ресурсов
             distribute_budget(stocks, balance)
 
+            # отфильтровываем с нулем лотов
+            stocks = [stock for stock in stocks if stock.lots != 0]
+
             sum_used = round(sum([stock.lots * stock.budget for stock in stocks]))
 
             for stock in stocks:
@@ -219,7 +225,21 @@ async def main():
             for stock in stocks:
                 commands.append(f"python3 {current_dir}/bot.py {stock.config.to_string()} >> log/all.log 2>&1")
 
+            if len(stocks) > 0:
+                acc_config = AccConfig(
+                    account_id=account.id,
+                    name=account.name,
+                )
+                commands_acc.append(f"python3 {current_dir}/acc_bot.py {acc_config.to_string()} >> log/all.log 2>&1")
+
         for command in commands:
+            tasks = [run_command(command)]
+            await asyncio.gather(*tasks)
+
+        # дождемся пока все прогрузятся и забьют себе место в базе
+        sleep(20)
+
+        for command in commands_acc:
             tasks = [run_command(command)]
             await asyncio.gather(*tasks)
 

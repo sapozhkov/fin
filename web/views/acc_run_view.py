@@ -30,7 +30,6 @@ class AccRunView(ModelView):
         'updated_at': view_format_datetime
     }
 
-    column_editable_list = ['status', 'exit_code']
     column_filters = ['account', 'status', 'date']
     form_choices = {'status': RunStatus.get_list()}
     column_choices = {'status': RunStatus.get_list()}

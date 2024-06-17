@@ -5,7 +5,7 @@ class AccConfig:
             name='',
 
             start_time='07:00',  # 10:00
-            end_time='15:29',  # 18:29
+            end_time='15:31',  # 18:31 (+2 мин к RunConfig)
 
             stop_up_p=0,
             stop_down_p=0,

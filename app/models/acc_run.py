@@ -31,4 +31,4 @@ class AccRun(db.Model):
     )
 
     def __repr__(self):
-        return f'<Run {self.id} i{self.instrument} ({self.config}) at {self.date}>'
+        return f'<AccRun {self.id} a{self.account} at {self.date}>'
