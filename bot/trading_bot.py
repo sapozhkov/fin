@@ -6,6 +6,7 @@ import pandas as pd
 from tinkoff.invest import PostOrderResponse, OrderType, OrderDirection, Quotation, MoneyValue, OrderState
 
 from app import db
+from bot import AbstractBot
 from bot.helper import OrderHelper
 from app.config import RunConfig
 from app.constants import RunStatus
@@ -15,7 +16,7 @@ from bot.env.prod import AccountingHelper, LoggerHelper, TimeProdEnvHelper, Tink
 from bot.env import AbstractAccountingHelper, AbstractLoggerHelper, AbstractTimeHelper, AbstractProxyClient
 
 
-class TradingBot:
+class TradingBot(AbstractBot):
     STATE_NEW = 1
     STATE_WORKING = 2
     STATE_FINISHED = 3

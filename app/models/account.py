@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Optional
 
 from app import db
 
@@ -16,3 +17,8 @@ class Account(db.Model):
 
     def __repr__(self):
         return f"<Account {self.name} ({self.id}) {'On' if self.status else 'Off'}>"
+
+    @classmethod
+    def get_by_id(cls, acc_id) -> Optional['Account']:
+        return cls.query.get(acc_id)
+

@@ -1,0 +1,2 @@
+class AbstractBot:
+    pass
