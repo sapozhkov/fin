@@ -11,10 +11,5 @@ class AccRunBalance(db.Model):
 
     acc_run_rel = db.relationship('AccRun')
 
-    # Индексы
-    __table_args__ = (
-        db.Index('idx_acc_run_balance_date_time', 'acc_run', 'datetime'),
-    )
-
     def __repr__(self):
         return f'<AccRunBalance {self.datetime} {self.balance}>'
