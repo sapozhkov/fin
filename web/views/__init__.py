@@ -4,3 +4,5 @@ from .instrument_view import InstrumentView
 from .instrument_log_view import InstrumentLogView
 from .run_view import RunView
 from .task_view import TaskView
+from .acc_run_view import AccRunView
+from .acc_run_balance_view import AccRunBalanceView

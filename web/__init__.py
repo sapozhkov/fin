@@ -41,8 +41,9 @@ def create_web(app):
 
     # Импортируем модели после создания приложения и расширений, иначе циклится
     from web.routes import register_blueprints
-    from web.views import AccountView, InstrumentView, InstrumentLogView, IndexView, RunView, TaskView
-    from app.models import Account, Run, Instrument, InstrumentLog, Task
+    from web.views import AccountView, AccRunView, AccRunBalanceView, \
+        InstrumentView, InstrumentLogView, IndexView, RunView, TaskView
+    from app.models import Account, AccRun, AccRunBalance, Run, Instrument, InstrumentLog, Task
 
     register_blueprints(app)
 
@@ -53,6 +54,8 @@ def create_web(app):
     admin = Admin(app, name='FinHub', template_mode='bootstrap3', url='/', index_view=IndexView(url='/'))
 
     admin.add_view(AccountView(Account, db.session))
+    admin.add_view(AccRunView(AccRun, db.session))
+    admin.add_view(AccRunBalanceView(AccRunBalance, db.session))
     admin.add_view(InstrumentView(Instrument, db.session))
     admin.add_view(RunView(Run, db.session))
     # admin.add_view(ModelView(Deal, db.session))
