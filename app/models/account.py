@@ -10,6 +10,7 @@ class Account(db.Model):
     id = db.Column(db.BigInteger, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     status = db.Column(db.Integer, nullable=False)
+    config = db.Column(db.String)
     description = db.Column(db.Text, nullable=True)
     updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
@@ -21,4 +22,3 @@ class Account(db.Model):
     @classmethod
     def get_by_id(cls, acc_id) -> Optional['Account']:
         return cls.query.get(acc_id)
-

@@ -1,7 +1,10 @@
+import re
+
+
 class AccConfig:
     def __init__(
             self,
-            account_id: str = '',
+            account_id='',
             name='',
 
             start_time='07:00',  # 10:00
@@ -15,6 +18,12 @@ class AccConfig:
         self.account_id = str(account_id)
         self.name = str(name)
 
+        if not self.name:
+            raise ValueError('AccConfig: name is empty')
+
+        if not self.account_id:
+            raise ValueError('AccConfig: account_id is empty')
+
         self.start_time = str(start_time)
         self.end_time = str(end_time)
 
@@ -27,11 +36,34 @@ class AccConfig:
     def __repr__(self):
         stops = f"|u{self.stop_up_p} d{self.stop_down_p}| " \
             if self.stop_up_p or self.stop_down_p else ''
-        return f"{self.name} ({self.account_id}) {stops}"
+        return f"{self.name} [{self.account_id}] {stops}"
+
+    @classmethod
+    def from_repr_string(cls, input_string):
+        # Acc name [67862814] |u0.0 d0.0|
+        # Acc_name [67862814]
+        pattern = r"^(?P<name>[\w\s]*) \[(?P<account_id>\d+)\]\s?" \
+                  r"(\|u(?P<stop_up_p>[\d.]+) d(?P<stop_down_p>[\d.]+)\|\s?)?$"
+        match = re.match(pattern, input_string)
+
+        if match:
+            values = match.groupdict()
+            # Преобразование строковых значений в нужный формат (int, float, bool и т.д.)
+            values['name'] = str(values['name'])
+            values['account_id'] = str(int(values['account_id']))
+            values['stop_up_p'] = float(values['stop_up_p'] or 0)
+            values['stop_down_p'] = float(values['stop_down_p'] or 0)
+
+            return AccConfig(**values)
+        else:
+            raise ValueError(f"Cannot create RunConfig from string '{input_string}'")
 
     def to_string(self):
         args = []
-        base_conf = AccConfig()
+        base_conf = AccConfig(
+            account_id='111111111111111111111111111',
+            name='---------------------------------',
+        )
         for key, value in self.__dict__.items():
             if value != base_conf.__dict__[key]:
                 if value is None:
@@ -44,7 +76,7 @@ class AccConfig:
     @classmethod
     def from_string(cls, config_string):
         if config_string == '':
-            return cls()
+            raise ValueError('Can not create AccConfig from empty string, name and account_id are required')
 
         args = config_string.split(',')
 
