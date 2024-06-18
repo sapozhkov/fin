@@ -1,9 +1,13 @@
+from datetime import timedelta
+
 from app import db
+from app.command import CommandManager
+from app.command.constants import CommandType
 from app.config import AccConfig
 from app.lib import TinkoffApi
 from bot import AbstractBot
 from app.constants import RunStatus
-from app.models import AccRun, Account, AccRunBalance
+from app.models import AccRun, Account, AccRunBalance, Run
 from bot.env.prod import LoggerHelper, TimeProdEnvHelper
 from bot.env import AbstractLoggerHelper, AbstractTimeHelper
 
@@ -33,6 +37,9 @@ class TradingAccountBot(AbstractBot):
 
         self.open_balance = self.get_current_balance()
         self.cur_balance = self.open_balance
+
+        self.exiting = False
+        '''Флаг: инициирован процесс выхода'''
         
         self.run_state: AccRun | None = None
         if self.account:
@@ -106,9 +113,22 @@ class TradingAccountBot(AbstractBot):
 
         self.start()
 
-        if self.check_need_stop():
-            self.stop(to_zero=True)
-            return
+        if not self.exiting and self.check_need_stop():
+            # выбираем все не завершенные
+            runs = Run.get_active_runs_on_account(self.account.id)
+
+            # добавляем каждому команду выхода
+            for run in runs:
+                CommandManager.create_command(CommandType.STOP_ON_ZERO, run.id)
+                self.log(f"Команда на остановку для запуска {run}")
+
+            # в конфиге делаем сдвиг на 5 мин от текущего времени и выходим
+            new_stop_time = self.time.now() + timedelta(minutes=5)
+            self.config.end_time = new_stop_time.strftime('%H:%M')
+            self.log(f"Планируем остановку бота в  {self.config.end_time}")
+
+            # взводим флаг выхода
+            self.exiting = True
 
         # обновление состояния в базе
         self.update_run_state()
@@ -119,16 +139,16 @@ class TradingAccountBot(AbstractBot):
         if not (self.config.stop_up_p or self.config.stop_down_p):
             return False
 
-        need_up_t = self.round(self.open_balance * (1 + self.config.stop_up_p))
+        need_up_t = self.round(self.open_balance * (1 + self.config.stop_up_p / 100))
         if self.config.stop_up_p and self.cur_balance > need_up_t:
             self.log(f"Останавливаем по получению нужного уровня прибыли. "
                      f"cur_balance={self.cur_balance}, stop_up_p={self.config.stop_up_p}, need_up_t={need_up_t}")
             return True
 
-        need_down_t = self.round(self.open_balance * (1 - self.config.stop_down_p))
+        need_down_t = self.round(self.open_balance * (1 - self.config.stop_down_p / 100))
         if self.config.stop_down_p and self.cur_balance < need_down_t:
             self.log(f"Останавливаем по достижению критического уровня потерь. "
-                     f"cur_balance={self.cur_balance}, stop_up_p={self.config.stop_down_p}, need_down_t={need_down_t}")
+                     f"cur_balance={self.cur_balance}, stop_down_p={self.config.stop_down_p}, need={need_down_t}")
             return True
 
         return False
@@ -140,8 +160,6 @@ class TradingAccountBot(AbstractBot):
         self.state = self.STATE_FINISHED
 
         self.log("Остановка бота...")
-
-        # todo #186 to_zero - надо "занулиться" при выходе
 
         if self.run_state:
             self.run_state.exit_code = exit_code

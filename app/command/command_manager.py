@@ -13,7 +13,7 @@ class CommandManager:
     def create_command(
             com_type: int,
             run_id: int,
-            data: str,
+            data: str = '',
             bot_type: int = CommandBotType.TRADE_BOT,
             status: int = CommandStatus.NEW,
             expired_at=None

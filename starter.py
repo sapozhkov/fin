@@ -6,7 +6,7 @@ from time import sleep
 
 from sqlalchemy.orm import joinedload
 
-from app import create_app, AppConfig
+from app import create_app, AppConfig, db
 from app.lib import TinkoffApi
 from app.models import Instrument, Run, Account
 from app.config import RunConfig, AccConfig
@@ -226,10 +226,16 @@ async def main():
                 commands.append(f"python3 {current_dir}/bot.py {stock.config.to_string()} >> log/all.log 2>&1")
 
             if len(stocks) > 0:
-                acc_config = AccConfig(
-                    account_id=account.id,
-                    name=account.name,
-                )
+                if not account.config:
+                    acc_config = AccConfig(
+                        account_id=account.id,
+                        name=account.name,
+                    )
+                    account.config = str(acc_config)
+                    db.session.add(account)
+                    db.session.commit()
+
+                acc_config = AccConfig.from_repr_string(account.config)
                 commands_acc.append(f"python3 {current_dir}/acc_bot.py {acc_config.to_string()} >> log/all.log 2>&1")
 
         for command in commands:

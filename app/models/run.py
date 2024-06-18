@@ -1,7 +1,7 @@
 from collections import defaultdict
-from typing import Optional
+from typing import Optional, List
 
-from sqlalchemy import desc
+from sqlalchemy import desc, not_
 from sqlalchemy.orm import joinedload
 
 from app import db
@@ -74,3 +74,14 @@ class Run(db.Model):
                   for account_id, runs in grouped_runs.items()]
 
         return result
+
+    @staticmethod
+    def get_active_runs_on_account(account_id: int) -> List['Run']:
+        closed_statuses = RunStatus.closed_list()
+        return Run.query\
+            .join(Instrument)\
+            .filter(
+                Instrument.account == account_id,
+                not_(Run.status.in_(closed_statuses))
+            )\
+            .all()

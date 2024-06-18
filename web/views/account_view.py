@@ -10,6 +10,7 @@ class AccountView(ModelView):
         'id',
         'name',
         'status',
+        'config',
         'description',
         'updated_at',
     ]

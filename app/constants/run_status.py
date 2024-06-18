@@ -14,6 +14,13 @@ class RunStatus:
     ]
 
     @classmethod
+    def closed_list(cls):
+        return [
+            cls.FINISHED,
+            cls.FAILED,
+        ]
+
+    @classmethod
     def get_list(cls):
         return cls._statuses
 
