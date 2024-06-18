@@ -17,7 +17,7 @@ class Account(db.Model):
     instruments = db.relationship('Instrument', back_populates='account_rel')
 
     def __repr__(self):
-        return f"<Account {self.name} ({self.id}) {'On' if self.status else 'Off'}>"
+        return f"<Account {self.name} ({self.id}) /{self.config}/ {'On' if self.status else 'Off'}>"
 
     @classmethod
     def get_by_id(cls, acc_id) -> Optional['Account']:
