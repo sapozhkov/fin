@@ -4,6 +4,8 @@ import pandas as pd
 from tinkoff.invest import PostOrderResponse, OrderType, OrderDirection, Quotation, MoneyValue, OrderState
 
 from app import db
+from app.command import CommandManager
+from app.command.constants import CommandType, CommandStatus
 from bot import AbstractBot
 from bot.helper import OrderHelper
 from app.config import RunConfig
@@ -497,6 +499,9 @@ class TradingBot(AbstractBot):
         # Обновляем список активных заявок, тут же заявки на продажу при удачной покупке
         self.update_orders_status()
 
+        if self.check_bot_commands():
+            return
+
         if self.check_need_stop():
             self.stop(True)
             return
@@ -619,3 +624,29 @@ class TradingBot(AbstractBot):
             db.session.add(self.run_state)
         self.run_state.updated_at = self.time.now()
         db.session.commit()
+
+    def check_bot_commands(self):
+        """
+        :return: True если надо прервать выполнение
+        """
+        if not self.run_state:
+            return False
+
+        need_exit = False
+
+        commands = CommandManager.get_new_commands(self.run_state.id)
+        for command in commands:
+            if command.com_type == CommandType.STOP:
+                self.stop()
+                CommandManager.update_command_status(command, CommandStatus.FINISHED)
+                need_exit = True
+            elif command.com_type == CommandType.STOP_ON_ZERO:
+                self.stop(to_zero=True)
+                CommandManager.update_command_status(command, CommandStatus.FINISHED)
+                need_exit = True
+            else:
+                CommandManager.update_command_status(command, CommandStatus.FAILED)
+
+            self.log(command)
+
+        return need_exit
