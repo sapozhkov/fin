@@ -1,50 +1,35 @@
-from datetime import time as datetime_time
-from typing import Tuple
-
 from app import db
 from app.config import AccConfig
 from app.lib import TinkoffApi
 from bot import AbstractBot
 from app.constants import RunStatus
-from app.helper import TimeHelper
 from app.models import AccRun, Account, AccRunBalance
 from bot.env.prod import LoggerHelper, TimeProdEnvHelper
 from bot.env import AbstractLoggerHelper, AbstractTimeHelper
 
 
 class TradingAccountBot(AbstractBot):
-    # todo abs?
-    STATE_NEW = 1
-    STATE_WORKING = 2
-    STATE_FINISHED = 3
-
-    # количество секунд задержки старта работы в начале торгового дня. хак, чтобы не влететь в отсечку утром
-    START_SEC_SHIFT = 1
-
     def __init__(
             self,
             config: AccConfig,
             time_helper: AbstractTimeHelper | None = None,
             logger_helper: AbstractLoggerHelper | None = None,
     ):
-        # хелперы и DTO
-        self.config = config
-        self.time = time_helper or TimeProdEnvHelper()
-
-        account_id = self.config.account_id
+        account_id = config.account_id
         self.account = Account.get_by_id(account_id)
         if not self.account:
             raise ValueError(f"Не найден account c account_id='{account_id}'")
 
-        self.logger = logger_helper or LoggerHelper(__name__, self.account.name)
+        super().__init__(
+            config,
+            time_helper or TimeProdEnvHelper(),
+            logger_helper or LoggerHelper(__name__, self.account.name)
+        )
 
         if not self.is_trading_day():
             self.log("Не торговый день. Завершаем работу.")
             self.state = self.STATE_FINISHED
             return
-
-        # внутренние переменные
-        self.state = self.STATE_NEW
 
         self.open_balance = self.get_current_balance()
         self.cur_balance = self.open_balance
@@ -76,43 +61,6 @@ class TradingAccountBot(AbstractBot):
                  f"     run_instance - {self.run_state}"
                  )
 
-    # todo abs? вместе с time 
-    def is_trading_day(self):
-        return TimeHelper.is_working_day(self.time.now())
-
-    # todo -//-
-    def log(self, message, repeat=False):
-        self.logger.log(message, repeat)
-
-    # todo -//-
-    def can_trade(self) -> Tuple[bool, int]:
-        """
-        Проверяет доступна ли торговля.
-        Отдает статус "можно торговать" и количество секунд для задержки, если нет
-        :return: (bool, int)
-        """
-        now = self.time.now()
-        now_time = now.time()
-
-        start_hour_str, start_min_str = self.config.start_time.split(':')
-        end_hour_str, end_min_str = self.config.end_time.split(':')
-
-        start_time = datetime_time(int(start_hour_str), int(start_min_str), self.START_SEC_SHIFT)
-        end_time = datetime_time(int(end_hour_str), int(end_min_str))
-
-        # ко времени запуска приближаемся шагами в половину оставшегося времени
-        if now_time < start_time:
-            now_sec = now_time.hour * 3600 + now_time.minute * 60 + now_time.second
-            start_sec = start_time.hour * 3600 + start_time.minute * 60 + start_time.second
-            delta_seconds = start_sec - now_sec
-            return False, max(2, round(delta_seconds / 2))
-
-        if now_time >= end_time:
-            self.stop()
-            return False, 0
-
-        return True, 0
-
     def get_status_str(self) -> str:
         out = f"balance {self.cur_balance} "
 
@@ -126,16 +74,6 @@ class TradingAccountBot(AbstractBot):
 
     def get_current_balance(self) -> float | None:
         return TinkoffApi.get_account_balance_rub(self.account.id)
-
-    # todo ->
-    def continue_trading(self):
-        return self.state != self.STATE_FINISHED
-
-    # todo ->
-    def run(self):
-        while self.continue_trading():
-            self.run_iteration()
-        self.log('END')
 
     def start(self):
         """Начало работы скрипта. первый старт"""

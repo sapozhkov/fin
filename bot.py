@@ -39,7 +39,7 @@ if __name__ == '__main__':
             bot.log(f"Config string: {sys.argv[1]}")
 
         def clean(*_args):
-            bot.stop()
+            bot.stop(exit_code=1)
             sys.exit(0)
 
         for sig in (SIGABRT, SIGILL, SIGINT, SIGSEGV, SIGTERM):
@@ -50,4 +50,4 @@ if __name__ == '__main__':
         except Exception as e:
             traceback_str = ''.join(traceback.format_exception(None, e, e.__traceback__))
             bot.logger.error(f"Не перехваченное исключение: {e}\nТрассировка: \n{traceback_str}")
-            bot.stop()
+            bot.stop(exit_code=2)

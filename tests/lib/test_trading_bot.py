@@ -1,8 +1,7 @@
 import unittest
 from datetime import datetime
 
-from bot import TradingBot
-from bot.helper import TestHelper
+from bot import TradingBot, TestHelper
 
 
 class MyTestCase(unittest.TestCase):

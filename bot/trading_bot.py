@@ -1,6 +1,4 @@
 import math
-from datetime import time as datetime_time
-from typing import Tuple
 
 import pandas as pd
 from tinkoff.invest import PostOrderResponse, OrderType, OrderDirection, Quotation, MoneyValue, OrderState
@@ -10,23 +8,15 @@ from bot import AbstractBot
 from bot.helper import OrderHelper
 from app.config import RunConfig
 from app.constants import RunStatus
-from app.helper import TimeHelper
 from app.models import Run, Instrument
 from bot.env.prod import AccountingHelper, LoggerHelper, TimeProdEnvHelper, TinkoffProxyClient
 from bot.env import AbstractAccountingHelper, AbstractLoggerHelper, AbstractTimeHelper, AbstractProxyClient
 
 
 class TradingBot(AbstractBot):
-    STATE_NEW = 1
-    STATE_WORKING = 2
-    STATE_FINISHED = 3
-
     RETRY_DEFAULT = 1
     RETRY_ON_START = 3
     RETRY_SLEEP = 5
-
-    # количество секунд задержки старта работы в начале торгового дня. хак, чтобы не влететь в отсечку утром
-    START_SEC_SHIFT = 1
 
     def __init__(
             self,
@@ -37,23 +27,23 @@ class TradingBot(AbstractBot):
             client_helper: AbstractProxyClient | None = None,
             accounting_helper: AbstractAccountingHelper | None = None
     ):
-        # хелперы и DTO
-        self.config = config
-
         instrument = None
         account_id = ''
         self.run_state: Run | None = None
-        if self.config.instrument_id:
-            instrument = Instrument.get_by_id(self.config.instrument_id)
+        if config.instrument_id:
+            instrument = Instrument.get_by_id(config.instrument_id)
             if instrument:
                 account_id = str(instrument.account)
-
-        self.time = time_helper or TimeProdEnvHelper()
 
         log_name = config.name or config.ticker
         if instrument:
             log_name = f"{instrument.account_rel.name}_{log_name}"
-        self.logger = logger_helper or LoggerHelper(__name__, log_name)
+
+        super().__init__(
+            config,
+            time_helper or TimeProdEnvHelper(),
+            logger_helper or LoggerHelper(__name__, log_name)
+        )
 
         self.client = client_helper or TinkoffProxyClient(token, self.config.ticker, self.time, self.logger, account_id)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
@@ -72,8 +62,6 @@ class TradingBot(AbstractBot):
             ))
             self.accounting.set_num(min(self.accounting.get_num(), self.config.use_shares))
 
-        # внутренние переменные
-        self.state = self.STATE_NEW
         # это запросим еще раз при старте торгов. часто открывает не на той цене, где закончились в предыдущий день
         self.start_price = self.get_current_price()
         self.start_count = self.get_current_count()
@@ -114,9 +102,6 @@ class TradingBot(AbstractBot):
                  f"     instrument_id - {self.config.instrument_id}\n"
                  f"     run_instance - {self.run_state}"
                  )
-
-    def is_trading_day(self):
-        return TimeHelper.is_working_day(self.time.now())
 
     def validate_and_modify_config(self):
         if self.config.majority_trade and not self.client.instrument.short_enabled_flag:
@@ -174,42 +159,11 @@ class TradingBot(AbstractBot):
 
         return current_trend
 
-    def log(self, message, repeat=False):
-        self.logger.log(message, repeat)
-
     def round(self, price) -> float:
         return self.client.round(price)
 
     def get_order_avg_price(self, order: PostOrderResponse | OrderState) -> float:
         return self.round(OrderHelper.get_avg_price(order))
-
-    def can_trade(self) -> Tuple[bool, int]:
-        """
-        Проверяет доступна ли торговля.
-        Отдает статус "можно торговать" и количество секунд для задержки, если нет
-        :return: (bool, int)
-        """
-        now = self.time.now()
-        now_time = now.time()
-
-        start_hour_str, start_min_str = self.config.start_time.split(':')
-        end_hour_str, end_min_str = self.config.end_time.split(':')
-
-        start_time = datetime_time(int(start_hour_str), int(start_min_str), self.START_SEC_SHIFT)
-        end_time = datetime_time(int(end_hour_str), int(end_min_str))
-
-        # ко времени запуска приближаемся шагами в половину оставшегося времени
-        if now_time < start_time:
-            now_sec = now_time.hour * 3600 + now_time.minute * 60 + now_time.second
-            start_sec = start_time.hour * 3600 + start_time.minute * 60 + start_time.second
-            delta_seconds = start_sec - now_sec
-            return False, max(2, round(delta_seconds / 2))
-
-        if now_time >= end_time:
-            self.stop()
-            return False, 0
-
-        return True, 0
 
     def place_order(self, order_type: int, direction: int, lots: int, price: float | None = None, retry=RETRY_DEFAULT) \
             -> PostOrderResponse | None:
@@ -591,7 +545,7 @@ class TradingBot(AbstractBot):
 
         return False
 
-    def stop(self, to_zero=False):
+    def stop(self, to_zero=False, exit_code=0):
         if self.state == self.STATE_FINISHED:
             return
 
@@ -627,7 +581,8 @@ class TradingBot(AbstractBot):
         self.log(final_message)
 
         if self.run_state:
-            self.run_state.status = RunStatus.FINISHED
+            self.run_state.exit_code = exit_code
+            self.run_state.status = RunStatus.FINISHED if not exit_code else RunStatus.FAILED
             self.run_state.total = profit
             self.run_state.data = final_message
             self.run_state.depo = max_start_total

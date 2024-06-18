@@ -2,7 +2,8 @@ import unittest
 
 from tinkoff.invest import OrderDirection, OrderType, OrderExecutionReportStatus, PostOrderResponse, OrderState
 
-from bot.helper import OrderHelper, TestHelper
+from bot import TestHelper
+from bot.helper import OrderHelper
 
 
 class TestOrderHelper(unittest.TestCase):
