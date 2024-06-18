@@ -53,7 +53,7 @@ class TradingAccountBot(AbstractBot):
                 data='',
                 error_cnt=0,
             )
-            self.save_run_state()
+            self.update_run_state()
 
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"
@@ -87,7 +87,7 @@ class TradingAccountBot(AbstractBot):
 
         if self.run_state:
             self.run_state.status = RunStatus.WORKING
-            self.save_run_state()
+            self.update_run_state()
 
     def run_iteration(self):
         can_trade, sleep_sec = self.can_trade()
@@ -96,7 +96,7 @@ class TradingAccountBot(AbstractBot):
                 self.log(f"can not trade, sleep {TimeProdEnvHelper.get_remaining_time_text(sleep_sec)}")
                 if self.run_state:
                     self.run_state.status = RunStatus.SLEEPING
-                    self.save_run_state()
+                    self.update_run_state()
                 self.time.sleep(sleep_sec)
             return
 
@@ -109,6 +109,9 @@ class TradingAccountBot(AbstractBot):
         if self.check_need_stop():
             self.stop(to_zero=True)
             return
+
+        # обновление состояния в базе
+        self.update_run_state()
 
         self.time.sleep(self.config.sleep_trading)
 
@@ -144,9 +147,9 @@ class TradingAccountBot(AbstractBot):
             self.run_state.exit_code = exit_code
             self.run_state.status = RunStatus.FINISHED if not exit_code else RunStatus.FAILED
 
-            self.save_run_state()
+            self.update_run_state()
 
-    def save_run_state(self):
+    def update_run_state(self):
         state = self.run_state
 
         if state is None:
