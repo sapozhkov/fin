@@ -2,11 +2,11 @@ from collections import defaultdict
 from typing import Optional, List
 
 from sqlalchemy import desc, not_
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, aliased
 
 from app import db
 from app.constants import RunStatus
-from app.models import Instrument
+from app.models import Instrument, Account
 from app.helper import TimeHelper
 
 
@@ -65,10 +65,17 @@ class Run(db.Model):
 
     @staticmethod
     def get_current_runs_on_accounts():
+        # Создаем алиас для модели Account
+        account_alias = aliased(Account)
+
         # Запрос для получения всех текущих запусков с предзагрузкой связанных данных
-        all_runs = Run.query.filter(Run.date == TimeHelper.get_current_date()) \
+        all_runs = Run.query \
+            .join(Instrument) \
+            .join(account_alias, Instrument.account_rel) \
+            .filter(Run.date == TimeHelper.get_current_date()) \
             .options(joinedload(Run.instrument_rel).joinedload(Instrument.account_rel)) \
-            .order_by(Run.status, Run.config).all()
+            .order_by(account_alias.name, Run.status, Run.config) \
+            .all()
 
         # Группировка запусков по аккаунтам
         grouped_runs = defaultdict(list)
