@@ -11,7 +11,7 @@ from app.constants import RunStatus
 from app.models import Run, Instrument
 from bot.env.prod import AccountingHelper, LoggerHelper, TimeProdEnvHelper, TinkoffProxyClient
 from bot.env import AbstractAccountingHelper, AbstractLoggerHelper, AbstractTimeHelper, AbstractProxyClient
-from bot.strategy import TradeNormalStrategy
+from bot.strategy import TradeNormalStrategy, TradeShiftStrategy
 
 
 class TradingBot(AbstractBot):
@@ -46,7 +46,12 @@ class TradingBot(AbstractBot):
             logger_helper or LoggerHelper(__name__, log_name)
         )
 
-        self.trade_strategy = TradeNormalStrategy(self)
+        if self.config.step_size_shift:
+            self.trade_strategy = TradeShiftStrategy(self)
+        else:
+            # todo del
+            raise Exception('try USE TradeNormalStrategy')
+            self.trade_strategy = TradeNormalStrategy(self)
 
         self.client = client_helper or TinkoffProxyClient(token, self.config.ticker, self.time, self.logger, account_id)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)

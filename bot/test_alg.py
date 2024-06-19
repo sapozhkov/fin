@@ -35,6 +35,9 @@ class TestAlgorithm:
         auto_conf_days_freq=0,
         auto_conf_prev_days=0,
     ):
+        if test_days_num == 0:
+            return None
+
         # внутренние переменные
         profit = 0
         success_days = 0
@@ -359,7 +362,7 @@ class TestAlgorithm:
         sorted_results = sorted(results, key=lambda x: float(x['profit_p']), reverse=True)
 
         # дальше берем лучший и возвращаем его
-        best_res = sorted_results[0]
+        best_res = sorted_results[0] if len(sorted_results) > 0 else None
 
         if best_res:
             best_conf = best_res['config']
@@ -402,6 +405,7 @@ class TestAlgorithm:
                 step_size=step_size,
                 step_set_orders_cnt=step_set_orders_cnt,
                 step_lots=config.step_lots,
+                step_size_shift=config.step_size_shift,
 
                 use_shares=None,  # тут None, чтобы текущая настройка с чистого листа работала
             ))

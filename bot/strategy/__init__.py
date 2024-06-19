@@ -1,1 +1,2 @@
 from .trade_normal_strategy import TradeNormalStrategy
+from .trade_shift_strategy import TradeShiftStrategy

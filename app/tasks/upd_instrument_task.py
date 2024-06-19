@@ -39,32 +39,66 @@ class UpdInstrumentTask(AbstractTask):
 
         t_config = RunConfig.from_repr_string(instrument.config)
 
-        test_configs = [
-            (RunConfig(
-                ticker=t_config.ticker,
-                step_max_cnt=max_shares,
-                step_base_cnt=base_shares,
-                step_lots=1,
+        # todo не должно появляться принудительного PRE
+        # на первом этапе можно просто их распараллелить и собирать отдельно
 
-                majority_trade=t_config.majority_trade,
-                pretest_period=pretest_period,
-                pretest_type=RunConfig.PRETEST_PRE,
+        # веерная продажа (с нелинейным шагом)
+        if t_config.step_size_shift:
+            test_configs = [
+                (RunConfig(
+                    ticker=t_config.ticker,
+                    step_max_cnt=max_shares,
+                    step_base_cnt=base_shares,
+                    step_lots=1,
 
-                threshold_buy_steps=0,
-                threshold_sell_steps=0,
-                stop_up_p=stop_up_p,
-                stop_down_p=0,
+                    majority_trade=t_config.majority_trade,
+                    pretest_period=pretest_period,
+                    pretest_type=RunConfig.PRETEST_NONE,
 
-                step_size=t_config.step_size + step_size_shift,
-                step_set_orders_cnt=step_cnt,
-            ))
-            for max_shares in [3, 4]
-            for base_shares in [0]
-            for stop_up_p in [0, 0.01]
-            for step_size_shift in [0, .2, -.2]
-            for step_cnt in [2]
-            for pretest_period in range(3, 7)
-        ]
+                    threshold_buy_steps=0,
+                    threshold_sell_steps=0,
+                    stop_up_p=stop_up_p,
+                    stop_down_p=0,
+                    step_size_shift=step_size_shift,
+
+                    step_size=t_config.step_size + step_size_diff,
+                    step_set_orders_cnt=step_cnt,
+                ))
+                for max_shares in [3, 4]
+                for base_shares in [0]
+                for stop_up_p in [0, 0.01]
+                for step_size_diff in [0, .2, -.2]
+                for step_size_shift in [.2, .3]
+                for step_cnt in [2]
+                for pretest_period in range(3, 4)
+            ]
+        else:
+            test_configs = [
+                (RunConfig(
+                    ticker=t_config.ticker,
+                    step_max_cnt=max_shares,
+                    step_base_cnt=base_shares,
+                    step_lots=1,
+
+                    majority_trade=t_config.majority_trade,
+                    pretest_period=pretest_period,
+                    pretest_type=RunConfig.PRETEST_PRE,
+
+                    threshold_buy_steps=0,
+                    threshold_sell_steps=0,
+                    stop_up_p=stop_up_p,
+                    stop_down_p=0,
+
+                    step_size=t_config.step_size + step_size_diff,
+                    step_set_orders_cnt=step_cnt,
+                ))
+                for max_shares in [3, 4]
+                for base_shares in [0]
+                for stop_up_p in [0, 0.01]
+                for step_size_diff in [0, .2, -.2]
+                for step_cnt in [2]
+                for pretest_period in range(3, 7)
+            ]
 
         def run_test(config: RunConfig):
             test_alg = TestAlgorithm(do_printing=False, config=config)

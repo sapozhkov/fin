@@ -84,8 +84,9 @@ class RunConfig:
         if self.pretest_type not in [self.PRETEST_NONE, self.PRETEST_RSI, self.PRETEST_PRE]:
             self.pretest_type = self.PRETEST_NONE
 
-        if self.pretest_type == self.PRETEST_NONE:
-            self.pretest_period = 0
+        # todo вот это чекнуть
+        # if self.pretest_type == self.PRETEST_NONE:
+        #     self.pretest_period = 0
 
         if self.step_base_cnt > self.step_max_cnt:
             self.step_base_cnt = self.step_max_cnt
@@ -108,7 +109,7 @@ class RunConfig:
 
     def __repr__(self):
         base = f"{self.pretest_type}{self.pretest_period}:{self.step_base_cnt}" \
-            if self.pretest_type else f"{self.step_base_cnt}"
+            if self.pretest_type or self.pretest_period else f"{self.step_base_cnt}"
         thresholds = f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| " \
             if self.threshold_sell_steps or self.threshold_buy_steps else ''
         stops = f"|u{self.stop_up_p} d{self.stop_down_p}| " \
@@ -128,7 +129,7 @@ class RunConfig:
         # RNFT- 3/pre7:-3/3 x l2 x 1.0(+x0.1)¤
         pattern = r"^\s*(?P<ticker>\w*)(?P<majority_trade>[\+\-]) " \
                   r"(?P<step_max_cnt>\d+)/" \
-                  r"((?P<pretest_type>pre|rsi)(?P<pretest_period>\d+):)?(?P<step_base_cnt>-?\d+)/" \
+                  r"((?P<pretest_type>pre|rsi))?((?P<pretest_period>\d+))?\:?(?P<step_base_cnt>-?\d+)/" \
                   r"(?P<step_set_orders_cnt>\d+) " \
                   r"x l(?P<step_lots>\d+) x (?P<step_size>[\d.]+)(\(\+x(?P<step_size_shift>[\d.]+)\))?¤\s?" \
                   r"(\|s(?P<threshold_sell_steps>\d+) b(?P<threshold_buy_steps>\d+)\|\s?)?" \
@@ -185,7 +186,7 @@ class RunConfig:
 
     def __eq__(self, other):
         if not isinstance(other, RunConfig):
-            raise TypeError
+            raise TypeError(f"{other} is not instance of RunConfig")
         return (
                 self.name == other.name and
                 self.ticker == other.ticker and
