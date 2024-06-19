@@ -1,5 +1,3 @@
-import math
-
 import pandas as pd
 from tinkoff.invest import PostOrderResponse, OrderType, OrderDirection, Quotation, MoneyValue, OrderState
 
@@ -13,6 +11,7 @@ from app.constants import RunStatus
 from app.models import Run, Instrument
 from bot.env.prod import AccountingHelper, LoggerHelper, TimeProdEnvHelper, TinkoffProxyClient
 from bot.env import AbstractAccountingHelper, AbstractLoggerHelper, AbstractTimeHelper, AbstractProxyClient
+from bot.strategy import TradeNormalStrategy
 
 
 class TradingBot(AbstractBot):
@@ -46,6 +45,8 @@ class TradingBot(AbstractBot):
             time_helper or TimeProdEnvHelper(),
             logger_helper or LoggerHelper(__name__, log_name)
         )
+
+        self.trade_strategy = TradeNormalStrategy(self)
 
         self.client = client_helper or TinkoffProxyClient(token, self.config.ticker, self.time, self.logger, account_id)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
@@ -253,37 +254,7 @@ class TradingBot(AbstractBot):
                 )
 
     def update_orders_status(self):
-        active_orders = self.client.get_active_orders()
-        if active_orders is None:
-            return
-        active_order_ids = [order.order_id for order in active_orders]
-
-        # Обновление заявок на продажу
-        for order_id, order in self.active_buy_orders.copy().items():
-            if order_id not in active_order_ids:
-                is_executed, order_state = self.client.order_is_executed(order)
-                if is_executed and order_state:
-                    self.apply_order_execution(order_state)
-                    self.set_sell_order_by_buy_order(order_state)
-                self._remove_order_from_active_list(order)
-
-        # обновляем список активных, так как список меняется в блоке выше
-        active_orders = self.client.get_active_orders()
-        if active_orders is None:
-            return
-        active_order_ids = [order.order_id for order in active_orders]
-
-        # Аналогично для заявок на покупку
-        for order_id, order in self.active_sell_orders.copy().items():
-            if order_id not in active_order_ids:
-                is_executed, order_state = self.client.order_is_executed(order)
-                if is_executed and order_state:
-                    self.apply_order_execution(order_state)
-                self._remove_order_from_active_list(order)
-
-        self.log(f"Orders: "
-                 f"buy {self.get_existing_buy_order_prices()}, "
-                 f"sell {self.get_existing_sell_order_prices()} ")
+        self.trade_strategy.update_orders_status()
 
     def get_status_str(self) -> str:
         out = f"cur {self.cached_current_price} | " \
@@ -325,76 +296,31 @@ class TradingBot(AbstractBot):
                 for order_id, order in self.active_sell_orders.items()]
 
     def place_buy_orders(self):
-        current_price = self.cached_current_price
-        if not current_price:
-            self.logger.error("Не могу выставить заявки на покупку, нулевая цена")
-            return
-
-        current_buy_orders_cnt = len(self.active_buy_orders)
-        current_step_cnt = self.get_current_step_count()
-        current_price = math.floor(current_price / self.config.step_size) * self.config.step_size
-
-        target_prices = [current_price - i * self.config.step_size
-                         for i in range(1, self.config.step_set_orders_cnt + 1)]
-        # target_prices = [self.round(current_price - i * self.config.step_size) for i in range(1,
-        # self.config.step_set_orders_cnt + 1)]
-
-        # Исключаем цены, по которым уже выставлены заявки на покупку
-        existing_order_prices = self.get_existing_buy_order_prices()
-
-        # Ставим заявки на покупку
-        for price in target_prices:
-            if current_buy_orders_cnt + current_step_cnt >= self.config.step_max_cnt:
-                break
-            if price in existing_order_prices:
-                continue
-            self.buy_limit(price, self.config.step_lots)
-            current_buy_orders_cnt += 1
+        self.trade_strategy.place_buy_orders()
 
     def place_sell_orders(self):
-        current_price = self.cached_current_price
-        if not current_price:
-            self.logger.error("Не могу выставить заявки на продажу, нулевая цена")
-            return
-
-        current_sell_orders_cnt = len(self.active_sell_orders)
-        current_step_cnt = self.get_current_step_count()
-        current_price = math.ceil(current_price / self.config.step_size) * self.config.step_size
-
-        # target_prices = [current_price + i * self.config.step_size
-        #                  for i in range(1, self.config.step_set_orders_cnt + 1)]
-        target_prices = [self.round(current_price + i * self.config.step_size)
-                         for i in range(1, self.config.step_set_orders_cnt + 1)]
-
-        # Исключаем цены, по которым уже выставлены заявки
-        existing_order_prices = self.get_existing_sell_order_prices()
-
-        # Ставим заявки на продажу
-        for price in target_prices:
-            min_steps = -self.config.step_max_cnt if self.config.majority_trade else 0
-            if current_step_cnt - current_sell_orders_cnt <= min_steps:
-                break
-            if price in existing_order_prices:
-                continue
-            self.sell_limit(price, self.config.step_lots)
-            current_sell_orders_cnt += 1
+        self.trade_strategy.place_sell_orders()
 
     def cancel_active_orders(self):
-        """Отменяет все активные заявки."""
+        self.cancel_active_buy_orders()
+        self.cancel_active_sell_orders()
+
+    def cancel_active_buy_orders(self):
         for order_id, order in self.active_buy_orders.copy().items():
             self.cancel_order(order)
 
+    def cancel_active_sell_orders(self):
         for order_id, order in self.active_sell_orders.copy().items():
             self.cancel_order(order)
 
-    def _remove_order_from_active_list(self, order: PostOrderResponse | OrderState):
+    def remove_order_from_active_list(self, order: PostOrderResponse | OrderState):
         if order.order_id in self.active_buy_orders:
             del self.active_buy_orders[order.order_id]
         if order.order_id in self.active_sell_orders:
             del self.active_sell_orders[order.order_id]
 
     def cancel_order(self, order: PostOrderResponse):
-        self._remove_order_from_active_list(order)
+        self.remove_order_from_active_list(order)
         res = self.client.cancel_order(order)
         self.accounting.del_order(order)
 
@@ -405,7 +331,7 @@ class TradingBot(AbstractBot):
             if lots_executed != 0:
                 if order_executed:
                     self.apply_order_execution(order_state)
-                    self._remove_order_from_active_list(order)
+                    self.remove_order_from_active_list(order)
                 else:
                     self.logger.error(f"!!!!!!!!!--------- сработала не полная продажа {order}, {order_state}")
                     # зарегистрировать частичное исполнение
