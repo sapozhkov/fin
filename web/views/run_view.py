@@ -11,7 +11,9 @@ class RunView(ModelView):
     column_display_pk = True
     form_columns = (
         'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
-        'profit', 'data', 'config', 'start_cnt', 'end_cnt', 'candle', 'created_at', 'updated_at',
+        'profit', 'data', 'config', 'start_cnt', 'end_cnt',
+        'open', 'close', 'high', 'low',
+        'created_at', 'updated_at',
         'error_cnt', 'operations_cnt'
     )
     form_choices = {'status': RunStatus.get_list()}

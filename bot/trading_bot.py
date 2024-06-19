@@ -67,7 +67,7 @@ class TradingBot(AbstractBot):
         # это запросим еще раз при старте торгов. часто открывает не на той цене, где закончились в предыдущий день
         self.start_price = self.get_current_price()
         self.start_count = self.get_current_count()
-        self.cached_current_price: float | None = 0
+        self.cached_current_price: float | None = self.start_price
 
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
@@ -91,9 +91,12 @@ class TradingBot(AbstractBot):
                 config=str(self.config),
                 start_cnt=self.start_count,
                 end_cnt=0,
-                candle='',
+                open=self.start_price,
+                close=self.start_price,
+                high=self.start_price,
+                low=self.start_price,
             )
-            self.save_run_state()
+            self.update_run_state()
 
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"
@@ -280,10 +283,18 @@ class TradingBot(AbstractBot):
                  f"sell {self.get_existing_sell_order_prices()} ")
 
     def get_status_str(self) -> str:
-        return f"cur {self.cached_current_price} | " \
-               f"buy {self.get_existing_buy_order_prices()} " \
-               f"sell {self.get_existing_sell_order_prices()} " \
-               f"{self.get_cur_count_for_log()}"
+        out = f"cur {self.cached_current_price} | " \
+              f"buy {self.get_existing_buy_order_prices()} " \
+              f"sell {self.get_existing_sell_order_prices()} " \
+              f"{self.get_cur_count_for_log()}"
+
+        if self.run_state:
+            out += f"[o{self.run_state.open} " \
+                   f"l{self.run_state.low} " \
+                   f"h{self.run_state.high} " \
+                   f"c{self.run_state.close}]"
+
+        return out
 
     def get_current_price(self) -> float | None:
         return self.client.get_current_price()
@@ -471,7 +482,7 @@ class TradingBot(AbstractBot):
         if self.run_state:
             self.run_state.depo = max_portfolio_size
             self.run_state.status = RunStatus.WORKING
-            self.save_run_state()
+            self.update_run_state()
 
         # докупаем недостающие по рыночной цене
         if need_operations > 0:
@@ -488,7 +499,7 @@ class TradingBot(AbstractBot):
                 self.log(f"can not trade, sleep {TimeProdEnvHelper.get_remaining_time_text(sleep_sec)}")
                 if self.run_state:
                     self.run_state.status = RunStatus.SLEEPING
-                    self.save_run_state()
+                    self.update_run_state()
                 self.time.sleep(sleep_sec)
             return
 
@@ -514,17 +525,8 @@ class TradingBot(AbstractBot):
         self.place_sell_orders()
 
         if self.run_state:
-            self.run_state.data = self.get_status_str()
             self.run_state.status = RunStatus.WORKING
-            self.run_state.total = self.get_current_profit()
-            self.run_state.end_cnt = self.get_current_count()
-            if self.run_state.depo:
-                self.run_state.profit = round(100 * self.run_state.total / self.run_state.depo, 2)
-            self.run_state.last_error = f"{self.time.now()} - {self.logger.last_error}" \
-                if self.logger.last_error else ''
-            self.run_state.error_cnt = self.logger.error_cnt
-            self.run_state.operations_cnt = self.accounting.operations_cnt
-            self.save_run_state()
+            self.update_run_state()
 
         # self.logger.debug(f"Ждем следующего цикла, sleep {self.config.sleep_trading}")
         self.time.sleep(self.config.sleep_trading)
@@ -573,31 +575,10 @@ class TradingBot(AbstractBot):
         if not current_price:
             self.logger.error("Нулевая цена, статистика НЕ будет верной")
 
-        profit = self.get_current_profit(current_price)
-
-        max_start_total = self.get_max_start_depo()
-        if max_start_total:
-            profit_p = round(100 * profit / max_start_total, 2)
-            final_message = f"Итог {round(profit, 2)} {self.client.instrument.currency} ({profit_p}%)\n\n"
-        else:
-            final_message = 'Ошибка при выявлении общей суммы. Получен 0'
-            profit_p = 0
-
-        self.log(final_message)
-
         if self.run_state:
             self.run_state.exit_code = exit_code
             self.run_state.status = RunStatus.FINISHED if not exit_code else RunStatus.FAILED
-            self.run_state.total = profit
-            self.run_state.data = final_message
-            self.run_state.depo = max_start_total
-            self.run_state.profit = profit_p
-            self.run_state.end_cnt = self.get_current_count()
-            self.run_state.last_error = f"{self.time.now()} - {self.logger.last_error}" \
-                if self.logger.last_error else ''
-            self.run_state.error_cnt = self.logger.error_cnt
-            self.run_state.operations_cnt = self.accounting.operations_cnt
-            self.save_run_state()
+            self.update_run_state()
 
     def get_max_start_depo(self):
         # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
@@ -617,12 +598,33 @@ class TradingBot(AbstractBot):
             + current_price * self.get_current_count()
         )
 
-    def save_run_state(self):
-        if self.run_state is None:
+    def update_run_state(self):
+        state = self.run_state
+
+        if state is None:
             return
-        if not self.run_state.id:
-            db.session.add(self.run_state)
-        self.run_state.updated_at = self.time.now()
+        if not state.id:
+            db.session.add(state)
+
+        state.data = self.get_status_str()
+        state.total = self.get_current_profit()
+        state.end_cnt = self.get_current_count()
+        if state.depo:
+            state.profit = round(100 * state.total / state.depo, 2)
+            state.profit_n = self.round(1 + state.profit / 100)
+        state.last_error = f"{self.time.now()} - {self.logger.last_error}" \
+            if self.logger.last_error else ''
+        state.error_cnt = self.logger.error_cnt
+        state.operations_cnt = self.accounting.operations_cnt
+
+        state.updated_at = self.time.now()
+        state.close = self.cached_current_price
+        if self.cached_current_price > state.high:
+            state.high = self.cached_current_price
+        if self.cached_current_price < state.low:
+            state.low = self.cached_current_price
+
+        state.updated_at = self.time.now()
         db.session.commit()
 
     def check_bot_commands(self):

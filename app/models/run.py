@@ -24,12 +24,18 @@ class Run(db.Model):
     total = db.Column(db.Float, nullable=False)
     depo = db.Column(db.Float, nullable=False)
     profit = db.Column(db.Float, nullable=False)
+    profit_n = db.Column(db.Float)
     data = db.Column(db.Text, nullable=True)
     instrument_data = db.Column(db.Text, nullable=True)
     config = db.Column(db.String, nullable=False)
     start_cnt = db.Column(db.Integer, nullable=False)
     end_cnt = db.Column(db.Integer, nullable=False)
-    candle = db.Column(db.String, nullable=False)
+
+    open = db.Column(db.Float)
+    close = db.Column(db.Float)
+    high = db.Column(db.Float)
+    low = db.Column(db.Float)
+
     error_cnt = db.Column(db.Integer, nullable=False, server_default='0')
     operations_cnt = db.Column(db.Integer, nullable=False, server_default='0')
 
