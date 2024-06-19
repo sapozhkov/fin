@@ -43,6 +43,8 @@ class TradingAccountBot(AbstractBot):
         
         self.run_state: AccRun | None = None
         if self.account:
+            self.account.balance = self.open_balance
+
             self.run_state = AccRun(
                 account=self.account.id,
                 date=self.time.now().date(),
@@ -164,6 +166,10 @@ class TradingAccountBot(AbstractBot):
         if self.run_state:
             self.run_state.exit_code = exit_code
             self.run_state.status = RunStatus.FINISHED if not exit_code else RunStatus.FAILED
+
+            account = Account.get_by_id(self.config.account_id)
+            if account:
+                account.balance = self.cur_balance
 
             self.update_run_state()
 

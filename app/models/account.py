@@ -11,6 +11,7 @@ class Account(db.Model):
     name = db.Column(db.String(100), nullable=False)
     status = db.Column(db.Integer, nullable=False)
     config = db.Column(db.String)
+    balance = db.Column(db.Float)
     description = db.Column(db.Text, nullable=True)
     updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
