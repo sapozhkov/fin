@@ -96,6 +96,9 @@ class TradingBot(AbstractBot):
                 high=self.start_price,
                 low=self.start_price,
             )
+
+            instrument.price = self.start_price
+
             self.update_run_state()
 
         self.log(f"INIT \n"
@@ -578,6 +581,12 @@ class TradingBot(AbstractBot):
         if self.run_state:
             self.run_state.exit_code = exit_code
             self.run_state.status = RunStatus.FINISHED if not exit_code else RunStatus.FAILED
+
+            if self.config.instrument_id:
+                instrument = Instrument.get_by_id(self.config.instrument_id)
+                if instrument:
+                    instrument.price = current_price
+
             self.update_run_state()
 
     def get_max_start_depo(self):
