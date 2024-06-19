@@ -184,6 +184,7 @@ class MyTestCase(unittest.TestCase):
                 step_size=12.31,
                 step_set_orders_cnt=9,
                 step_lots=2,
+                step_size_shift=2.2,
             ),
         ]
 

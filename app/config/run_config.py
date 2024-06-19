@@ -34,6 +34,7 @@ class RunConfig:
             step_size=0,
             step_set_orders_cnt=0,
             step_lots=0,
+            step_size_shift=0,
 
             use_shares=None,
     ):
@@ -50,6 +51,7 @@ class RunConfig:
         self.step_size = float(step_size)
         self.step_set_orders_cnt = int(step_set_orders_cnt)
         self.step_lots = int(step_lots)
+        self.step_size_shift = float(step_size_shift)
 
         self.pretest_type = str(pretest_type)
         self.pretest_period = int(pretest_period)
@@ -111,8 +113,10 @@ class RunConfig:
             if self.threshold_sell_steps or self.threshold_buy_steps else ''
         stops = f"|u{self.stop_up_p} d{self.stop_down_p}| " \
             if self.stop_up_p or self.stop_down_p else ''
+        step_shift = f"(+x{self.step_size_shift})" if self.step_size_shift else ''
         return (f"{self.ticker}{'+' if self.majority_trade else '-'} "
-                f"{self.step_max_cnt}/{base}/{self.step_set_orders_cnt} x l{self.step_lots} x {round(self.step_size, 2)}¤ "
+                f"{self.step_max_cnt}/{base}/{self.step_set_orders_cnt} "
+                f"x l{self.step_lots} x {round(self.step_size, 2)}{step_shift}¤ "
                 f"{thresholds}{stops}"
                 )
 
@@ -121,11 +125,12 @@ class RunConfig:
         # RNFT+ 3/0/3 x l2 x 1.0¤ |s0 b0| |u0.0 d0.0| maj+z+
         # RNFT- 3/pre7:-3/3 x l2 x 1.0¤ |s0 b0| |u0.0 d0.0| maj+z+
         # RNFT- 3/pre7:-3/3 x l2 x 1.0¤
+        # RNFT- 3/pre7:-3/3 x l2 x 1.0(+x0.1)¤
         pattern = r"^\s*(?P<ticker>\w*)(?P<majority_trade>[\+\-]) " \
                   r"(?P<step_max_cnt>\d+)/" \
                   r"((?P<pretest_type>pre|rsi)(?P<pretest_period>\d+):)?(?P<step_base_cnt>-?\d+)/" \
                   r"(?P<step_set_orders_cnt>\d+) " \
-                  r"x l(?P<step_lots>\d+) x (?P<step_size>[\d.]+)¤\s?" \
+                  r"x l(?P<step_lots>\d+) x (?P<step_size>[\d.]+)(\(\+x(?P<step_size_shift>[\d.]+)\))?¤\s?" \
                   r"(\|s(?P<threshold_sell_steps>\d+) b(?P<threshold_buy_steps>\d+)\|\s?)?" \
                   r"(\|u(?P<stop_up_p>[\d.]+) d(?P<stop_down_p>[\d.]+)\|\s?)?$"
         match = re.match(pattern, input_string)
@@ -141,6 +146,7 @@ class RunConfig:
             values['pretest_period'] = int(values['pretest_period'] or 0)
             values['step_lots'] = int(values['step_lots'])
             values['step_size'] = float(values['step_size'])
+            values['step_size_shift'] = float(values['step_size_shift'] or 0)
             values['threshold_sell_steps'] = int(values['threshold_sell_steps'] or 0)
             values['threshold_buy_steps'] = int(values['threshold_buy_steps'] or 0)
             values['stop_up_p'] = float(values['stop_up_p'] or 0)
@@ -200,6 +206,7 @@ class RunConfig:
                 self.step_size == other.step_size and
                 self.step_set_orders_cnt == other.step_set_orders_cnt and
                 self.step_lots == other.step_lots and
+                self.step_size_shift == other.step_size_shift and
                 self.use_shares == other.use_shares
         )
 
@@ -213,6 +220,6 @@ class RunConfig:
             self.majority_trade,
             self.threshold_buy_steps, self.threshold_sell_steps,
             self.stop_up_p, self.stop_down_p,
-            self.step_size, self.step_set_orders_cnt, self.step_lots,
+            self.step_size, self.step_set_orders_cnt, self.step_lots, self.step_size_shift,
             self.use_shares
         ))
