@@ -4,9 +4,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from app import AppConfig
 from app.config import RunConfig
 from app.constants import TaskStatus
+from app.lib import TinkoffApi
 from app.models import Instrument, Task, InstrumentLog
 from app.tasks import AbstractTask
 from bot import TestAlgorithm
+from bot.db import TickerCache
 
 
 class UpdInstrumentTask(AbstractTask):
@@ -120,6 +122,11 @@ class UpdInstrumentTask(AbstractTask):
             avg_avg_profit = round(sum(all_avg_profit) / len(all_avg_profit), 2)
             instrument.data = f"profit: min {min_avg_profit}, avg {avg_avg_profit}, max {max_avg_profit}"
             print(f"Data: {instrument.data}")
+
+        # обновить цену заодно
+        ticker_cache = TickerCache(t_config.ticker)
+        figi = ticker_cache.get_instrument().figi
+        instrument.price = TinkoffApi.get_last_price(figi)
 
         instrument.save()
 
