@@ -65,7 +65,7 @@ class TradingBot(AbstractBot):
             self.accounting.set_num(min(self.accounting.get_num(), self.config.use_shares))
 
         # это запросим еще раз при старте торгов. часто открывает не на той цене, где закончились в предыдущий день
-        self.start_price = self.get_current_price()
+        self.start_price = self.get_current_price() or 0
         self.start_count = self.get_current_count()
         self.cached_current_price: float | None = self.start_price
 

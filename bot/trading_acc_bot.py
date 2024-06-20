@@ -35,7 +35,7 @@ class TradingAccountBot(AbstractBot):
             self.state = self.STATE_FINISHED
             return
 
-        self.open_balance = self.get_current_balance()
+        self.open_balance = self.get_current_balance() or 0
         self.cur_balance = self.open_balance
 
         self.exiting = False
