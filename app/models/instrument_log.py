@@ -12,6 +12,10 @@ class InstrumentLog(db.Model):
     data = db.Column(db.Text, nullable=True)
     expected_profit = db.Column(db.Float, default=0)
 
+    instrument_rel = db.relationship(
+        'Instrument', primaryjoin='foreign(InstrumentLog.instrument_id) == Instrument.id', backref='logs'
+    )
+
     @classmethod
     def add_by_instrument(cls, instrument: Instrument):
         log = cls(
