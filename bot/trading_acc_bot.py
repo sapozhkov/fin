@@ -183,11 +183,12 @@ class TradingAccountBot(AbstractBot):
             db.session.add(state)
 
         state.updated_at = self.time.now()
-        state.close = self.cur_balance
-        if self.cur_balance > state.high:
-            state.high = self.cur_balance
-        if self.cur_balance < state.low:
-            state.low = self.cur_balance
+        if self.cur_balance:
+            state.close = self.cur_balance
+            if self.cur_balance > state.high:
+                state.high = self.cur_balance
+            if self.cur_balance < state.low:
+                state.low = self.cur_balance
 
         if state.open:
             state.profit = round(100 * (state.close - state.open) / state.open, 2)

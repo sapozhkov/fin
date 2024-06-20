@@ -627,11 +627,13 @@ class TradingBot(AbstractBot):
         state.operations_cnt = self.accounting.operations_cnt
 
         state.updated_at = self.time.now()
-        state.close = self.cached_current_price
-        if self.cached_current_price > state.high:
-            state.high = self.cached_current_price
-        if self.cached_current_price < state.low:
-            state.low = self.cached_current_price
+
+        if self.cached_current_price:
+            state.close = self.cached_current_price
+            if self.cached_current_price > state.high:
+                state.high = self.cached_current_price
+            if self.cached_current_price < state.low:
+                state.low = self.cached_current_price
 
         state.updated_at = self.time.now()
         db.session.commit()
