@@ -190,8 +190,8 @@ class TradingAccountBot(AbstractBot):
             state.low = self.cur_balance
 
         if state.open:
-            state.profit = self.round(100 * (state.close - state.open) / state.open)
-        state.profit_n = self.round(1 + state.profit / 100)
+            state.profit = round(100 * (state.close - state.open) / state.open, 2)
+        state.profit_n = round(1 + state.profit / 100, 4)
 
         state.data = self.get_status_str()
 

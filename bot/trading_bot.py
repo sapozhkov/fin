@@ -620,7 +620,7 @@ class TradingBot(AbstractBot):
         state.end_cnt = self.get_current_count()
         if state.depo:
             state.profit = round(100 * state.total / state.depo, 2)
-            state.profit_n = self.round(1 + state.profit / 100)
+            state.profit_n = round(1 + state.profit / 100, 4)
         state.last_error = f"{self.time.now()} - {self.logger.last_error}" \
             if self.logger.last_error else ''
         state.error_cnt = self.logger.error_cnt
