@@ -2,7 +2,7 @@ from flask_admin.contrib.sqla import ModelView
 from wtforms import ValidationError
 
 from app.config import AccConfig
-from web.formater import view_format_datetime
+from web.formater import view_format_datetime, view_format_currency
 
 
 class AccountView(ModelView):
@@ -19,7 +19,8 @@ class AccountView(ModelView):
     ]
 
     column_formatters = {
-        'updated_at': view_format_datetime
+        'updated_at': view_format_datetime,
+        'balance': view_format_currency,
     }
 
     column_editable_list = ['status']

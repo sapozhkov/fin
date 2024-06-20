@@ -2,7 +2,7 @@ from flask_admin.contrib.sqla import ModelView
 from wtforms import ValidationError
 
 from app.config import RunConfig
-from web.formater import view_format_datetime
+from web.formater import view_format_datetime, view_format_currency
 
 
 class InstrumentView(ModelView):
@@ -14,6 +14,7 @@ class InstrumentView(ModelView):
                             'expected_profit', 'price', 'data', 'updated_at')
     column_formatters = {
         'updated_at': view_format_datetime,
+        'price': view_format_currency,
     }
     column_editable_list = ['status']
     column_filters = [

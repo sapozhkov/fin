@@ -1,6 +1,7 @@
 from flask_admin.contrib.sqla import ModelView
 
 from web import view_format_datetime
+from web.formater import view_format_currency
 
 
 class AccRunBalanceView(ModelView):
@@ -13,7 +14,8 @@ class AccRunBalanceView(ModelView):
     ]
 
     column_formatters = {
-        'datetime': view_format_datetime
+        'datetime': view_format_datetime,
+        'balance': view_format_currency,
     }
 
     column_filters = ['acc_run', 'datetime']

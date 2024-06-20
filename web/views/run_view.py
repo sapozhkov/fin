@@ -2,7 +2,7 @@ from flask_admin.contrib.sqla import ModelView
 
 from app.constants import RunStatus
 from app.models import Instrument
-from web.formater import view_format_datetime
+from web.formater import view_format_datetime, view_format_currency
 
 
 class RunView(ModelView):
@@ -20,7 +20,12 @@ class RunView(ModelView):
     column_choices = {'status': RunStatus.get_list()}
     column_formatters = {
         'created_at': view_format_datetime,
-        'updated_at': view_format_datetime
+        'updated_at': view_format_datetime,
+        'depo': view_format_currency,
+        'open': view_format_currency,
+        'close': view_format_currency,
+        'high': view_format_currency,
+        'low': view_format_currency,
     }
 
     def create_form(self, obj=None):

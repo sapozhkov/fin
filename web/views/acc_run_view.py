@@ -2,6 +2,7 @@ from flask_admin.contrib.sqla import ModelView
 
 from app.constants import RunStatus
 from web import view_format_datetime
+from web.formater import view_format_currency
 
 
 class AccRunView(ModelView):
@@ -27,7 +28,11 @@ class AccRunView(ModelView):
 
     column_formatters = {
         'created_at': view_format_datetime,
-        'updated_at': view_format_datetime
+        'updated_at': view_format_datetime,
+        'open': view_format_currency,
+        'close': view_format_currency,
+        'high': view_format_currency,
+        'low': view_format_currency,
     }
 
     column_filters = ['account', 'status', 'date']
