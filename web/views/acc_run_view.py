@@ -9,11 +9,11 @@ class AccRunView(ModelView):
     column_display_pk = True
     column_default_sort = [('id', True)]
     form_columns = [
-        'account',
         'date',
+        'status',
+        'account_rel',
         'created_at',
         'updated_at',
-        'status',
         'exit_code',
         'last_error',
         'open',
@@ -25,6 +25,65 @@ class AccRunView(ModelView):
         'data',
         'error_cnt'
     ]
+
+    column_list = [
+        'id',
+        'date',
+        'account_rel.name',
+        'profit',
+        'status',
+        'open',
+        'close',
+        'high',
+        'low',
+        'created_at',
+        'updated_at',
+        'exit_code',
+        'last_error',
+        'profit_n',
+        'data',
+        'error_cnt'
+    ]
+    column_sortable_list = [
+        'id',
+        'date',
+        'account_rel.name',
+        'profit',
+        'status',
+        'open',
+        'close',
+        'high',
+        'low',
+        'created_at',
+        'updated_at',
+        'exit_code',
+        'last_error',
+        'profit_n',
+        'data',
+        'error_cnt'
+    ]
+
+    # form_columns = [
+    #     'account',
+    #     'date',
+    #     'status',
+    #     'account_rel',
+    #     'created_at',
+    #     'updated_at',
+    #     'exit_code',
+    #     'last_error',
+    #     'open',
+    #     'close',
+    #     'high',
+    #     'low',
+    #     'profit',
+    #     'profit_n',
+    #     'data',
+    #     'error_cnt'
+    # ]
+    column_labels = {
+        'account_rel.name': 'Account',
+    }
 
     column_formatters = {
         'created_at': view_format_datetime,

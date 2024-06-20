@@ -9,9 +9,9 @@ class Account(db.Model):
 
     id = db.Column(db.BigInteger, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    balance = db.Column(db.Float)
     status = db.Column(db.Integer, nullable=False)
     config = db.Column(db.String)
-    balance = db.Column(db.Float)
     description = db.Column(db.Text, nullable=True)
     updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
 
