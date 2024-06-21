@@ -60,10 +60,10 @@ def create_web(app):
     admin.add_view(RunView(Run, db.session, name="Inst Run"))
     admin.add_view(InstrumentView(Instrument, db.session))
     # admin.add_view(ModelView(Deal, db.session))
-    admin.add_view(TaskView(Task, db.session))
-    admin.add_view(CommandView(Command, db.session))
     admin.add_view(AccRunBalanceView(AccRunBalance, db.session))
     admin.add_view(InstrumentLogView(InstrumentLog, db.session, name="ILog"))
+    admin.add_view(TaskView(Task, db.session))
+    admin.add_view(CommandView(Command, db.session))
     admin.add_link(MenuLink(name='Logout', url='/logout'))
 
     return app
