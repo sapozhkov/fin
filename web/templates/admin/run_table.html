@@ -3,12 +3,32 @@
 {% endif %}
 
 {% for acc in accounts %}
+
+    {% if acc.acc_run %}
+        <h2>{{ acc.account.name }},
+            <span class="{{ acc.acc_run.profit|currency_class }}">
+                {% if acc.acc_run.profit > 0 %}+{% endif %}{{ acc.acc_run.profit }}%</span
+            >,
+            <span class="{{ acc.acc_run.status|status_class }}">
+                {{ acc.acc_run.get_status_title() }}
+            </span>
+        </h2>
+        <div class="card-body">
+            <p class="card-text">
+                <b>{{ acc.balance|currency }}</b>
+                (<i>open</i> {{ acc.acc_run.open|currency }} <i>close</i> {{ acc.acc_run.close|currency }}
+                <i>low</i> {{ acc.acc_run.low|currency }} <i>high</i> {{ acc.acc_run.high|currency }}),
+                conf |u{{ acc.config.stop_up_p }} d{{ acc.config.stop_down_p }}|
+            </p>
+        </div>
+    {% else %}
     <h2>{{ acc.account.name }}</h2>
-    <div class="card-body">
-        <p class="card-text">
-            Balance: <b>{{ acc.balance|currency }}</b> rub
-        </p>
-    </div>
+        <div class="card-body">
+            <p class="card-text">
+                Balance: <b>{{ acc.balance|currency }}</b> rub
+            </p>
+        </div>
+    {% endif %}
 
     <table class="table table-striped table-bordered">
         <thead class="thead-dark">
@@ -29,11 +49,10 @@
             {% for run in acc.runs %}
                 <tr>
                     <td>{{ run.config }}</td>
-                    <td class="{% if run.status == 3 %}text-primary{% elif run.status == 4 %}text-success{%
-                            elif run.status == 2 %}text-warning{% endif %}">
+                    <td class="{{ run.status|status_class }}">
                         {{ run.get_status_title() }}
                     </td>
-                    <td class="{% if run.total < 0 %}text-danger{% else %}text-success{% endif %}">
+                    <td class="{{ run.total|currency_class }}">
                         {{ run.total }} ({{ run.profit }}%)
                     </td>
                     <td>{{ run.depo|currency }}</td>

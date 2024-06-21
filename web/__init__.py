@@ -8,7 +8,7 @@ from flask_login import LoginManager, current_user
 
 from app import db, AppConfig
 from app.models import User
-from web.formater import view_format_datetime, format_currency, format_time
+from web.formater import view_format_datetime, format_currency, format_time, format_currency_class, format_status_class
 
 login = LoginManager()
 login.login_view = 'common.login'
@@ -50,6 +50,8 @@ def create_web(app):
     # Регистрация фильтра в приложении
     app.jinja_env.filters['time'] = format_time
     app.jinja_env.filters['currency'] = format_currency
+    app.jinja_env.filters['currency_class'] = format_currency_class
+    app.jinja_env.filters['status_class'] = format_status_class
 
     admin = Admin(app, name='FinHub', template_mode='bootstrap3', url='/', index_view=IndexView(url='/'))
 

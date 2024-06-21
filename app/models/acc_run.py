@@ -1,4 +1,8 @@
+from typing import List
+
 from app import db
+from app.constants import RunStatus
+from app.helper import TimeHelper
 
 
 class AccRun(db.Model):
@@ -29,6 +33,14 @@ class AccRun(db.Model):
     __table_args__ = (
         db.Index('idx_acc_date', 'account', 'date'),
     )
+
+    def get_status_title(self):
+        return RunStatus.get_title(self.status)
+
+    @staticmethod
+    def get_today_runs() -> List['AccRun']:
+        today = TimeHelper.get_current_date()
+        return AccRun.query.filter(AccRun.date == today).all()
 
     def __repr__(self):
         return f'<AccRun {self.id} a{self.account} at {self.date}>'

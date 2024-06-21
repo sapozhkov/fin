@@ -5,8 +5,9 @@ from sqlalchemy import desc, not_
 from sqlalchemy.orm import joinedload, aliased
 
 from app import db
+from app.config import AccConfig
 from app.constants import RunStatus
-from app.models import Instrument, Account
+from app.models import Instrument, Account, AccRun
 from app.helper import TimeHelper
 
 
@@ -82,9 +83,19 @@ class Run(db.Model):
         for run in all_runs:
             grouped_runs[run.instrument_rel.account_rel.id].append(run)
 
+        # выбираем AccRun текущего дня
+        acc_runs = {acc_run.account: acc_run for acc_run in AccRun.get_today_runs()}
+
         # Формирование результирующего списка
-        result = [{'account': runs[0].instrument_rel.account_rel, 'runs': runs}
-                  for account_id, runs in grouped_runs.items()]
+        result = []
+        for account_id, runs in grouped_runs.items():
+            account = runs[0].instrument_rel.account_rel
+            result.append({
+                'account': account,
+                'acc_run': acc_runs.get(account.id, None),
+                'config': AccConfig.from_repr_string(account.config),
+                'runs': runs
+            })
 
         return result
 
