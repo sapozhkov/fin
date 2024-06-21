@@ -1,4 +1,6 @@
-from tinkoff.invest import Client, InvestError
+from datetime import datetime, timezone
+
+from tinkoff.invest import Client, InvestError, InstrumentIdType, OrderType, OrderDirection
 
 from app.helper import q2f
 from app.config import AppConfig
@@ -85,3 +87,49 @@ class TinkoffApi:
             except InvestError as e:
                 print(f"Ошибка при получении баланса: {e}")
                 return 0
+
+    @staticmethod
+    def get_ticker_by_figi(figi):
+        with Client(AppConfig.TOKEN) as client:
+            try:
+                response = client.instruments.get_instrument_by(
+                    id_type=InstrumentIdType.INSTRUMENT_ID_TYPE_FIGI, id=figi)
+                return response.instrument.ticker
+            except InvestError as e:
+                print(f"An error occurred for FIGI {figi}: {e}")
+        return None
+
+    @staticmethod
+    def get_shares_on_account(account_id):
+        instruments = []
+        with Client(AppConfig.TOKEN) as client:
+            try:
+                response = client.operations.get_portfolio(account_id=str(account_id))
+                for position in response.positions:
+                    if position.instrument_type != 'share':
+                        continue
+                    instruments.append({
+                        "figi": position.figi,
+                        "ticker": TinkoffApi.get_ticker_by_figi(position.figi),
+                        "quantity": position.quantity.units
+                    })
+            except InvestError as e:
+                print(f"Ошибка при получении инструментов на аккаунте: {e}")
+        return instruments
+
+    @staticmethod
+    def sell(account_id, figi, quantity):
+        with Client(AppConfig.TOKEN) as client:
+            try:
+                # Создаем рыночный ордер на продажу
+                client.orders.post_order(
+                    figi=figi,
+                    quantity=quantity,
+                    account_id=str(account_id),
+                    order_type=OrderType.ORDER_TYPE_MARKET,
+                    direction=OrderDirection.ORDER_DIRECTION_SELL,
+                    order_id=str(datetime.now(timezone.utc)),
+                )
+                print(f"Sold {quantity} of {figi}")
+            except InvestError as e:
+                print(f"An error occurred: {e}")

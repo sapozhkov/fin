@@ -3,11 +3,11 @@ from datetime import timedelta
 from app import db
 from app.command import CommandManager
 from app.command.constants import CommandType
-from app.config import AccConfig
+from app.config import AccConfig, RunConfig
 from app.lib import TinkoffApi
 from bot import AbstractBot
 from app.constants import RunStatus
-from app.models import AccRun, Account, AccRunBalance, Run
+from app.models import AccRun, Account, AccRunBalance, Run, Instrument
 from bot.env.prod import LoggerHelper, TimeProdEnvHelper
 from bot.env import AbstractLoggerHelper, AbstractTimeHelper
 
@@ -84,6 +84,33 @@ class TradingAccountBot(AbstractBot):
     def get_current_balance(self) -> float | None:
         return TinkoffApi.get_account_balance_rub(self.account.id)
 
+    def sell_unused_instruments(self):
+        # Запросить все инструменты на аккаунте
+        instruments = Instrument.query.filter_by(account=self.account.id).all()
+
+        # Выбрать сегодняшние запуски
+        today = self.time.now().date()
+        active_instruments = Run.query.filter(
+            Run.date == today,
+            Run.instrument.in_([instrument.id for instrument in instruments])
+        ).with_entities(Run.instrument).distinct().all()
+
+        active_instrument_ids = {ai[0] for ai in active_instruments}
+
+        used_tickers = [RunConfig.from_repr_string(instrument.config).ticker
+                        for instrument in instruments if instrument.id in active_instrument_ids]
+
+        self.log(f"Используемые инструменты {used_tickers}")
+
+        bought_instruments = TinkoffApi.get_shares_on_account(self.account.id)
+
+        self.log(f"Купленные инструменты {bought_instruments}")
+
+        for instrument in bought_instruments:
+            if instrument['ticker'] not in used_tickers:
+                self.log(f"Продажа инструмента: {instrument['ticker']}, {instrument['quantity']} шт")
+                TinkoffApi.sell(self.account.id, instrument['figi'], instrument['quantity'])
+
     def start(self):
         """Начало работы скрипта. первый старт"""
 
@@ -93,6 +120,8 @@ class TradingAccountBot(AbstractBot):
         self.state = self.STATE_WORKING
         
         self.log(f"START")
+
+        self.sell_unused_instruments()
 
         if self.run_state:
             self.run_state.status = RunStatus.WORKING
