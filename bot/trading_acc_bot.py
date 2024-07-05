@@ -40,7 +40,10 @@ class TradingAccountBot(AbstractBot):
 
         self.exiting = False
         '''Флаг: инициирован процесс выхода'''
-        
+
+        self.sell_all_on_exit = False
+        '''Флаг: Распродать все при выходе'''
+
         self.run_state: AccRun | None = None
         if self.account:
             self.account.balance = self.open_balance
@@ -111,6 +114,13 @@ class TradingAccountBot(AbstractBot):
                 self.log(f"Продажа инструмента: {instrument['ticker']}, {instrument['quantity']} шт")
                 TinkoffApi.sell(self.account.id, instrument['figi'], instrument['quantity'])
 
+    def sell_all_instruments(self):
+        bought_instruments = TinkoffApi.get_shares_on_account(self.account.id)
+
+        for instrument in bought_instruments:
+            self.log(f"Продажа инструмента: {instrument['ticker']}, {instrument['quantity']} шт")
+            TinkoffApi.sell(self.account.id, instrument['figi'], instrument['quantity'])
+
     def start(self):
         """Начало работы скрипта. первый старт"""
 
@@ -158,6 +168,9 @@ class TradingAccountBot(AbstractBot):
             self.config.end_time = new_stop_time.strftime('%H:%M')
             self.log(f"Планируем остановку бота в  {self.config.end_time}")
 
+            # взводим флаг полной распродажи
+            self.sell_all_on_exit = True
+
             # взводим флаг выхода
             self.exiting = True
 
@@ -191,6 +204,9 @@ class TradingAccountBot(AbstractBot):
         self.state = self.STATE_FINISHED
 
         self.log("Остановка бота...")
+
+        if self.sell_all_on_exit:
+            self.sell_all_instruments()
 
         if self.run_state:
             self.run_state.exit_code = exit_code
