@@ -1,11 +1,9 @@
 import pandas as pd
-from tinkoff.invest import PostOrderResponse, OrderType, OrderDirection, Quotation, MoneyValue, OrderState
 
 from app import db
 from app.command import CommandManager
 from app.command.constants import CommandType, CommandStatus
 from bot import AbstractBot
-from bot.helper import OrderHelper
 from app.config import RunConfig
 from app.constants import RunStatus
 from app.models import Run, Instrument
@@ -15,10 +13,6 @@ from bot.strategy import TradeNormalStrategy, TradeShiftStrategy
 
 
 class TradingBot(AbstractBot):
-    RETRY_DEFAULT = 1
-    RETRY_ON_START = 3
-    RETRY_SLEEP = 5
-
     def __init__(
             self,
             token,
@@ -50,9 +44,10 @@ class TradingBot(AbstractBot):
             self.trade_strategy = TradeShiftStrategy(self)
         else:
             # todo del
-            raise Exception('try USE TradeNormalStrategy')
+            # raise Exception('try USE TradeNormalStrategy')
             self.trade_strategy = TradeNormalStrategy(self)
 
+        # todo вот эти двое должны уехать в торговую стратегию
         self.client = client_helper or TinkoffProxyClient(token, self.config.ticker, self.time, self.logger, account_id)
         self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
 
@@ -71,12 +66,9 @@ class TradingBot(AbstractBot):
             self.accounting.set_num(min(self.accounting.get_num(), self.config.use_shares))
 
         # это запросим еще раз при старте торгов. часто открывает не на той цене, где закончились в предыдущий день
-        self.start_price = self.get_current_price() or 0
-        self.start_count = self.get_current_count()
+        self.start_price = self.trade_strategy.get_current_price() or 0
+        self.start_count = self.trade_strategy.get_current_count()
         self.cached_current_price: float | None = self.start_price
-
-        self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
-        self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
 
         self.validate_and_modify_config()
 
@@ -173,211 +165,6 @@ class TradingBot(AbstractBot):
 
         return current_trend
 
-    def round(self, price) -> float:
-        return self.client.round(price)
-
-    def get_order_avg_price(self, order: PostOrderResponse | OrderState) -> float:
-        return self.round(OrderHelper.get_avg_price(order))
-
-    def place_order(self, order_type: int, direction: int, lots: int, price: float | None = None, retry=RETRY_DEFAULT) \
-            -> PostOrderResponse | None:
-
-        order = self.client.place_order(lots, direction, price, order_type)
-        if order is None:
-            if retry > 0:
-                self.logger.error(f"RETRY order. {lots}, {direction}, {price}, {order_type}, "
-                                  f"sleep {self.RETRY_SLEEP}, retry num={retry}")
-                self.time.sleep(self.RETRY_SLEEP)
-                return self.place_order(order_type, direction, lots, price, retry-1)
-            else:
-                return None
-
-        self.accounting.add_order(order)
-        avg_price = self.get_order_avg_price(order)
-
-        if order_type == OrderType.ORDER_TYPE_MARKET:
-            self.accounting.add_deal_by_order(order)
-            if direction == OrderDirection.ORDER_DIRECTION_BUY:
-                prefix = "BUY MARKET executed"
-                avg_price = -avg_price
-            else:
-                prefix = "SELL MARKET executed"
-
-        else:
-            if direction == OrderDirection.ORDER_DIRECTION_BUY:
-                self.active_buy_orders[order.order_id] = order
-                prefix = "Buy order set"
-                avg_price = -avg_price
-            else:
-                self.active_sell_orders[order.order_id] = order
-                prefix = "Sell order set"
-
-        self.log(f"{prefix}, {lots} x {avg_price} {self.get_cur_count_for_log()}")
-
-        return order
-
-    def buy(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_BUY, lots, None, retry)
-
-    def sell(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_SELL, lots, None, retry)
-
-    def sell_limit(self, price: float, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_SELL, lots, price, retry)
-
-    def buy_limit(self, price: float, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_BUY, lots, price, retry)
-
-    def equivalent_prices(self, quotation_price: Quotation | MoneyValue, float_price: float) -> bool:
-        rounded_quotation_price = self.client.q2f(quotation_price)
-        rounded_float_price = self.round(float_price)
-        return rounded_quotation_price == rounded_float_price
-
-    def set_sell_order_by_buy_order(self, order: OrderState):
-        price = self.get_order_avg_price(order)
-        price += self.config.step_size
-        self.sell_limit(price, self.config.step_lots)
-
-    def apply_order_execution(self, order: OrderState):
-        lots = OrderHelper.get_lots(order)
-        avg_price = self.get_order_avg_price(order)
-        type_text = 'BUY' if order.direction == OrderDirection.ORDER_DIRECTION_BUY else 'SELL'
-        self.accounting.add_deal_by_order(order)
-        self.log(f"{type_text} order executed, {lots} x {avg_price} {self.get_cur_count_for_log()}")
-
-    def get_cur_count_for_log(self):
-        """
-        Формат '| s3 (x5+1=16) | p 1.3 rub'
-        для отрицательных работает так '| s-3 (x5+3=-12)'
-        """
-        rest = self.get_current_step_rest_count()
-        return (f"| s{self.get_current_step_count()} "
-                f"(x{self.config.step_lots}"
-                f"{'+' + str(rest) if rest else ''}"
-                f"={self.get_current_count()}) "
-                f"| p {self.get_current_profit()} {self.client.instrument.currency}"
-                )
-
-    def update_orders_status(self):
-        self.trade_strategy.update_orders_status()
-
-    def get_status_str(self) -> str:
-        out = f"cur {self.cached_current_price} | " \
-              f"buy {self.get_existing_buy_order_prices()} " \
-              f"sell {self.get_existing_sell_order_prices()} " \
-              f"{self.get_cur_count_for_log()}"
-
-        if self.run_state:
-            out += f"[o{self.run_state.open} " \
-                   f"l{self.run_state.low} " \
-                   f"h{self.run_state.high} " \
-                   f"c{self.run_state.close}]"
-
-        return out
-
-    def get_current_price(self) -> float | None:
-        return self.client.get_current_price()
-
-    # общее количество акций в портфеле
-    def get_current_count(self) -> int:
-        return self.accounting.get_num()
-
-    # количество полных наборов лотов в портфеле
-    def get_current_step_count(self) -> int:
-        if self.config.step_lots == 0:
-            return 0
-        return self.get_current_count() // self.config.step_lots
-
-    # остаток количества акций - сколько ЛИШНИХ от количества полных лотов
-    def get_current_step_rest_count(self) -> int:
-        return self.get_current_count() % self.config.step_lots
-
-    def get_existing_buy_order_prices(self) -> list[float]:
-        return [self.get_order_avg_price(order)
-                for order_id, order in self.active_buy_orders.items()]
-
-    def get_existing_sell_order_prices(self) -> list[float]:
-        return [self.get_order_avg_price(order)
-                for order_id, order in self.active_sell_orders.items()]
-
-    def place_buy_orders(self):
-        self.trade_strategy.place_buy_orders()
-
-    def place_sell_orders(self):
-        self.trade_strategy.place_sell_orders()
-
-    def cancel_active_orders(self):
-        self.cancel_active_buy_orders()
-        self.cancel_active_sell_orders()
-
-    def cancel_active_buy_orders(self):
-        for order_id, order in self.active_buy_orders.copy().items():
-            self.cancel_order(order)
-
-    def cancel_active_sell_orders(self):
-        for order_id, order in self.active_sell_orders.copy().items():
-            self.cancel_order(order)
-
-    def remove_order_from_active_list(self, order: PostOrderResponse | OrderState):
-        if order.order_id in self.active_buy_orders:
-            del self.active_buy_orders[order.order_id]
-        if order.order_id in self.active_sell_orders:
-            del self.active_sell_orders[order.order_id]
-
-    def cancel_order(self, order: PostOrderResponse):
-        self.remove_order_from_active_list(order)
-        res = self.client.cancel_order(order)
-        self.accounting.del_order(order)
-
-        # запрашиваем статус и если есть исполненные позиции - делаем обратную операцию
-        order_executed, order_state = self.client.order_is_executed(order)
-        if order_state:
-            lots_executed = order_state.lots_executed
-            if lots_executed != 0:
-                if order_executed:
-                    self.apply_order_execution(order_state)
-                    self.remove_order_from_active_list(order)
-                else:
-                    self.logger.error(f"!!!!!!!!!--------- сработала не полная продажа {order}, {order_state}")
-                    # зарегистрировать частичное исполнение
-                    self.accounting.add_deal_by_order(order_state)
-                    # и откатить его
-                    if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY:
-                        self.sell(lots_executed)
-                    else:
-                        self.buy(lots_executed)
-
-        if res:
-            prefix = "Buy" if order.direction == OrderDirection.ORDER_DIRECTION_BUY else "Sell"
-            lots = OrderHelper.get_lots(order)
-            avg_price = self.get_order_avg_price(order)
-            self.log(f"{prefix} order canceled, {lots} x {avg_price} {self.get_cur_count_for_log()}")
-
-    def cancel_orders_by_limits(self):
-        current_price = self.cached_current_price
-        if not current_price:
-            self.logger.error("Не могу закрыть заявки, нулевая цена")
-            return
-
-        # берем текущую цену + сдвиг
-        if self.config.threshold_buy_steps:
-            threshold_price = (current_price - self.config.step_size * self.config.threshold_buy_steps)
-
-            # перебираем активные заявки на покупку и закрываем всё, что ниже
-            for order_id, order in self.active_buy_orders.copy().items():
-                order_price = self.get_order_avg_price(order)
-                if order_price <= threshold_price:
-                    self.cancel_order(order)
-
-        if self.config.threshold_sell_steps:
-            threshold_price = (current_price + self.config.step_size * self.config.threshold_sell_steps)
-
-            # перебираем активные заявки на продажу и закрываем всё, что ниже
-            for order_id, order in self.active_sell_orders.copy().items():
-                order_price = self.get_order_avg_price(order)
-                if order_price >= threshold_price:
-                    self.cancel_order(order)
-
     def continue_trading(self):
         return self.state != self.STATE_FINISHED
 
@@ -386,8 +173,9 @@ class TradingBot(AbstractBot):
             self.run_iteration()
         self.log('END')
 
+    # todo move
     def update_cached_price(self):
-        self.cached_current_price = self.get_current_price()
+        self.cached_current_price = self.trade_strategy.get_current_price()
 
     def start(self):
         """Начало работы скрипта. первый старт"""
@@ -397,14 +185,14 @@ class TradingBot(AbstractBot):
 
         self.state = self.STATE_WORKING
 
-        self.start_count = self.get_current_count()
+        self.start_count = self.trade_strategy.get_current_count()
         self.start_price = self.cached_current_price
         if not self.start_price:
             self.logger.error("Ошибка первичного запроса цены. Статистика будет неверной в конце работы")
             self.start_price = 0
 
         # требуемое изменение портфеля
-        need_operations = self.config.step_base_cnt * self.config.step_lots - self.get_current_count()
+        need_operations = self.config.step_base_cnt * self.config.step_lots - self.trade_strategy.get_current_count()
 
         max_portfolio_size = self.get_max_start_depo()
         self.log(f"START \n"
@@ -419,12 +207,13 @@ class TradingBot(AbstractBot):
             self.update_run_state()
 
         # докупаем недостающие по рыночной цене
+        # todo move
         if need_operations > 0:
-            self.buy(need_operations, self.RETRY_ON_START)
+            self.trade_strategy.buy(need_operations, self.trade_strategy.RETRY_ON_START)
 
         # или продаем лишние. в минус без мажоритарной уйти не должны - учтено в конфиге
         if need_operations < 0:
-            self.sell(-need_operations, self.RETRY_ON_START)
+            self.trade_strategy.sell(-need_operations, self.trade_strategy.RETRY_ON_START)
 
     def run_iteration(self):
         can_trade, sleep_sec = self.can_trade()
@@ -441,8 +230,9 @@ class TradingBot(AbstractBot):
 
         self.start()
 
+        # todo 5
         # Обновляем список активных заявок, тут же заявки на продажу при удачной покупке
-        self.update_orders_status()
+        self.trade_strategy.update_orders_status()
 
         if self.check_bot_commands():
             return
@@ -452,11 +242,39 @@ class TradingBot(AbstractBot):
             return
 
         # закрываем заявки, которые не входят в лимиты
-        self.cancel_orders_by_limits()
+        self.trade_strategy.cancel_orders_by_limits()
 
         # Выставляем заявки
-        self.place_buy_orders()
-        self.place_sell_orders()
+        self.trade_strategy.place_buy_orders()
+        self.trade_strategy.place_sell_orders()
+        # todo вот до сюда
+
+        # todo новый вариант
+        # if False:
+        #     # Обновляем список активных заявок, тут же заявки на продажу при удачной покупке
+        #     bought_price, sold_price = self.update_orders_status()
+        #
+        #     if bought_price:
+        #         self.cancel_active_sell_orders()
+        #
+        #     if sold_price:
+        #         self.cancel_active_buy_orders()
+        #
+        #     if bought_price > 0 and sold_price > 0:
+        #         bought_and_sold = True
+        #         bought_price = 0
+        #         sold_price = 0
+        #     else:
+        #         bought_and_sold = False
+        #
+        #     # закрываем заявки, которые не входят в лимиты
+        #     self.cancel_orders_by_limits()
+        #
+        #     # Выставляем заявки
+        #     # todo второй параметр не нужен?
+        #     self.place_buy_orders(sold_price, bought_and_sold)
+        #     self.place_sell_orders(bought_price, bought_and_sold)
+        #     # todo новый вариант до сюда
 
         if self.run_state:
             self.run_state.status = RunStatus.WORKING
@@ -472,13 +290,13 @@ class TradingBot(AbstractBot):
         profit = self.get_current_profit()
         max_portfolio = self.get_max_start_depo()
 
-        need_profit = self.round(max_portfolio * self.config.stop_up_p)
+        need_profit = self.trade_strategy.round(max_portfolio * self.config.stop_up_p)
         if self.config.stop_up_p and profit > need_profit:
             self.log(f"Останавливаем по получению нужного уровня прибыли. "
                      f"profit={profit}, stop_up_p={self.config.stop_up_p}, need_profit={need_profit}")
             return True
 
-        need_loss = self.round(max_portfolio * self.config.stop_down_p)
+        need_loss = self.trade_strategy.round(max_portfolio * self.config.stop_down_p)
         if self.config.stop_down_p and profit < -need_loss:
             self.log(f"Останавливаем по достижению критического уровня потерь. "
                      f"profit={profit}, stop_up_p={self.config.stop_down_p}, need_loss=-{need_loss}")
@@ -493,19 +311,19 @@ class TradingBot(AbstractBot):
         self.state = self.STATE_FINISHED
 
         self.log("Остановка бота...")
-        self.cancel_active_orders()
+        self.trade_strategy.cancel_active_orders()
 
-        current_count = self.get_current_count()
+        current_count = self.trade_strategy.get_current_count()
 
         # если надо вернуться в 0 - продать откупленные инструменты
         if to_zero and current_count > 0:
-            self.sell(current_count)
+            self.trade_strategy.sell(current_count)
 
         # при мажоритарной откупить перепроданные, если есть
         if self.config.majority_trade and current_count < 0:
-            self.buy(-current_count)
+            self.trade_strategy.buy(-current_count)
 
-        current_price = self.get_current_price()
+        current_price = self.trade_strategy.get_current_price()
         if not current_price:
             self.logger.error("Нулевая цена, статистика НЕ будет верной")
 
@@ -523,7 +341,7 @@ class TradingBot(AbstractBot):
     def get_max_start_depo(self):
         # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
         maj_k = 2 if self.config.majority_trade else 1
-        return self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots * maj_k)
+        return self.trade_strategy.round(self.start_price * self.config.step_max_cnt * self.config.step_lots * maj_k)
 
     def get_current_profit(self, current_price=None) -> float:
         if current_price is None:
@@ -532,10 +350,10 @@ class TradingBot(AbstractBot):
         if not current_price:
             return 0
 
-        return self.round(
+        return self.trade_strategy.round(
             - self.start_price * self.start_count
             + self.accounting.get_sum()
-            + current_price * self.get_current_count()
+            + current_price * self.trade_strategy.get_current_count()
         )
 
     def update_run_state(self):
@@ -546,9 +364,9 @@ class TradingBot(AbstractBot):
         if not state.id:
             db.session.add(state)
 
-        state.data = self.get_status_str()
+        state.data = self.trade_strategy.get_status_str()
         state.total = self.get_current_profit()
-        state.end_cnt = self.get_current_count()
+        state.end_cnt = self.trade_strategy.get_current_count()
         if state.depo:
             state.profit = round(100 * state.total / state.depo, 2)
             state.profit_n = round(1 + state.profit / 100, 4)
