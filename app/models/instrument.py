@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 
 from app import db
@@ -38,3 +38,39 @@ class Instrument(db.Model):
 
     def __repr__(self):
         return f"<Instrument {self.id} '{self.config}' [{self.account}] {'On' if self.status else 'Off'}>"
+
+    @staticmethod
+    def calculate_product(values):
+        product = 1.0
+        for value in values:
+            if value and value > 0:
+                product *= float(value)
+        return (product - 1) * 100.0
+
+    @property
+    def profit_n_last_week(self):
+        from app.models import Run
+        one_week_ago = datetime.now(timezone.utc) - timedelta(weeks=1)
+        profits = db.session.query(Run.profit_n).filter(
+            Run.instrument == self.id,
+            Run.date >= one_week_ago
+        ).all()
+        return self.calculate_product([profit[0] for profit in profits])
+
+    @property
+    def profit_n_last_month(self):
+        from app.models import Run
+        one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        profits = db.session.query(Run.profit_n).filter(
+            Run.instrument == self.id,
+            Run.date >= one_month_ago
+        ).all()
+        return self.calculate_product([profit[0] for profit in profits])
+
+    @property
+    def profit_n_all_time(self):
+        from app.models import Run
+        profits = db.session.query(Run.profit_n).filter(
+            Run.instrument == self.id
+        ).all()
+        return self.calculate_product([profit[0] for profit in profits])
