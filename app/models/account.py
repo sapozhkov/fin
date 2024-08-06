@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
 from app import db
@@ -17,9 +17,67 @@ class Account(db.Model):
 
     instruments = db.relationship('Instrument', back_populates='account_rel')
 
+    profit_n_last_week_cache = None
+    profit_n_last_month_cache = None
+    profit_n_all_time_cache = None
+
     def __repr__(self):
         return f"<Account {self.name} ({self.id}) /{self.config}/ {'On' if self.status else 'Off'}>"
 
     @classmethod
     def get_by_id(cls, acc_id) -> Optional['Account']:
         return cls.query.get(acc_id)
+
+    @staticmethod
+    def calculate_product(values):
+        product = 1.0
+        for value in values:
+            if value and value > 0:
+                product *= float(value)
+        return round((product - 1) * 100.0, 2)
+
+    @property
+    def profit_n_last_week(self):
+        if self.profit_n_last_week_cache is not None:
+            return self.profit_n_last_week_cache
+
+        from app.models import AccRun
+        one_week_ago = datetime.now(timezone.utc) - timedelta(weeks=1)
+        profits = db.session.query(AccRun.profit_n).filter(
+            AccRun.account == self.id,
+            AccRun.date >= one_week_ago
+        ).all()
+
+        self.profit_n_last_week_cache = self.calculate_product([profit[0] for profit in profits])
+
+        return self.profit_n_last_week_cache
+
+    @property
+    def profit_n_last_month(self):
+        if self.profit_n_last_month_cache is not None:
+            return self.profit_n_last_month_cache
+
+        from app.models import AccRun
+        one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        profits = db.session.query(AccRun.profit_n).filter(
+            AccRun.account == self.id,
+            AccRun.date >= one_month_ago
+        ).all()
+
+        self.profit_n_last_month_cache = self.calculate_product([profit[0] for profit in profits])
+
+        return self.profit_n_last_month_cache
+
+    @property
+    def profit_n_all_time(self):
+        if self.profit_n_all_time_cache is not None:
+            return self.profit_n_all_time_cache
+
+        from app.models import AccRun
+        profits = db.session.query(AccRun.profit_n).filter(
+            AccRun.account == self.id
+        ).all()
+
+        self.profit_n_all_time_cache = self.calculate_product([profit[0] for profit in profits])
+
+        return self.profit_n_all_time_cache
