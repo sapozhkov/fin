@@ -2,6 +2,8 @@ from app.constants import RunStatus
 
 
 def format_currency_class(value):
+    if not value:
+        return ''
     if value < 0:
         return 'text-danger'
     elif value > 0:
