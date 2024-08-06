@@ -19,6 +19,10 @@ class Instrument(db.Model):
 
     account_rel = db.relationship('Account', back_populates='instruments')
 
+    profit_n_last_week_cache = None
+    profit_n_last_month_cache = None
+    profit_n_all_time_cache = None
+
     def save(self):
         self.updated_at = datetime.now(timezone.utc)
         db.session.add(self)
@@ -45,32 +49,50 @@ class Instrument(db.Model):
         for value in values:
             if value and value > 0:
                 product *= float(value)
-        return (product - 1) * 100.0
+        return round((product - 1) * 100.0, 2)
 
     @property
     def profit_n_last_week(self):
+        if self.profit_n_last_week_cache is not None:
+            return self.profit_n_last_week_cache
+
         from app.models import Run
         one_week_ago = datetime.now(timezone.utc) - timedelta(weeks=1)
         profits = db.session.query(Run.profit_n).filter(
             Run.instrument == self.id,
             Run.date >= one_week_ago
         ).all()
-        return self.calculate_product([profit[0] for profit in profits])
+
+        self.profit_n_last_week_cache = self.calculate_product([profit[0] for profit in profits])
+
+        return self.profit_n_last_week_cache
 
     @property
     def profit_n_last_month(self):
+        if self.profit_n_last_month_cache is not None:
+            return self.profit_n_last_month_cache
+
         from app.models import Run
         one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
         profits = db.session.query(Run.profit_n).filter(
             Run.instrument == self.id,
             Run.date >= one_month_ago
         ).all()
-        return self.calculate_product([profit[0] for profit in profits])
+
+        self.profit_n_last_month_cache = self.calculate_product([profit[0] for profit in profits])
+
+        return self.profit_n_last_month_cache
 
     @property
     def profit_n_all_time(self):
+        if self.profit_n_all_time_cache is not None:
+            return self.profit_n_all_time_cache
+
         from app.models import Run
         profits = db.session.query(Run.profit_n).filter(
             Run.instrument == self.id
         ).all()
-        return self.calculate_product([profit[0] for profit in profits])
+
+        self.profit_n_all_time_cache = self.calculate_product([profit[0] for profit in profits])
+
+        return self.profit_n_all_time_cache

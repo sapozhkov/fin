@@ -48,7 +48,19 @@
         <tbody id="run-table-body">
             {% for run in acc.runs %}
                 <tr>
-                    <td>{{ run.config }}</td>
+                    <td>
+                        {{ run.config }}<br />
+
+                        (<span class="{{ run.instrument_rel.profit_n_last_week|currency_class }}">
+                            w{% if run.instrument_rel.profit_n_last_week > 0 %}+{% endif %}{{ run.instrument_rel.profit_n_last_week }}%</span
+                        >,
+                        <span class="{{ run.instrument_rel.profit_n_last_month|currency_class }}">
+                            m{% if run.instrument_rel.profit_n_last_month > 0 %}+{% endif %}{{ run.instrument_rel.profit_n_last_month }}%</span
+                        >,
+                        <span class="{{ run.instrument_rel.profit_n_all_time|currency_class }}">
+                            a{% if run.instrument_rel.profit_n_all_time > 0 %}+{% endif %}{{ run.instrument_rel.profit_n_all_time }}%</span
+                        >)
+                    </td>
                     <td class="{{ run.status|status_class }}">
                         {{ run.get_status_title() }}
                     </td>
