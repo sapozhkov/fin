@@ -79,7 +79,10 @@
                     <td>
                         {{ run.config }}<br />
 
-                        (<span class="{{ run.instrument_rel.profit_n_last_week|currency_class }}"
+                        (<span class="{{ run.instrument_rel.profit_n_last_day|currency_class }}"
+                            >d{% if run.instrument_rel.profit_n_last_day > 0 %}+{% endif %}{{ run.instrument_rel.profit_n_last_day }}%</span
+                        >,
+                        <span class="{{ run.instrument_rel.profit_n_last_week|currency_class }}"
                             >w{% if run.instrument_rel.profit_n_last_week > 0 %}+{% endif %}{{ run.instrument_rel.profit_n_last_week }}%</span
                         >,
                         <span class="{{ run.instrument_rel.profit_n_last_month|currency_class }}">

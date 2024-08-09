@@ -18,15 +18,23 @@ class InstrumentView(ModelView):
         'data',
         'updated_at',
         'status',
+        'profit_n_last_day',
         'profit_n_last_week',
         'profit_n_last_month',
         'profit_n_all_time',
     )
-    column_sortable_list = ('id', 'name', 'account_rel.name', 'config', 'status',
-                            'expected_profit', 'price', 'data', 'updated_at')
+    column_sortable_list = (
+        'id', 'name', 'account_rel.name', 'config', 'status',
+        'expected_profit', 'price', 'data', 'updated_at',
+        'profit_n_last_day',
+        'profit_n_last_week',
+        'profit_n_last_month',
+        'profit_n_all_time',
+    )
     column_formatters = {
         'updated_at': view_format_datetime,
         'price': view_format_currency,
+        'profit_n_last_day': view_format_percent,
         'profit_n_last_week': view_format_percent,
         'profit_n_last_month': view_format_percent,
         'profit_n_all_time': view_format_percent,
@@ -59,7 +67,7 @@ class InstrumentView(ModelView):
         try:
             RunConfig.from_repr_string(model.config)
         except ValueError as e:
-            raise ValidationError(e)
+            raise ValidationError(str(e))
 
         # Вызываем родительский метод для продолжения стандартной обработки
         super(InstrumentView, self).on_model_change(form, model, is_created)
