@@ -10,6 +10,9 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             function fetchRuns() {
+                if (document.visibilityState !== 'visible')
+                    return;
+
                 fetch('{{ url_for('admin.get_runs') }}')
                     .then(response => response.text())
                     .then(html => {
@@ -23,6 +26,13 @@
 
             // Initial fetch
             fetchRuns();
+
+            // Check if the document's visibility state is 'visible' and send a request for updates
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    fetchRuns();
+                }
+            });
         });
     </script>
 {% endblock %}
