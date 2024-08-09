@@ -26,10 +26,6 @@ class InstrumentView(ModelView):
     column_sortable_list = (
         'id', 'name', 'account_rel.name', 'config', 'status',
         'expected_profit', 'price', 'data', 'updated_at',
-        'profit_n_last_day',
-        'profit_n_last_week',
-        'profit_n_last_month',
-        'profit_n_all_time',
     )
     column_formatters = {
         'updated_at': view_format_datetime,
