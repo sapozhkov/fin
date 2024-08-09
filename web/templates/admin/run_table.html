@@ -3,6 +3,24 @@
 {% endif %}
 
 {% for acc in accounts %}
+    {% if acc.acc_run %}
+        <h4>{{ acc.account.name }}
+            <small class="text-body-secondary">
+                {{ acc.balance|currency }};
+                <span class="{{ acc.acc_run.profit|currency_class }}">
+                    {% if acc.acc_run.profit > 0 %}+{% endif %}{{ acc.acc_run.profit }}%</span
+                >;
+                <span class="{{ acc.acc_run.status|status_class }}">
+                    {{ acc.acc_run.get_status_title() }}
+                </span>
+            </small>
+        </h4>
+    {% endif %}
+{% endfor %}
+
+<hr />
+
+{% for acc in accounts %}
 
     {% if acc.acc_run %}
         <h2>{{ acc.account.name }},
