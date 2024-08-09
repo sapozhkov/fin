@@ -37,7 +37,10 @@
                 (<i>open</i> {{ acc.acc_run.open|currency }} <i>close</i> {{ acc.acc_run.close|currency }}
                 <i>low</i> {{ acc.acc_run.low|currency }} <i>high</i> {{ acc.acc_run.high|currency }}),
                 conf |u{{ acc.config.stop_up_p }} d{{ acc.config.stop_down_p }}|,
-                (<span class="{{ acc.account.profit_n_last_week|currency_class }}"
+                (<span class="{{ acc.account.profit_n_last_day|currency_class }}"
+                    >d{% if acc.account.profit_n_last_day > 0 %}+{% endif %}{{ acc.account.profit_n_last_day }}%</span
+                >,
+                <span class="{{ acc.account.profit_n_last_week|currency_class }}"
                     >w{% if acc.account.profit_n_last_week > 0 %}+{% endif %}{{ acc.account.profit_n_last_week }}%</span
                 >,
                 <span class="{{ acc.account.profit_n_last_month|currency_class }}">

@@ -26,6 +26,7 @@ class AccountView(ModelView):
         'balance',
         'description',
         'updated_at',
+        'profit_n_last_day',
         'profit_n_last_week',
         'profit_n_last_month',
         'profit_n_all_time',
@@ -34,6 +35,7 @@ class AccountView(ModelView):
     column_formatters = {
         'updated_at': view_format_datetime,
         'balance': view_format_currency,
+        'profit_n_last_day': view_format_percent,
         'profit_n_last_week': view_format_percent,
         'profit_n_last_month': view_format_percent,
         'profit_n_all_time': view_format_percent,
