@@ -1,4 +1,6 @@
+from flask import url_for
 from flask_admin.contrib.sqla import ModelView
+from markupsafe import Markup
 
 from app.constants import RunStatus
 from web import view_format_datetime
@@ -92,6 +94,9 @@ class AccRunView(ModelView):
         'close': view_format_currency,
         'high': view_format_currency,
         'low': view_format_currency,
+        'date': lambda view, context, model, name: Markup(
+            f'<a href="{url_for("balancechartview.chart", acc_run_id=model.id)}" >{getattr(model, name)}</a>'
+        )
     }
 
     column_filters = ['account', 'status', 'date']

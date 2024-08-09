@@ -7,3 +7,4 @@ from .task_view import TaskView
 from .acc_run_view import AccRunView
 from .acc_run_balance_view import AccRunBalanceView
 from .command_view import CommandView
+from .balance_chart_view import BalanceChartView

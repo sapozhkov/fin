@@ -3,6 +3,8 @@ from datetime import datetime
 
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import current_user, login_user, logout_user
+
+from app.helper.plot_balance import plot_balance
 from app.models import User
 from app.config import AppConfig
 
@@ -50,3 +52,8 @@ def login():
 def logout():
     logout_user()
     return redirect(url_for('common.login'))
+
+
+@bp.route('/img/acc_balance_chart/<int:acc_run_id>')
+def img_balance_chart(acc_run_id):
+    return plot_balance(acc_run_id)

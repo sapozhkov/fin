@@ -42,8 +42,9 @@ def create_web(app):
     # Импортируем модели после создания приложения и расширений, иначе циклится
     from web.routes import register_blueprints
     from web.views import AccountView, AccRunView, AccRunBalanceView, \
-        InstrumentView, InstrumentLogView, IndexView, RunView, TaskView, CommandView
-    from app.models import Account, AccRun, AccRunBalance, Run, Instrument, InstrumentLog, Task, Command
+        InstrumentView, InstrumentLogView, IndexView, RunView, TaskView, CommandView, \
+        BalanceChartView
+    from app.models import Account, AccRun, Run, Instrument, InstrumentLog, Task, Command
 
     register_blueprints(app)
 
@@ -55,14 +56,17 @@ def create_web(app):
 
     admin = Admin(app, name='FinHub', template_mode='bootstrap3', url='/', index_view=IndexView(url='/'))
 
-    admin.add_view(AccRunView(AccRun, db.session))
     admin.add_view(AccountView(Account, db.session))
-    admin.add_view(RunView(Run, db.session, name="Inst Run"))
+    admin.add_view(AccRunView(AccRun, db.session))
+    admin.add_view(BalanceChartView(name='Balance'))
+
     admin.add_view(InstrumentView(Instrument, db.session))
+    admin.add_view(RunView(Run, db.session, name="Inst Run"))
     # admin.add_view(ModelView(Deal, db.session))
+
     admin.add_view(TaskView(Task, db.session))
     admin.add_view(CommandView(Command, db.session))
-    admin.add_view(AccRunBalanceView(AccRunBalance, db.session))
+    # admin.add_view(AccRunBalanceView(AccRunBalance, db.session))
     admin.add_view(InstrumentLogView(InstrumentLog, db.session, name="ILog"))
     admin.add_link(MenuLink(name='Logout', url='/logout'))
 
