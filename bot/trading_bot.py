@@ -7,7 +7,7 @@ from bot import AbstractBot
 from app.config import RunConfig
 from app.constants import RunStatus
 from app.models import Run, Instrument
-from bot.env.prod import AccountingHelper, LoggerHelper, TimeProdEnvHelper, TinkoffProxyClient
+from bot.env.prod import TimeProdEnvHelper
 from bot.env import AbstractAccountingHelper, AbstractLoggerHelper, AbstractTimeHelper, AbstractProxyClient
 from bot.strategy import TradeNormalStrategy, TradeShiftStrategy
 
@@ -15,30 +15,22 @@ from bot.strategy import TradeNormalStrategy, TradeShiftStrategy
 class TradingBot(AbstractBot):
     def __init__(
             self,
-            token,
             config: RunConfig,
-            time_helper: AbstractTimeHelper | None = None,
-            logger_helper: AbstractLoggerHelper | None = None,
-            client_helper: AbstractProxyClient | None = None,
-            accounting_helper: AbstractAccountingHelper | None = None
+            time_helper: AbstractTimeHelper,
+            logger_helper: AbstractLoggerHelper,
+            client_helper: AbstractProxyClient,
+            accounting_helper: AbstractAccountingHelper
     ):
-        instrument = None
-        account_id = ''
         self.run_state: Run | None = None
-        if config.instrument_id:
-            instrument = Instrument.get_by_id(config.instrument_id)
-            if instrument:
-                account_id = str(instrument.account)
-
-        log_name = config.name or config.ticker
-        if instrument:
-            log_name = f"{instrument.account_rel.name}_{log_name}"
 
         super().__init__(
             config,
-            time_helper or TimeProdEnvHelper(),
-            logger_helper or LoggerHelper(__name__, log_name)
+            time_helper,
+            logger_helper
         )
+
+        self.client = client_helper
+        self.accounting = accounting_helper
 
         if self.config.step_size_shift:
             self.trade_strategy = TradeShiftStrategy(self)
@@ -47,15 +39,12 @@ class TradingBot(AbstractBot):
             # raise Exception('try USE TradeNormalStrategy')
             self.trade_strategy = TradeNormalStrategy(self)
 
-        # todo вот эти двое должны уехать в торговую стратегию
-        self.client = client_helper or TinkoffProxyClient(token, self.config.ticker, self.time, self.logger, account_id)
-        self.accounting = accounting_helper or AccountingHelper(__file__, self.client)
-
         if not self.is_trading_day():
             self.log("Не торговый день. Завершаем работу.")
             self.state = self.STATE_FINISHED
             return
 
+        # todo и это перевезти
         if self.config.use_shares is None:
             self.accounting.set_num(self.accounting.get_instrument_count())
         else:
@@ -73,6 +62,7 @@ class TradingBot(AbstractBot):
         self.validate_and_modify_config()
 
         self.run_state: Run | None = None
+        instrument = Instrument.get_by_id(config.instrument_id) if config.instrument_id else None
         if instrument:
             self.run_state = Run(
                 instrument=instrument.id,
@@ -343,6 +333,7 @@ class TradingBot(AbstractBot):
         maj_k = 2 if self.config.majority_trade else 1
         return self.trade_strategy.round(self.start_price * self.config.step_max_cnt * self.config.step_lots * maj_k)
 
+    # todo move
     def get_current_profit(self, current_price=None) -> float:
         if current_price is None:
             current_price = self.cached_current_price
@@ -356,6 +347,21 @@ class TradingBot(AbstractBot):
             + current_price * self.trade_strategy.get_current_count()
         )
 
+    # todo move ?
+    def get_status_str(self) -> str:
+        out = f"cur {self.cached_current_price} | " \
+              f"buy {self.trade_strategy.get_existing_buy_order_prices()} " \
+              f"sell {self.trade_strategy.get_existing_sell_order_prices()} " \
+              f"{self.trade_strategy.get_cur_count_for_log()}"
+
+        if self.run_state:
+            out += f"[o{self.run_state.open} " \
+                   f"l{self.run_state.low} " \
+                   f"h{self.run_state.high} " \
+                   f"c{self.run_state.close}]"
+
+        return out
+
     def update_run_state(self):
         state = self.run_state
 
@@ -364,7 +370,7 @@ class TradingBot(AbstractBot):
         if not state.id:
             db.session.add(state)
 
-        state.data = self.trade_strategy.get_status_str()
+        state.data = self.get_status_str()
         state.total = self.get_current_profit()
         state.end_cnt = self.trade_strategy.get_current_count()
         if state.depo:

@@ -14,12 +14,11 @@ class ClientTestEnvHelper(AbstractProxyClient):
     END_TIME = '15:29'
 
     def __init__(self,
-                 token,
                  ticker,
                  logger,
                  time_helper: TimeTestEnvHelper,
                  ):
-        super().__init__(token, ticker, time_helper, logger)
+        super().__init__(ticker, time_helper, logger)
 
         self.candles_1_min_dict: dict = {}
         self.total_completed_orders = 0

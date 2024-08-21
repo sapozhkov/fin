@@ -7,7 +7,7 @@ from bot import TradingBot
 from bot.db import TickerCache
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
 from bot.helper import OrderHelper
-from app.config import RunConfig, AppConfig
+from app.config import RunConfig
 from app.helper import TimeHelper, LocalCache
 
 
@@ -18,11 +18,10 @@ class TestAlgorithm:
             do_printing=False,
             use_cache=True,
     ):
-        self.token = AppConfig.TOKEN
         self.config = config
         self.time_helper = TimeTestEnvHelper()
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
-        self.client_helper = ClientTestEnvHelper(self.token, config.ticker, self.logger_helper, self.time_helper)
+        self.client_helper = ClientTestEnvHelper(config.ticker, self.logger_helper, self.time_helper)
         self.accounting_helper = AccountingTestEnvHelper(self.client_helper)
         self.use_cache = use_cache
 
@@ -128,7 +127,6 @@ class TestAlgorithm:
 
                 # создаем бота с настройками
                 bot = TradingBot(
-                    self.token,
                     config=config,
                     time_helper=self.time_helper,
                     logger_helper=self.logger_helper,

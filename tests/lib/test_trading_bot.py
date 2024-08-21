@@ -11,7 +11,6 @@ class MyTestCase(unittest.TestCase):
             TestHelper.get_helper_pack()
 
         self.bot = TradingBot(
-            '',
             config=self.config,
             time_helper=self.time_helper,
             logger_helper=self.logger_helper,
@@ -82,7 +81,7 @@ class MyTestCase(unittest.TestCase):
                               price=price, rounded_price=rounded_price):
                 self.bot.client.instrument.min_increment = min_increment
                 self.bot.client.instrument.round_signs = round_signs
-                self.assertEqual(rounded_price, self.bot.round(price),
+                self.assertEqual(rounded_price, self.bot.trade_strategy.round(price),
                                  f"{min_increment}, {round_signs}, {price}, {rounded_price}")
 
 

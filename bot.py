@@ -3,8 +3,10 @@ import traceback
 from signal import *
 
 from app import create_app
-from app.config import AppConfig, RunConfig
+from app.config import RunConfig
+from app.models import Instrument
 from bot import TradingBot
+from bot.env.prod import TimeProdEnvHelper, LoggerHelper, TinkoffProxyClient, AccountingHelper
 
 if __name__ == '__main__':
     app = create_app()
@@ -33,7 +35,29 @@ if __name__ == '__main__':
         else:
             config_dto = RunConfig.from_string(sys.argv[1])
 
-        bot = TradingBot(AppConfig.TOKEN, config_dto)
+        instrument = None
+        account_id = ''
+        if config_dto.instrument_id:
+            instrument = Instrument.get_by_id(config_dto.instrument_id)
+            if instrument:
+                account_id = str(instrument.account)
+
+        log_name = config_dto.name or config_dto.ticker
+        if instrument:
+            log_name = f"{instrument.account_rel.name}_{log_name}"
+
+        time_helper = TimeProdEnvHelper()
+        logger_helper = LoggerHelper(__name__, log_name)
+        client_helper = TinkoffProxyClient(config_dto.ticker, time_helper, logger_helper, account_id)
+        accounting_helper = AccountingHelper(__file__, client_helper)
+
+        bot = TradingBot(
+            config=config_dto,
+            time_helper=time_helper,
+            logger_helper=logger_helper,
+            client_helper=client_helper,
+            accounting_helper=accounting_helper,
+        )
 
         if len(sys.argv) > 1:
             bot.log(f"Config string: {sys.argv[1]}")

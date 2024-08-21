@@ -5,6 +5,7 @@ from typing import Tuple
 from tinkoff.invest import CandleInterval, Quotation, MoneyValue, OrderType, PostOrderResponse, GetCandlesResponse, \
     OrderState
 
+from app import AppConfig
 from bot.db import TickerCache
 from bot.dto import InstrumentDTO
 from bot.env import AbstractTimeHelper, AbstractLoggerHelper
@@ -24,13 +25,12 @@ class AbstractProxyClient(ABC):
 
     def __init__(
             self,
-            token,
             ticker,
             time: AbstractTimeHelper,
             logger: AbstractLoggerHelper
     ):
         # авто расчет надо переделать если будут инструменты с шагом не кратным десятой доле #26
-        self.token = token
+        self.token = AppConfig.TOKEN
         self.time: AbstractTimeHelper = time
         self.logger = logger
         self.ticker_cache = TickerCache(ticker)

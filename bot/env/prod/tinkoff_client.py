@@ -10,8 +10,8 @@ from app.lib import TinkoffApi
 
 
 class TinkoffProxyClient(AbstractProxyClient):
-    def __init__(self, token, ticker, time, logger, account_id: str):
-        super().__init__(token, ticker, time, logger)
+    def __init__(self, ticker, time, logger, account_id: str):
+        super().__init__(ticker, time, logger)
         self.account_id: str = account_id
 
     def get_current_price(self) -> float | None:
