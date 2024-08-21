@@ -50,7 +50,7 @@ class TradeNormalStrategy(TradeAbstractStrategy):
                      f"sell {self.get_existing_sell_order_prices()} ")
 
     def place_buy_orders(self):
-        current_price = self.bot.cached_current_price
+        current_price = self.cached_current_price
         if not current_price:
             self.logger.error("Не могу выставить заявки на покупку, нулевая цена")
             return
@@ -77,7 +77,7 @@ class TradeNormalStrategy(TradeAbstractStrategy):
             current_buy_orders_cnt += 1
 
     def place_sell_orders(self):
-        current_price = self.bot.cached_current_price
+        current_price = self.cached_current_price
         if not current_price:
             self.logger.error("Не могу выставить заявки на продажу, нулевая цена")
             return

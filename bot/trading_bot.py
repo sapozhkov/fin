@@ -54,11 +54,6 @@ class TradingBot(AbstractBot):
             ))
             self.accounting.set_num(min(self.accounting.get_num(), self.config.use_shares))
 
-        # это запросим еще раз при старте торгов. часто открывает не на той цене, где закончились в предыдущий день
-        self.start_price = self.trade_strategy.get_current_price() or 0
-        self.start_count = self.trade_strategy.get_current_count()
-        self.cached_current_price: float | None = self.start_price
-
         self.validate_and_modify_config()
 
         self.run_state: Run | None = None
@@ -72,29 +67,29 @@ class TradingBot(AbstractBot):
                 exit_code=0,
                 last_error='',
                 total=0,
-                depo=self.get_max_start_depo(),
+                depo=self.trade_strategy.get_max_start_depo(),
                 profit=0,
                 data='',
                 instrument_data=f"{instrument.data}, exp {instrument.expected_profit}",
                 config=str(self.config),
-                start_cnt=self.start_count,
+                start_cnt=self.trade_strategy.start_count,
                 end_cnt=0,
-                open=self.start_price,
-                close=self.start_price,
-                high=self.start_price,
-                low=self.start_price,
+                open=self.trade_strategy.start_price,
+                close=self.trade_strategy.start_price,
+                high=self.trade_strategy.start_price,
+                low=self.trade_strategy.start_price,
             )
 
-            instrument.price = self.start_price
+            instrument.price = self.trade_strategy.start_price
 
             self.update_run_state()
 
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"
                  f"     instrument - {self.client.instrument}\n"
-                 f"     cur_used_cnt - {self.start_count}\n"
-                 f"     last_price - {self.start_price}\n"
-                 f"     depo - {self.get_max_start_depo()}\n"
+                 f"     cur_used_cnt - {self.trade_strategy.start_count}\n"
+                 f"     last_price - {self.trade_strategy.start_price}\n"
+                 f"     depo - {self.trade_strategy.get_max_start_depo()}\n"
                  f"     instrument_id - {self.config.instrument_id}\n"
                  f"     run_instance - {self.run_state}"
                  )
@@ -163,10 +158,6 @@ class TradingBot(AbstractBot):
             self.run_iteration()
         self.log('END')
 
-    # todo move
-    def update_cached_price(self):
-        self.cached_current_price = self.trade_strategy.get_current_price()
-
     def start(self):
         """Начало работы скрипта. первый старт"""
 
@@ -175,19 +166,17 @@ class TradingBot(AbstractBot):
 
         self.state = self.STATE_WORKING
 
-        self.start_count = self.trade_strategy.get_current_count()
-        self.start_price = self.cached_current_price
-        if not self.start_price:
+        self.trade_strategy.update_start_price_and_counter()
+        if not self.trade_strategy.start_price:
             self.logger.error("Ошибка первичного запроса цены. Статистика будет неверной в конце работы")
-            self.start_price = 0
 
         # требуемое изменение портфеля
         need_operations = self.config.step_base_cnt * self.config.step_lots - self.trade_strategy.get_current_count()
 
-        max_portfolio_size = self.get_max_start_depo()
+        max_portfolio_size = self.trade_strategy.get_max_start_depo()
         self.log(f"START \n"
                  f"     need_operations - {need_operations}\n"
-                 f"     start_price - {self.start_price} {self.client.instrument.currency}\n"
+                 f"     start_price - {self.trade_strategy.start_price} {self.client.instrument.currency}\n"
                  f"     max_port - {max_portfolio_size} {self.client.instrument.currency}"
                  )
 
@@ -216,7 +205,7 @@ class TradingBot(AbstractBot):
                 self.time.sleep(sleep_sec)
             return
 
-        self.update_cached_price()
+        self.trade_strategy.update_cached_price()
 
         self.start()
 
@@ -274,11 +263,11 @@ class TradingBot(AbstractBot):
         self.time.sleep(self.config.sleep_trading)
 
     def check_need_stop(self):
-        if not self.start_price or not (self.config.stop_up_p or self.config.stop_down_p):
+        if not self.trade_strategy.start_price or not (self.config.stop_up_p or self.config.stop_down_p):
             return False
 
-        profit = self.get_current_profit()
-        max_portfolio = self.get_max_start_depo()
+        profit = self.trade_strategy.get_current_profit()
+        max_portfolio = self.trade_strategy.get_max_start_depo()
 
         need_profit = self.trade_strategy.round(max_portfolio * self.config.stop_up_p)
         if self.config.stop_up_p and profit > need_profit:
@@ -313,7 +302,7 @@ class TradingBot(AbstractBot):
         if self.config.majority_trade and current_count < 0:
             self.trade_strategy.buy(-current_count)
 
-        current_price = self.trade_strategy.get_current_price()
+        current_price = self.trade_strategy.update_cached_price()
         if not current_price:
             self.logger.error("Нулевая цена, статистика НЕ будет верной")
 
@@ -328,28 +317,8 @@ class TradingBot(AbstractBot):
 
             self.update_run_state()
 
-    def get_max_start_depo(self):
-        # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
-        maj_k = 2 if self.config.majority_trade else 1
-        return self.trade_strategy.round(self.start_price * self.config.step_max_cnt * self.config.step_lots * maj_k)
-
-    # todo move
-    def get_current_profit(self, current_price=None) -> float:
-        if current_price is None:
-            current_price = self.cached_current_price
-
-        if not current_price:
-            return 0
-
-        return self.trade_strategy.round(
-            - self.start_price * self.start_count
-            + self.accounting.get_sum()
-            + current_price * self.trade_strategy.get_current_count()
-        )
-
-    # todo move ?
     def get_status_str(self) -> str:
-        out = f"cur {self.cached_current_price} | " \
+        out = f"cur {self.trade_strategy.cached_current_price} | " \
               f"buy {self.trade_strategy.get_existing_buy_order_prices()} " \
               f"sell {self.trade_strategy.get_existing_sell_order_prices()} " \
               f"{self.trade_strategy.get_cur_count_for_log()}"
@@ -371,7 +340,7 @@ class TradingBot(AbstractBot):
             db.session.add(state)
 
         state.data = self.get_status_str()
-        state.total = self.get_current_profit()
+        state.total = self.trade_strategy.get_current_profit()
         state.end_cnt = self.trade_strategy.get_current_count()
         if state.depo:
             state.profit = round(100 * state.total / state.depo, 2)
@@ -383,12 +352,13 @@ class TradingBot(AbstractBot):
 
         state.updated_at = self.time.now()
 
-        if self.cached_current_price:
-            state.close = self.cached_current_price
-            if self.cached_current_price > state.high:
-                state.high = self.cached_current_price
-            if self.cached_current_price < state.low:
-                state.low = self.cached_current_price
+        cur_price = self.trade_strategy.cached_current_price
+        if cur_price:
+            state.close = cur_price
+            if cur_price > state.high:
+                state.high = cur_price
+            if cur_price < state.low:
+                state.low = cur_price
 
         state.updated_at = self.time.now()
         db.session.commit()

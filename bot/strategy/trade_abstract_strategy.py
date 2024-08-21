@@ -26,8 +26,17 @@ class TradeAbstractStrategy(ABC):
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
 
+        self.start_price: float = 0
+        self.start_count: int = 0
+        self.update_start_price_and_counter()
+        self.cached_current_price: float = self.start_price
+
     def log(self, message, repeat=False):
         self.logger.log(message, repeat)
+
+    def update_start_price_and_counter(self):
+        self.start_price = self.get_current_price() or 0
+        self.start_count = self.get_current_count()
 
     @abstractmethod
     def update_orders_status(self):
@@ -153,7 +162,7 @@ class TradeAbstractStrategy(ABC):
             self.log(f"{prefix} order canceled, {lots} x {avg_price} {self.get_cur_count_for_log()}")
 
     def cancel_orders_by_limits(self):
-        current_price = self.bot.cached_current_price  # todo 1
+        current_price = self.cached_current_price
         if not current_price:
             self.logger.error("Не могу закрыть заявки, нулевая цена")
             return
@@ -200,8 +209,26 @@ class TradeAbstractStrategy(ABC):
                 f"(x{self.config.step_lots}"
                 f"{'+' + str(rest) if rest else ''}"
                 f"={self.get_current_count()}) "
-                f"| p {self.bot.get_current_profit()} {self.client.instrument.currency}"
+                f"| p {self.get_current_profit()} {self.client.instrument.currency}"
                 )
+
+    def get_current_profit(self, current_price=None) -> float:
+        if current_price is None:
+            current_price = self.cached_current_price
+
+        if not current_price:
+            return 0
+
+        return self.round(
+            - self.start_price * self.start_count
+            + self.accounting.get_sum()
+            + current_price * self.get_current_count()
+        )
+
+    def get_max_start_depo(self):
+        # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
+        maj_k = 2 if self.config.majority_trade else 1
+        return self.round(self.start_price * self.config.step_max_cnt * self.config.step_lots * maj_k)
 
     def get_current_price(self) -> float | None:
         return self.client.get_current_price()
@@ -219,3 +246,7 @@ class TradeAbstractStrategy(ABC):
     # остаток количества акций - сколько ЛИШНИХ от количества полных лотов
     def get_current_step_rest_count(self) -> int:
         return self.get_current_count() % self.config.step_lots
+
+    def update_cached_price(self):
+        self.cached_current_price = self.get_current_price()
+        return self.cached_current_price
