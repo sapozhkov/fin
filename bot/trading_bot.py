@@ -44,7 +44,6 @@ class TradingBot(AbstractBot):
             self.state = self.STATE_FINISHED
             return
 
-        # todo и это перевезти
         if self.config.use_shares is None:
             self.accounting.set_num(self.accounting.get_instrument_count())
         else:
