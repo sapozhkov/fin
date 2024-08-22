@@ -166,33 +166,13 @@ class TradingBot(AbstractBot):
 
         self.state = self.STATE_WORKING
 
-        self.trade_strategy.update_start_price_and_counter()
-        if not self.trade_strategy.start_price:
-            self.logger.error("Ошибка первичного запроса цены. Статистика будет неверной в конце работы")
-
-        # требуемое изменение портфеля
-        need_operations = self.config.step_base_cnt * self.config.step_lots - self.trade_strategy.get_current_count()
+        self.trade_strategy.on_day_start()
 
         max_portfolio_size = self.trade_strategy.get_max_start_depo()
-        self.log(f"START \n"
-                 f"     need_operations - {need_operations}\n"
-                 f"     start_price - {self.trade_strategy.start_price} {self.client.instrument.currency}\n"
-                 f"     max_port - {max_portfolio_size} {self.client.instrument.currency}"
-                 )
-
         if self.run_state:
             self.run_state.depo = max_portfolio_size
             self.run_state.status = RunStatus.WORKING
             self.update_run_state()
-
-        # докупаем недостающие по рыночной цене
-        # todo move
-        if need_operations > 0:
-            self.trade_strategy.buy(need_operations, self.trade_strategy.RETRY_ON_START)
-
-        # или продаем лишние. в минус без мажоритарной уйти не должны - учтено в конфиге
-        if need_operations < 0:
-            self.trade_strategy.sell(-need_operations, self.trade_strategy.RETRY_ON_START)
 
     def run_iteration(self):
         can_trade, sleep_sec = self.can_trade()

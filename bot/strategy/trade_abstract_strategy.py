@@ -37,6 +37,8 @@ class TradeAbstractStrategy(ABC):
     def update_start_price_and_counter(self):
         self.start_price = self.get_current_price() or 0
         self.start_count = self.get_current_count()
+        if not self.start_price:
+            self.logger.error("Ошибка первичного запроса цены. Статистика будет неверной в конце работы")
 
     @abstractmethod
     def update_orders_status(self):
@@ -167,8 +169,6 @@ class TradeAbstractStrategy(ABC):
             self.logger.error("Не могу закрыть заявки, нулевая цена")
             return
 
-        # todo закрыть все заявки, если коснулись лимитов
-
         # берем текущую цену + сдвиг
         if self.config.threshold_buy_steps:
             threshold_price = (current_price - self.config.step_size * self.config.threshold_buy_steps)
@@ -250,3 +250,24 @@ class TradeAbstractStrategy(ABC):
     def update_cached_price(self):
         self.cached_current_price = self.get_current_price()
         return self.cached_current_price
+
+    def on_day_start(self):
+        self.update_start_price_and_counter()
+
+        # требуемое изменение портфеля
+        need_operations = self.config.step_base_cnt * self.config.step_lots - self.get_current_count()
+
+        max_portfolio_size = self.get_max_start_depo()
+        self.log(f"START \n"
+                 f"     need_operations - {need_operations}\n"
+                 f"     start_price - {self.start_price} {self.client.instrument.currency}\n"
+                 f"     max_port - {max_portfolio_size} {self.client.instrument.currency}"
+                 )
+
+        # докупаем недостающие по рыночной цене
+        if need_operations > 0:
+            self.buy(need_operations, self.RETRY_ON_START)
+
+        # или продаем лишние. в минус без мажоритарной уйти не должны - учтено в конфиге
+        if need_operations < 0:
+            self.sell(-need_operations, self.RETRY_ON_START)

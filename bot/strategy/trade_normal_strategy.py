@@ -4,16 +4,6 @@ from tinkoff.invest import OrderState
 
 from .trade_abstract_strategy import TradeAbstractStrategy
 
-# todo подумать что еще можно сюда утащить. кажется можно переместить часть, отвечающую именно за хранение данных
-"""
-apply_order_execution
-set_sell_order_by_buy_order
-remove_order_from_active_list
-get_existing_buy_order_prices
-get_existing_sell_order_prices
-
-"""
-
 
 class TradeNormalStrategy(TradeAbstractStrategy):
     def update_orders_status(self):
