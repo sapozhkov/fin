@@ -29,8 +29,13 @@ if __name__ == '__main__':
                 threshold_sell_steps=0,
                 threshold_buy_steps=6,
 
+                step_size_shift=0.2,
+                majority_trade=True,
+
                 stop_up_p=.05,
                 stop_down_p=.15,
+
+                instrument_id=4,
             )
         else:
             config_dto = RunConfig.from_string(sys.argv[1])
