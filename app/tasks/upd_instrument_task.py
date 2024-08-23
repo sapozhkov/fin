@@ -67,7 +67,7 @@ class UpdInstrumentTask(AbstractTask):
                 for base_shares in [0]
                 for stop_up_p in [0, 0.01]
                 for step_size_diff in [0, .2, -.2]
-                for step_size_shift in [0, .1, .2, .3]
+                for step_size_shift in [.1, .2, .3]
                 for step_cnt in [2]
             ]
         else:
