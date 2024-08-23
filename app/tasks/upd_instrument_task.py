@@ -39,8 +39,7 @@ class UpdInstrumentTask(AbstractTask):
 
         t_config = RunConfig.from_repr_string(instrument.config)
 
-        # todo не должно появляться принудительного PRE
-        # на первом этапе можно просто их распараллелить и собирать отдельно
+        # пока параметры задаются напрямую в зависимости от типа. будет исправлено в #139
 
         # веерная продажа (с нелинейным шагом)
         if t_config.step_size_shift:
@@ -52,7 +51,7 @@ class UpdInstrumentTask(AbstractTask):
                     step_lots=1,
 
                     majority_trade=t_config.majority_trade,
-                    pretest_period=pretest_period,
+                    pretest_period=0,
                     pretest_type=RunConfig.PRETEST_NONE,
 
                     threshold_buy_steps=0,
@@ -68,9 +67,8 @@ class UpdInstrumentTask(AbstractTask):
                 for base_shares in [0]
                 for stop_up_p in [0, 0.01]
                 for step_size_diff in [0, .2, -.2]
-                for step_size_shift in [.2, .3]
+                for step_size_shift in [0, .1, .2, .3]
                 for step_cnt in [2]
-                for pretest_period in range(3, 4)
             ]
         else:
             test_configs = [
