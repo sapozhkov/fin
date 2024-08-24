@@ -129,15 +129,18 @@ class UpdInstrumentTask(AbstractTask):
             print(item)
 
         best_res = sorted_results[0]
-        new_config = best_res['config']
+        new_config: RunConfig = best_res['config']
         new_profit = float(best_res['profit_p_avg'])
 
         print(f"Сохраним вот это: {new_config}, profit {new_profit}")
 
-        cur_status = bool(instrument.status)
-        new_status = new_profit >= AppConfig.INSTRUMENT_ON_THRESHOLD
+        # todo хак для #84
+        threshold = AppConfig.INSTRUMENT_ON_THRESHOLD if not new_config.step_size_shift else 0.1
 
-        print(f"Порог прибыли {AppConfig.INSTRUMENT_ON_THRESHOLD}, расчетная прибыль {new_profit}")
+        cur_status = bool(instrument.status)
+        new_status = new_profit >= threshold
+
+        print(f"Порог прибыли {threshold}, расчетная прибыль {new_profit}")
         if cur_status != new_status:
             print(f"Изменяем статус активности на {new_status}")
             instrument.status = 1 if new_status else 0
