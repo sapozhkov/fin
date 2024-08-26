@@ -134,7 +134,7 @@ class UpdInstrumentTask(AbstractTask):
 
         print(f"Сохраним вот это: {new_config}, profit {new_profit}")
 
-        # todo хак для #84
+        # хак для #84, удалить в #221
         threshold = AppConfig.INSTRUMENT_ON_THRESHOLD if not new_config.step_size_shift else 0.1
 
         cur_status = bool(instrument.status)
