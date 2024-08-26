@@ -80,7 +80,7 @@ class RunConfig:
                 self.step_max_cnt = 2
         else:
             if self.step_max_cnt < 4:
-                self.step_max_cnt = 2
+                self.step_max_cnt = 4
 
         if self.step_size <= 0:
             self.step_size = 0.2
