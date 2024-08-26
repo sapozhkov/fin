@@ -1,23 +1,36 @@
 import matplotlib.pyplot as plt
 import io
 from flask import Response
+from matplotlib.ticker import MaxNLocator
+
+from app import AppConfig
 from app.models import AccRunBalance
+from datetime import timedelta
 
 
 def plot_balance(acc_run_id):
     # Получаем данные для указанного acc_run
     balances = AccRunBalance.query.filter_by(acc_run=acc_run_id).order_by(AccRunBalance.datetime).all()
 
-    # Построение графика
-    times = [b.datetime for b in balances]
-    values = [b.balance for b in balances]
+    # Фильтруем нулевые значения
+    filtered_balances = [
+        b for b in balances if b.balance != 0
+    ]
 
+    # сдвигаем время на 3 часа
+    times = [(b.datetime + timedelta(hours=AppConfig.TIME_SHIFT_HOURS)).strftime('%H:%M') for b in filtered_balances]
+    values = [b.balance for b in filtered_balances]
+
+    # Построение графика
     plt.figure(figsize=(10, 5))
     plt.plot(times, values, marker='.')
-    # plt.title(f'Баланс по AccRun {acc_run_id}')
-    # plt.xlabel('Время')
-    # plt.ylabel('Баланс')
     plt.grid(True)
+
+    # Наклон подписей на 45 градусов
+    plt.xticks(rotation=45)
+
+    # Ограничение количества вертикальных линий (меток)
+    plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True, prune='both'))
 
     # Сохранение в буфер как PNG
     buf = io.BytesIO()
