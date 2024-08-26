@@ -16,6 +16,9 @@
                 <span class="{{ acc.acc_run.status|status_class }}">
                     {{ acc.acc_run.get_status_title() }}
                 </span>
+                <a href="{{ url_for('balancechartview.chart', acc_run_id=acc.acc_run.id) }}" class="ms-2">
+                    <i class="bi bi-bar-chart">chart</i>
+                </a>
             </small>
         </h4>
     {% endif %}
@@ -52,6 +55,10 @@
                 <span class="{{ acc.account.profit_n_all_time|currency_class }}">
                     a{% if acc.account.profit_n_all_time > 0 %}+{% endif %}{{ acc.account.profit_n_all_time }}%</span
                 >)
+                <a href="{{ url_for('balancechartview.chart', acc_run_id=acc.acc_run.id) }}" class="ms-2">
+                    <i class="bi bi-bar-chart">chart</i>
+                </a>
+
 
             </p>
         </div>
