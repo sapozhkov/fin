@@ -387,6 +387,7 @@ class TestAlgorithm:
 
     @staticmethod
     def make_config_variants(config: RunConfig) -> list[RunConfig]:
+        step_step = 1 if config.is_maj_trade() else 2
         return [
             (RunConfig(
                 name=config.name,
@@ -424,14 +425,18 @@ class TestAlgorithm:
             # for step_set_orders_cnt in [config.step_set_orders_cnt]
             for step_max_cnt in [
                 config.step_max_cnt,
-                config.step_max_cnt+1,
-                config.step_max_cnt-1,
+                config.step_max_cnt+step_step,
+                config.step_max_cnt-step_step,
             ]
-            for step_base_cnt in [
-                0,
-                config.step_max_cnt,
-                -config.step_max_cnt if config.majority_trade else config.step_max_cnt // 2
-            ]
+            for step_base_cnt in (
+                [
+                    0 if config.is_maj_trade() else step_max_cnt // 2
+                ] if config.is_nonlinear_step() else [
+                    0,
+                    step_max_cnt,
+                    -step_max_cnt if config.is_maj_trade() else step_max_cnt // 2
+                ]
+            )
             for step_size in [
                 round(config.step_size, 2),
                 round(config.step_size-0.2, 2),

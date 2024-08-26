@@ -75,8 +75,12 @@ class RunConfig:
             self.step_base_cnt = round(self.step_max_cnt / 2)
 
         # корректировки параметров
-        if self.step_max_cnt < 2:
-            self.step_max_cnt = 2
+        if self.is_maj_trade():
+            if self.step_max_cnt < 2:
+                self.step_max_cnt = 2
+        else:
+            if self.step_max_cnt < 4:
+                self.step_max_cnt = 2
 
         if self.step_size <= 0:
             self.step_size = 0.2
@@ -106,6 +110,12 @@ class RunConfig:
 
         if self.step_lots <= 0:
             self.step_lots = 1
+
+    def is_maj_trade(self):
+        return self.majority_trade
+
+    def is_nonlinear_step(self):
+        return self.step_size_shift != 0
 
     def __repr__(self):
         base = f"{self.pretest_type}{self.pretest_period}:{self.step_base_cnt}" \

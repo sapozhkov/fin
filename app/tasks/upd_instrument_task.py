@@ -63,7 +63,7 @@ class UpdInstrumentTask(AbstractTask):
                     step_size=t_config.step_size + step_size_diff,
                     step_set_orders_cnt=step_cnt,
                 ))
-                for max_shares in [3, 4]
+                for max_shares in ([3, 4] if t_config.is_maj_trade() else [4, 6, 8])
                 for base_shares in [0]
                 for stop_up_p in [0, 0.01]
                 for step_size_diff in [0, .2, -.2]
@@ -90,7 +90,7 @@ class UpdInstrumentTask(AbstractTask):
                     step_size=t_config.step_size + step_size_diff,
                     step_set_orders_cnt=step_cnt,
                 ))
-                for max_shares in [3, 4]
+                for max_shares in ([3, 4] if t_config.is_maj_trade() else [4, 6, 8])
                 for base_shares in [0]
                 for stop_up_p in [0, 0.01]
                 for step_size_diff in [0, .2, -.2]
