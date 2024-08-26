@@ -426,7 +426,7 @@ class TestAlgorithm:
             for step_max_cnt in [
                 config.step_max_cnt,
                 config.step_max_cnt+step_step,
-                config.step_max_cnt-step_step,
+                max(config.step_max_cnt-step_step, 2 if config.is_maj_trade() else 4),
             ]
             for step_base_cnt in (
                 [
