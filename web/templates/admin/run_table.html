@@ -4,7 +4,10 @@
 
 {% for acc in accounts %}
     {% if acc.acc_run %}
-        <h4>{{ acc.account.name }}
+        <h4>
+            <a href="#acc-{{ acc.account.id }}">
+                {{ acc.account.name }}
+            </a>
             <small class="text-body-secondary">
                 {{ acc.balance|currency }};
                 <span class="{{ acc.acc_run.profit|currency_class }}">
@@ -23,7 +26,7 @@
 {% for acc in accounts %}
 
     {% if acc.acc_run %}
-        <h2>{{ acc.account.name }},
+        <h2 id="acc-{{ acc.account.id }}">{{ acc.account.name }},
             <span class="{{ acc.acc_run.profit|currency_class }}">
                 {% if acc.acc_run.profit > 0 %}+{% endif %}{{ acc.acc_run.profit }}%</span
             >,
@@ -53,7 +56,7 @@
             </p>
         </div>
     {% else %}
-    <h2>{{ acc.account.name }}</h2>
+        <h2 id="acc-{{ acc.account.id }}">{{ acc.account.name }}</h2>
         <div class="card-body">
             <p class="card-text">
                 Balance: <b>{{ acc.balance|currency }}</b> rub
