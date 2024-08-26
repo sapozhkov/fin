@@ -106,7 +106,7 @@ class UpdInstrumentTask(AbstractTask):
                 shares_count=0,
 
                 auto_conf_days_freq=1,
-                auto_conf_prev_days=config.pretest_period,
+                auto_conf_prev_days=config.pretest_period or 7,
             )
 
         unique_configs = set(test_configs)
