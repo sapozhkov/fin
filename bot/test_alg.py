@@ -34,6 +34,15 @@ class TestAlgorithm:
         auto_conf_days_freq=0,
         auto_conf_prev_days=0,
     ):
+        """
+        Провести тестирование по заданному конфигу
+        :param last_test_date: последняя дата для теста
+        :param test_days_num: сколько дней надо проверить
+        :param shares_count: сколько инструментов на балансе
+        :param auto_conf_days_freq: частота подстройки конфига. если задано, то подстраивается
+        :param auto_conf_prev_days: сколько дней претестить для каждого дня
+        :return:
+        """
         if test_days_num == 0:
             return None
 
@@ -238,6 +247,7 @@ class TestAlgorithm:
         total_maj_commission += maj_commission
         profit += maj_commission
 
+        last_config = config
         config = original_config
 
         # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
@@ -257,6 +267,7 @@ class TestAlgorithm:
             'profit_p_avg': round(profit_p / test_days_num, 2),  # не удалять
             # 'pot_p': potential_profit_p,
             'config': config,  # не удалять
+            'last_conf': last_config,
             # 'maj_com': round(total_maj_commission, 2),
 
             # 'profit_avg': round(sum(balance_change_list) / test_days_num, 2),
@@ -363,7 +374,7 @@ class TestAlgorithm:
         best_res = sorted_results[0] if len(sorted_results) > 0 else None
 
         if best_res:
-            best_conf = best_res['config']
+            best_conf = best_res['last_conf']
             if last_config:
                 # пробросить, так как сбрасывается
                 best_conf.use_shares = last_config.use_shares

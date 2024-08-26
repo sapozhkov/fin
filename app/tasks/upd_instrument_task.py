@@ -129,7 +129,7 @@ class UpdInstrumentTask(AbstractTask):
             print(item)
 
         best_res = sorted_results[0]
-        new_config: RunConfig = best_res['config']
+        new_config: RunConfig = best_res['last_conf']
         new_profit = float(best_res['profit_p_avg'])
 
         print(f"Сохраним вот это: {new_config}, profit {new_profit}")

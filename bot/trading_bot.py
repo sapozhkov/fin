@@ -96,10 +96,10 @@ class TradingBot(AbstractBot):
     def validate_and_modify_config(self):
         if self.config.majority_trade and not self.client.instrument.short_enabled_flag:
             self.config.majority_trade = False
-            self.log(f"Change majority_trade to False. Instrument short_enabled_flag is False")
+            self.logger.error(f"Change majority_trade to False. Instrument short_enabled_flag is False")
             if self.config.step_base_cnt < 0:
                 self.config.step_base_cnt = 0
-                self.log(f"Change step_base_cnt to 0")
+                self.logger.error(f"Change step_base_cnt to 0")
 
         # вот тут проводим переустановку base
         self.pretest_and_modify_config()
