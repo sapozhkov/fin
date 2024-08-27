@@ -106,9 +106,9 @@ class MyTestCase(unittest.TestCase):
 
     def test_hash(self):
         configs = [
-            RunConfig(step_max_cnt=3),
-            RunConfig(step_max_cnt=2),
-            RunConfig(step_max_cnt=3),
+            RunConfig(step_max_cnt=5),
+            RunConfig(step_max_cnt=4),
+            RunConfig(step_max_cnt=5),
         ]
         unique_configs = set(configs)
         self.assertEqual(len(unique_configs), 2)
