@@ -223,7 +223,7 @@ async def main():
             print()
 
             for stock in stocks:
-                commands.append(f"python3 {current_dir}/bot.py {stock.config.to_string()} >> log/all.log 2>&1")
+                commands.append(f"python3 {current_dir}/bot.py {stock.config.to_string()} >> ~/log/all.log 2>&1")
 
             if len(stocks) > 0:
                 if not account.config:
@@ -236,7 +236,7 @@ async def main():
                     db.session.commit()
 
                 acc_config = AccConfig.from_repr_string(account.config)
-                commands_acc.append(f"python3 {current_dir}/acc_bot.py {acc_config.to_string()} >> log/all.log 2>&1")
+                commands_acc.append(f"python3 {current_dir}/acc_bot.py {acc_config.to_string()} >> ~/log/all.log 2>&1")
 
         for command in commands:
             tasks = [run_command(command)]
