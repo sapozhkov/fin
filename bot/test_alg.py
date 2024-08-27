@@ -413,7 +413,7 @@ class TestAlgorithm:
                 step_max_cnt=step_max_cnt,
                 step_base_cnt=step_base_cnt,
                 step_size=step_size,
-                step_set_orders_cnt=step_set_orders_cnt,
+                step_set_orders_cnt=config.step_set_orders_cnt,
                 step_lots=config.step_lots,
                 step_size_shift=config.step_size_shift,
 
@@ -426,12 +426,15 @@ class TestAlgorithm:
             for step_max_cnt in [
                 config.step_max_cnt,
                 config.step_max_cnt+step_step,
-                max(config.step_max_cnt-step_step, 2 if config.is_maj_trade() else 4),
+                max(
+                    config.step_max_cnt-step_step,
+                    RunConfig.MIN_MAJ_MAX_CNT if config.is_maj_trade() else RunConfig.MIN_NON_MAJ_MAX_CNT
+                ),
             ]
             for step_base_cnt in (
                 [
                     0 if config.is_maj_trade() else step_max_cnt // 2
-                ] if config.is_nonlinear_step() else [
+                ] if config.is_fan_layout() else [
                     0,
                     step_max_cnt,
                     -step_max_cnt if config.is_maj_trade() else step_max_cnt // 2
@@ -442,5 +445,4 @@ class TestAlgorithm:
                 round(config.step_size-0.2, 2),
                 round(config.step_size+0.2, 2),
             ]
-            for step_set_orders_cnt in [config.step_set_orders_cnt]
         ]

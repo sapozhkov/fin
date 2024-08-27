@@ -39,64 +39,32 @@ class UpdInstrumentTask(AbstractTask):
 
         t_config = RunConfig.from_repr_string(instrument.config)
 
-        # пока параметры задаются напрямую в зависимости от типа. будет исправлено в #139
+        test_configs = [
+            (RunConfig(
+                ticker=t_config.ticker,
+                step_max_cnt=max_shares,
+                step_base_cnt=0,
+                step_lots=1,
 
-        # веерная продажа (с нелинейным шагом)
-        if t_config.step_size_shift:
-            test_configs = [
-                (RunConfig(
-                    ticker=t_config.ticker,
-                    step_max_cnt=max_shares,
-                    step_base_cnt=base_shares,
-                    step_lots=1,
+                majority_trade=t_config.majority_trade,
+                pretest_period=pretest_period,
+                pretest_type=t_config.pretest_type,
 
-                    majority_trade=t_config.majority_trade,
-                    pretest_period=0,
-                    pretest_type=RunConfig.PRETEST_NONE,
+                threshold_buy_steps=0,
+                threshold_sell_steps=0,
+                stop_up_p=stop_up_p,
+                stop_down_p=0,
+                step_size_shift=step_size_shift,
 
-                    threshold_buy_steps=0,
-                    threshold_sell_steps=0,
-                    stop_up_p=stop_up_p,
-                    stop_down_p=0,
-                    step_size_shift=step_size_shift,
-
-                    step_size=t_config.step_size + step_size_diff,
-                    step_set_orders_cnt=step_cnt,
-                ))
-                for max_shares in ([3, 4] if t_config.is_maj_trade() else [4, 6, 8])
-                for base_shares in [0]
-                for stop_up_p in [0, 0.01]
-                for step_size_diff in [0, .2, -.2]
-                for step_size_shift in [.1, .2, .3]
-                for step_cnt in [2]
-            ]
-        else:
-            test_configs = [
-                (RunConfig(
-                    ticker=t_config.ticker,
-                    step_max_cnt=max_shares,
-                    step_base_cnt=base_shares,
-                    step_lots=1,
-
-                    majority_trade=t_config.majority_trade,
-                    pretest_period=pretest_period,
-                    pretest_type=RunConfig.PRETEST_PRE,
-
-                    threshold_buy_steps=0,
-                    threshold_sell_steps=0,
-                    stop_up_p=stop_up_p,
-                    stop_down_p=0,
-
-                    step_size=t_config.step_size + step_size_diff,
-                    step_set_orders_cnt=step_cnt,
-                ))
-                for max_shares in ([3, 4] if t_config.is_maj_trade() else [4, 6, 8])
-                for base_shares in [0]
-                for stop_up_p in [0, 0.01]
-                for step_size_diff in [0, .2, -.2]
-                for step_cnt in [2]
-                for pretest_period in range(3, 7)
-            ]
+                step_size=t_config.step_size + step_size_diff,
+                step_set_orders_cnt=2,
+            ))
+            for max_shares in ([3, 4] if t_config.is_maj_trade() else [4, 6, 8])
+            for stop_up_p in [0, 0.01]
+            for step_size_diff in [0, .2, -.2]
+            for step_size_shift in ([0, .1, .2, .3] if t_config.is_fan_layout() else [0])
+            for pretest_period in ([t_config.pretest_period] if t_config.is_fan_layout() else range(3, 7))
+        ]
 
         def run_test(config: RunConfig):
             test_alg = TestAlgorithm(do_printing=False, config=config)
@@ -106,7 +74,7 @@ class UpdInstrumentTask(AbstractTask):
                 shares_count=0,
 
                 auto_conf_days_freq=1,
-                auto_conf_prev_days=config.pretest_period or 7,
+                auto_conf_prev_days=config.pretest_period,
             )
 
         unique_configs = set(test_configs)
@@ -134,8 +102,7 @@ class UpdInstrumentTask(AbstractTask):
 
         print(f"Сохраним вот это: {new_config}, profit {new_profit}")
 
-        # хак для #84, удалить в #221
-        threshold = AppConfig.INSTRUMENT_ON_THRESHOLD if not new_config.step_size_shift else 0.1
+        threshold = AppConfig.INSTRUMENT_ON_THRESHOLD
 
         cur_status = bool(instrument.status)
         new_status = new_profit >= threshold

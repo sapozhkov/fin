@@ -5,6 +5,10 @@ class RunConfig:
     PRETEST_NONE = ''
     PRETEST_RSI = 'rsi'  # прогон по RSI
     PRETEST_PRE = 'pre'  # анализ и выбор лучшего варианта том же алгоритме за pretest_period дней с вариациями конфига
+    PRETEST_FAN = 'fan'  # веерная раскладка, она же нелинейный шаг
+
+    MIN_MAJ_MAX_CNT = 2
+    MIN_NON_MAJ_MAX_CNT = 4
 
     def __init__(
             self,
@@ -76,16 +80,16 @@ class RunConfig:
 
         # корректировки параметров
         if self.is_maj_trade():
-            if self.step_max_cnt < 2:
-                self.step_max_cnt = 2
+            if self.step_max_cnt < self.MIN_MAJ_MAX_CNT:
+                self.step_max_cnt = self.MIN_MAJ_MAX_CNT
         else:
-            if self.step_max_cnt < 4:
-                self.step_max_cnt = 4
+            if self.step_max_cnt < self.MIN_NON_MAJ_MAX_CNT:
+                self.step_max_cnt = self.MIN_NON_MAJ_MAX_CNT
 
         if self.step_size <= 0:
             self.step_size = 0.2
 
-        if self.pretest_type not in [self.PRETEST_NONE, self.PRETEST_RSI, self.PRETEST_PRE]:
+        if self.pretest_type not in [self.PRETEST_NONE, self.PRETEST_RSI, self.PRETEST_PRE, self.PRETEST_FAN]:
             self.pretest_type = self.PRETEST_NONE
 
         # todo вот это чекнуть
@@ -114,8 +118,8 @@ class RunConfig:
     def is_maj_trade(self):
         return self.majority_trade
 
-    def is_nonlinear_step(self):
-        return self.step_size_shift != 0
+    def is_fan_layout(self):
+        return self.pretest_type == self.PRETEST_FAN
 
     def __repr__(self):
         base = f"{self.pretest_type}{self.pretest_period}:{self.step_base_cnt}" \
@@ -132,14 +136,14 @@ class RunConfig:
                 )
 
     @classmethod
-    def from_repr_string(cls, input_string):
+    def from_repr_string(cls, input_string) -> 'RunConfig':
         # RNFT+ 3/0/3 x l2 x 1.0¤ |s0 b0| |u0.0 d0.0| maj+z+
         # RNFT- 3/pre7:-3/3 x l2 x 1.0¤ |s0 b0| |u0.0 d0.0| maj+z+
         # RNFT- 3/pre7:-3/3 x l2 x 1.0¤
         # RNFT- 3/pre7:-3/3 x l2 x 1.0(+x0.1)¤
         pattern = r"^\s*(?P<ticker>\w*)(?P<majority_trade>[\+\-]) " \
                   r"(?P<step_max_cnt>\d+)/" \
-                  r"((?P<pretest_type>pre|rsi))?((?P<pretest_period>\d+))?\:?(?P<step_base_cnt>-?\d+)/" \
+                  r"((?P<pretest_type>pre|rsi|fan))?((?P<pretest_period>\d+))?\:?(?P<step_base_cnt>-?\d+)/" \
                   r"(?P<step_set_orders_cnt>\d+) " \
                   r"x l(?P<step_lots>\d+) x (?P<step_size>[\d.]+)(\(\+x(?P<step_size_shift>[\d.]+)\))?¤\s?" \
                   r"(\|s(?P<threshold_sell_steps>\d+) b(?P<threshold_buy_steps>\d+)\|\s?)?" \

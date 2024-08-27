@@ -92,6 +92,20 @@ class MyTestCase(unittest.TestCase):
 
         self.assertEqual(config_max, config_over)
 
+    def test_is_functions(self):
+
+        config = RunConfig(
+            pretest_type=RunConfig.PRETEST_FAN,
+            majority_trade=True,
+        )
+
+        self.assertEqual(config.pretest_type, RunConfig.PRETEST_FAN)
+        self.assertTrue(config.majority_trade)
+
+        self.assertTrue(config.is_fan_layout())
+        self.assertTrue(config.is_maj_trade())
+
+
     def test_failing(self):
         with self.assertRaises(ValueError):
             RunConfig(
@@ -162,6 +176,11 @@ class MyTestCase(unittest.TestCase):
             RunConfig(
                 pretest_type=RunConfig.PRETEST_PRE,
                 pretest_period=14,
+            ),
+
+            RunConfig(
+                pretest_type=RunConfig.PRETEST_FAN,
+                pretest_period=12,
             ),
 
             # # полный набор - всё не стандартное. новые поля докидывать сюда
