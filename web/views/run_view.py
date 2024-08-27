@@ -11,7 +11,7 @@ class RunView(ModelView):
     column_display_pk = True
     form_columns = (
         'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
-        'profit', 'profit_n', 'data', 'config', 'start_cnt', 'end_cnt',
+        'profit', 'profit_n', 'expected_profit', 'data', 'config', 'start_cnt', 'end_cnt',
         'open', 'close', 'high', 'low',
         'created_at', 'updated_at',
         'error_cnt', 'operations_cnt'

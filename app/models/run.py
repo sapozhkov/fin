@@ -24,6 +24,7 @@ class Run(db.Model):
     last_error = db.Column(db.String, nullable=True)
     total = db.Column(db.Float, nullable=False)
     depo = db.Column(db.Float, nullable=False)
+    expected_profit = db.Column(db.Float, default=0)
     profit = db.Column(db.Float, nullable=False)
     profit_n = db.Column(db.Float)
     data = db.Column(db.Text, nullable=True)
