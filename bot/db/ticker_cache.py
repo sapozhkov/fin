@@ -136,16 +136,19 @@ class TickerCache:
             candles = []
             for row in rows:
                 date, open_, high, low, close, volume = row
-                candle = HistoricCandle(
-                    time=datetime.strptime(date, "%Y-%m-%d %H:%M:%S+00:00"),
-                    open=f2q(open_),
-                    high=f2q(high),
-                    low=f2q(low),
-                    close=f2q(close),
-                    volume=volume,
-                    is_complete=True
-                )
-                candles.append(candle)
+                try:
+                    candle = HistoricCandle(
+                        time=datetime.strptime(date, "%Y-%m-%d %H:%M:%S+00:00"),
+                        open=f2q(open_),
+                        high=f2q(high),
+                        low=f2q(low),
+                        close=f2q(close),
+                        volume=volume,
+                        is_complete=True
+                    )
+                    candles.append(candle)
+                except ValueError:
+                    pass
             val = GetCandlesResponse(candles=candles)
             LocalCache.set(cache_key, val)
             return val
