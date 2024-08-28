@@ -63,7 +63,7 @@ class UpdInstrumentTask(AbstractTask):
             for stop_up_p in [0, 0.01]
             for step_size_diff in [0, .2, -.2]
             for step_size_shift in ([0, .1, .2, .3] if t_config.is_fan_layout() else [0])
-            for pretest_period in ([t_config.pretest_period] if t_config.is_fan_layout() else range(3, 7))
+            for pretest_period in range(3, 7)
         ]
 
         def run_test(config: RunConfig):
