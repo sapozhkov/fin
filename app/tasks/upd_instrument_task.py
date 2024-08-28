@@ -59,7 +59,7 @@ class UpdInstrumentTask(AbstractTask):
                 step_size=t_config.step_size + step_size_diff,
                 step_set_orders_cnt=2,
             ))
-            for max_shares in ([3, 4] if t_config.is_maj_trade() else [4, 6, 8])
+            for max_shares in ([3, 4] if t_config.is_maj_trade() else [6, 8])
             for stop_up_p in [0, 0.01]
             for step_size_diff in [0, .2, -.2]
             for step_size_shift in ([0, .1, .2, .3] if t_config.is_fan_layout() else [0])
