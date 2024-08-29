@@ -268,6 +268,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         #       server_time=datetime.datetime(2024, 4, 22, 13, 37, 55, 818008, tzinfo=datetime.timezone.utc)
         #     ))
 
+        i_lot = self.instrument.lot
         return PostOrderResponse(
             order_id=self.get_new_order_id(),
             execution_report_status=OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL,
@@ -275,10 +276,10 @@ class ClientTestEnvHelper(AbstractProxyClient):
             direction=direction,
             lots_requested=lots,
             lots_executed=lots,
-            initial_order_price=self.float_to_money_value(lots * self.current_price * self.instrument.lot),
+            initial_order_price=self.float_to_money_value(lots * self.current_price * i_lot),
             executed_order_price=self.float_to_money_value(self.current_price),
-            total_order_amount=self.float_to_money_value(lots * self.current_price * self.instrument.lot),
-            initial_commission=self.float_to_money_value(lots * self.current_price * self.commission),  # todo для SBER 0 - проверить
+            total_order_amount=self.float_to_money_value(lots * self.current_price * i_lot),
+            initial_commission=self.float_to_money_value(lots * self.current_price * i_lot * self.commission),
             executed_commission=self.float_to_money_value(0),  # как в оригинале
             initial_security_price=self.float_to_money_value(self.current_price),
         )
@@ -304,6 +305,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         #     tracking_id='bd***1f0',
         #     server_time=datetime.datetime(2024, 4, 22, 14, 13, 59, 82995, tzinfo=datetime.timezone.utc)
         #   ))
+        i_lot = self.instrument.lot
         return PostOrderResponse(
             order_id=self.get_new_order_id(),
             execution_report_status=OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_NEW,
@@ -311,10 +313,10 @@ class ClientTestEnvHelper(AbstractProxyClient):
             direction=direction,
             lots_requested=lots,
             lots_executed=0,
-            initial_order_price=self.float_to_money_value(lots * price * self.instrument.lot),
+            initial_order_price=self.float_to_money_value(lots * price * i_lot),
             executed_order_price=self.float_to_money_value(0),
             total_order_amount=self.float_to_money_value(0),
-            initial_commission=self.float_to_money_value(lots * price * self.commission),
+            initial_commission=self.float_to_money_value(lots * price * i_lot * self.commission),
             executed_commission=self.float_to_money_value(0),
             initial_security_price=self.float_to_money_value(price),
         )
