@@ -62,26 +62,21 @@ def distribute_budget(stocks: list[Stock], budget):
     # Распределяем равную долю бюджета для каждой акции
     for stock in stocks:
         # Количество акций, которые можно купить за бюджет
-        i_lot = stock.instrument_lots
-        count = i_lot * (int(equal_share // stock.budget) // i_lot)
-        stock.lots = count
+        count = int(equal_share // stock.budget)
+        stock.lots = count * stock.instrument_lots
         remaining_budget -= count * stock.budget
 
     max_iterations = 3
 
     for i in range(1, max_iterations+1):
         for stock in stocks:
-            i_lot = stock.instrument_lots
-            if remaining_budget < stock.budget * i_lot:
+            if remaining_budget < stock.budget:
                 continue
 
             # на последней итерации "сколько влезает", а так по одному шагу добавляем
-            if i == max_iterations:
-                count = i_lot * (int(remaining_budget // stock.budget) // i_lot)
-            else:
-                count = i_lot
+            count = int(remaining_budget // stock.budget) if i == max_iterations else 1
 
-            stock.lots += count
+            stock.lots += count * stock.instrument_lots
             remaining_budget -= count * stock.budget
 
     # обновляем конфиги
@@ -192,7 +187,7 @@ async def main():
                     maj_k = 2 if s.config.majority_trade else 1
 
                     s.price = price
-                    s.budget = round(price * s.config.step_max_cnt * maj_k, 2)
+                    s.budget = round(price * s.config.step_max_cnt * s.instrument_lots * maj_k, 2)
 
             # отфильтровываем нулевые цены
             stocks = [stock for stock in stocks if stock.price != 0]

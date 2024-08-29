@@ -98,11 +98,19 @@ class TestDistributeBudget(unittest.TestCase):
         self.assertEqual(expected, result)
 
     def test_with_lots(self):
-        stocks = self.create_stocks_with_lots([("A", 20, 1), ("B", 17, 10)])
+        stocks = self.create_stocks_with_lots([("A", 20, 1), ("B", 170, 10)])
         budget = 500
         distribute_budget(stocks, budget)
         result = {stock.config.name: stock.lots for stock in stocks}
         expected = {'A': 16, 'B': 10}
+        self.assertEqual(expected, result)
+
+    def test_with_lots_and_overprice(self):
+        stocks = self.create_stocks_with_lots([("A", 20, 1), ("B", 170, 10), ("C", 171, 1)])
+        budget = 501
+        distribute_budget(stocks, budget)
+        result = {stock.config.name: stock.lots for stock in stocks}
+        expected = {'A': 8, 'B': 10, 'C': 1}
         self.assertEqual(expected, result)
 
 
