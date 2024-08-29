@@ -275,10 +275,10 @@ class ClientTestEnvHelper(AbstractProxyClient):
             direction=direction,
             lots_requested=lots,
             lots_executed=lots,
-            initial_order_price=self.float_to_money_value(lots * self.current_price),
+            initial_order_price=self.float_to_money_value(lots * self.current_price * self.instrument.lot),
             executed_order_price=self.float_to_money_value(self.current_price),
-            total_order_amount=self.float_to_money_value(lots * self.current_price),
-            initial_commission=self.float_to_money_value(lots * self.current_price * self.commission),
+            total_order_amount=self.float_to_money_value(lots * self.current_price * self.instrument.lot),
+            initial_commission=self.float_to_money_value(lots * self.current_price * self.commission),  # todo для SBER 0 - проверить
             executed_commission=self.float_to_money_value(0),  # как в оригинале
             initial_security_price=self.float_to_money_value(self.current_price),
         )
@@ -311,11 +311,12 @@ class ClientTestEnvHelper(AbstractProxyClient):
             direction=direction,
             lots_requested=lots,
             lots_executed=0,
-            initial_order_price=self.float_to_money_value(lots * price),
+            initial_order_price=self.float_to_money_value(lots * price * self.instrument.lot),
             executed_order_price=self.float_to_money_value(0),
             total_order_amount=self.float_to_money_value(0),
             initial_commission=self.float_to_money_value(lots * price * self.commission),
             executed_commission=self.float_to_money_value(0),
+            initial_security_price=self.float_to_money_value(price),
         )
 
     def get_order_state(self, order: PostOrderResponse) -> OrderState:
@@ -374,7 +375,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         is_executed = order.order_id in self.executed_orders_ids or order.order_type == OrderType.ORDER_TYPE_MARKET
         price_0 = f2q(0)
         avg_init_price = self.float_to_money_value(
-            self.q2f(order.initial_order_price) / order.lots_requested)
+            self.q2f(order.initial_order_price) / (order.lots_requested * self.instrument.lot))
         return OrderState(
             order_id=order.order_id,
             order_type=order.order_type,
@@ -387,7 +388,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
             average_position_price=avg_init_price if is_executed else price_0,
             initial_commission=order.initial_commission,
             executed_commission=order.initial_commission if is_executed else price_0,
-            initial_security_price=avg_init_price,
+            initial_security_price=order.initial_security_price,
             service_commission=self.float_to_money_value(0),
             execution_report_status=OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL
             if is_executed else OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_NEW,

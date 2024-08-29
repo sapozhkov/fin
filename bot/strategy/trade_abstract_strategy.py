@@ -55,7 +55,7 @@ class TradeAbstractStrategy(ABC):
     def place_order(self, order_type: int, direction: int, lots: int, price: float | None = None, retry=RETRY_DEFAULT) \
             -> PostOrderResponse | None:
 
-        order = self.client.place_order(lots, direction, price, order_type)
+        order = self.client.place_order(lots // self.client.instrument.lot, direction, price, order_type)
         if order is None:
             if retry > 0:
                 self.logger.error(f"RETRY order. {lots}, {direction}, {price}, {order_type}, "

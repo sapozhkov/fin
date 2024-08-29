@@ -15,6 +15,21 @@ class TestDistributeBudget(unittest.TestCase):
             conf.step_lots = 0
             stock.budget = budget
             stock.config = conf
+            stock.instrument_lots = 1
+            out.append(stock)
+        return out
+
+    @staticmethod
+    def create_stocks_with_lots(stock_data):
+        out = []
+        for name, budget, lots in stock_data:
+            stock = Stock()
+            conf = RunConfig()
+            conf.name = name
+            conf.step_lots = 0
+            stock.budget = budget
+            stock.config = conf
+            stock.instrument_lots = lots
             out.append(stock)
         return out
 
@@ -80,6 +95,14 @@ class TestDistributeBudget(unittest.TestCase):
         distribute_budget(stocks, budget)
         result = {stock.config.name: stock.lots for stock in stocks}
         expected = {'A': 3, 'B': 3, 'C': 3, 'D': 4, 'E': 4}
+        self.assertEqual(expected, result)
+
+    def test_with_lots(self):
+        stocks = self.create_stocks_with_lots([("A", 20, 1), ("B", 17, 10)])
+        budget = 500
+        distribute_budget(stocks, budget)
+        result = {stock.config.name: stock.lots for stock in stocks}
+        expected = {'A': 16, 'B': 10}
         self.assertEqual(expected, result)
 
 

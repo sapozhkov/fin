@@ -32,11 +32,9 @@ class TradingBot(AbstractBot):
         self.client = client_helper
         self.accounting = accounting_helper
 
-        if self.config.step_size_shift:
+        if self.config.is_fan_layout():
             self.trade_strategy = TradeShiftStrategy(self)
         else:
-            # todo del
-            # raise Exception('try USE TradeNormalStrategy')
             self.trade_strategy = TradeNormalStrategy(self)
 
         if not self.is_trading_day():
@@ -53,7 +51,9 @@ class TradingBot(AbstractBot):
             ))
             self.accounting.set_num(min(self.accounting.get_num(), self.config.use_shares))
 
-        self.validate_and_modify_config()
+        if not self.validate_and_modify_config():
+            self.state = self.STATE_FINISHED
+            return
 
         self.run_state: Run | None = None
         instrument = Instrument.get_by_id(config.instrument_id) if config.instrument_id else None
@@ -94,7 +94,7 @@ class TradingBot(AbstractBot):
                  f"     run_instance - {self.run_state}"
                  )
 
-    def validate_and_modify_config(self):
+    def validate_and_modify_config(self) -> bool:
         if self.config.majority_trade and not self.client.instrument.short_enabled_flag:
             self.config.majority_trade = False
             self.logger.error(f"Change majority_trade to False. Instrument short_enabled_flag is False")
@@ -102,8 +102,18 @@ class TradingBot(AbstractBot):
                 self.config.step_base_cnt = 0
                 self.logger.error(f"Change step_base_cnt to 0")
 
+        # приводим лотность к нижнему кратному значению
+        inst_lot = self.client.instrument.lot
+        if inst_lot > 1:
+            self.config.step_lots = inst_lot * (self.config.step_lots // inst_lot)
+            if self.config.step_lots == 0:
+                self.logger.error('Получена нулевая лотность')
+                return False
+
         # вот тут проводим переустановку base
         self.pretest_and_modify_config()
+
+        return True
 
     def pretest_and_modify_config(self):
         if not self.config.pretest_period:

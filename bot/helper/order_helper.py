@@ -13,32 +13,28 @@ class OrderHelper:
         :param order:
         :return:
         """
-        # executed_order_price - тут лежит средняя цена по API
-        lots = OrderHelper.get_lots(order)
-
         if isinstance(order, PostOrderResponse):
             price = q2f(order.executed_order_price)
         elif isinstance(order, OrderState):
-            price = q2f(order.executed_order_price) / lots
+            price = q2f(order.average_position_price)
         else:
             raise TypeError
 
         if price > 0:
             return price
 
-        # initial_order_price - а вот тут средняя умноженная на лоты
-        price = q2f(order.initial_order_price)
-        return price / lots
+        return q2f(order.initial_security_price)
 
     @staticmethod
     def get_lots(order: PostOrderResponse | OrderState) -> int:
         """
         Отдает количество лотов в заказе.
-        Отдает сразу lots_requested - там то, что надо во всех текущих случаях для этого кода
+        Отдает округленное частное от общей суммы и цены за 1 -
+        это для расчета реального количества с учетом лотностей инструмента и алгоритма
         :param order:
         :return:
         """
-        return order.lots_requested
+        return round(q2f(order.initial_order_price) / OrderHelper.get_avg_price(order))
 
     @staticmethod
     def get_commission(order: PostOrderResponse | OrderState):

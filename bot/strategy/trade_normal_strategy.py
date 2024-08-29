@@ -36,8 +36,8 @@ class TradeNormalStrategy(TradeAbstractStrategy):
                 self.remove_order_from_active_list(order)
 
         self.log(f"Orders: "
-                     f"buy {self.get_existing_buy_order_prices()}, "
-                     f"sell {self.get_existing_sell_order_prices()} ")
+                 f"buy {self.get_existing_buy_order_prices()}, "
+                 f"sell {self.get_existing_sell_order_prices()} ")
 
     def place_buy_orders(self):
         current_price = self.cached_current_price

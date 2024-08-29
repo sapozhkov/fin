@@ -43,9 +43,10 @@ class Stock:
     price: float = 0
     budget: float = 0
     lots: int = 0
+    instrument_lots: int = 0
 
     def __repr__(self):
-        return f"{self.config} p{self.price} b{self.budget} l{self.lots}"
+        return f"{self.config} p{self.price} b{self.budget} l{self.lots} x {self.instrument_lots}"
 
 
 def distribute_budget(stocks: list[Stock], budget):
@@ -61,7 +62,8 @@ def distribute_budget(stocks: list[Stock], budget):
     # Распределяем равную долю бюджета для каждой акции
     for stock in stocks:
         # Количество акций, которые можно купить за бюджет
-        count = int(equal_share // stock.budget)
+        i_lot = stock.instrument_lots
+        count = i_lot * (int(equal_share // stock.budget) // i_lot)
         stock.lots = count
         remaining_budget -= count * stock.budget
 
@@ -69,11 +71,15 @@ def distribute_budget(stocks: list[Stock], budget):
 
     for i in range(1, max_iterations+1):
         for stock in stocks:
-            if remaining_budget < stock.budget:
+            i_lot = stock.instrument_lots
+            if remaining_budget < stock.budget * i_lot:
                 continue
 
             # на последней итерации "сколько влезает", а так по одному шагу добавляем
-            count = int(remaining_budget // stock.budget) if i == max_iterations else 1
+            if i == max_iterations:
+                count = i_lot * (int(remaining_budget // stock.budget) // i_lot)
+            else:
+                count = i_lot
 
             stock.lots += count
             remaining_budget -= count * stock.budget
@@ -155,12 +161,14 @@ async def main():
                 ticker = config.ticker
                 ticker_cache = TickerCache(ticker)
                 figi = ticker_cache.get_instrument().figi
+                instrument_lots = ticker_cache.get_instrument().lot
 
                 stock = Stock()
                 stock.instrument_id = instrument.id
                 stock.config = config
                 stock.ticker = ticker
                 stock.figi = figi
+                stock.instrument_lots = instrument_lots
 
                 stocks.append(stock)
 
