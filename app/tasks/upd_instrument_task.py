@@ -39,10 +39,13 @@ class UpdInstrumentTask(AbstractTask):
 
         t_config = RunConfig.from_repr_string(instrument.config)
 
+        ticker_cache = TickerCache(t_config.ticker)
+        i_lot = ticker_cache.get_instrument().lot
+
         test_configs = [
             (RunConfig(
                 ticker=t_config.ticker,
-                step_max_cnt=max_shares,
+                step_max_cnt=max_shares * i_lot,
                 step_base_cnt=0,
                 step_lots=1,
 
