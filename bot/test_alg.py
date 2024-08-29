@@ -387,9 +387,7 @@ class TestAlgorithm:
 
     @staticmethod
     def make_config_variants(config: RunConfig) -> list[RunConfig]:
-        ticker_cache = TickerCache(config.ticker)
-        i_lot = ticker_cache.get_instrument().lot
-        step_step = 1 * i_lot if config.is_maj_trade() else 2 * i_lot
+        step_step = 1 if config.is_maj_trade() else 2
         return [
             (RunConfig(
                 name=config.name,

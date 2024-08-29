@@ -45,9 +45,9 @@ class UpdInstrumentTask(AbstractTask):
         test_configs = [
             (RunConfig(
                 ticker=t_config.ticker,
-                step_max_cnt=max_shares * i_lot,
+                step_max_cnt=max_shares,
                 step_base_cnt=0,
-                step_lots=1,
+                step_lots=1 * i_lot,
 
                 majority_trade=t_config.majority_trade,
                 pretest_period=pretest_period,
