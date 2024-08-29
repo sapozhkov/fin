@@ -113,6 +113,29 @@ class TestDistributeBudget(unittest.TestCase):
         expected = {'A': 8, 'B': 10, 'C': 1}
         self.assertEqual(expected, result)
 
+    def test_big_diff(self):
+        stocks = self.create_stocks([
+            ("D", 11 * 228.75 * 2),
+            ("E", 2 * 112.05 * 2),
+            ("P", 8 * 235),
+            ("Q", 8 * 194),
+            ("R", 2 * 161 * 2),
+            ("U", 4 * 37.25)
+        ])
+        """
+        D 5032.5
+        P 1880
+        Q 1552
+        R 3220
+        E 3137.4
+        U 2831.0
+        """
+        budget = 18672 * 0.95
+        distribute_budget(stocks, budget)
+        result = {stock.config.name: stock.lots for stock in stocks}
+        expected = {'D': 1, 'E': 7, 'P': 1, 'Q': 1, 'R': 5, 'U': 19}
+        self.assertEqual(expected, result)
+
 
 if __name__ == '__main__':
     unittest.main()
