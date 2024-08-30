@@ -7,7 +7,7 @@ from web.formater import view_format_datetime, view_format_currency, view_format
 
 class AccountView(ModelView):
     column_display_pk = True
-    column_default_sort = [('id', False)]
+    column_default_sort = [('name', False)]
     form_columns = [
         'id',
         'name',
