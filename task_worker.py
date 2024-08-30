@@ -1,4 +1,5 @@
 import random
+import traceback
 from datetime import datetime
 
 from app import create_app
@@ -52,6 +53,9 @@ def main():
         task.status = TaskStatus.FINISHED if res else TaskStatus.FAILED
         task.save()
     except Exception as e:
+        traceback_str = ''.join(traceback.format_exception(None, e, e.__traceback__))
+        print_log(f"Исключение при выполнении задачи: {e}\nТрассировка: \n{traceback_str}")
+
         task.error = str(e)
         task.status = TaskStatus.FAILED
         task.save()
