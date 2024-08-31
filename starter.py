@@ -14,11 +14,6 @@ from bot.db import TickerCache
 from app.helper import TimeHelper
 from bot import TestAlgorithm
 
-date = TimeHelper.get_next_date() if TimeHelper.is_evening() else TimeHelper.get_current_date()
-if not TimeHelper.is_working_day(date):
-    print(f'{datetime.datetime.now()} Выходной, спим')
-    exit()
-
 
 async def run_command(command):
     print(command)
@@ -255,6 +250,11 @@ async def main():
 
 if __name__ == '__main__':
     print(f'start {datetime.datetime.now()}')
+
+    date = TimeHelper.get_next_date() if TimeHelper.is_evening() else TimeHelper.get_current_date()
+    if not TimeHelper.is_working_day(date):
+        print(f'{datetime.datetime.now()} Выходной, спим')
+        exit()
 
     asyncio.run(main())
 

@@ -51,6 +51,8 @@ class TradeNormalStrategy(TradeAbstractStrategy):
 
         target_prices = [current_price - i * self.config.step_size
                          for i in range(1, self.config.step_set_orders_cnt + 1)]
+        # выфильтровываем только положительные
+        target_prices = [x for x in target_prices if x > 0]
         # target_prices = [self.round(current_price - i * self.config.step_size) for i in range(1,
         # self.config.step_set_orders_cnt + 1)]
 
@@ -80,6 +82,8 @@ class TradeNormalStrategy(TradeAbstractStrategy):
         #                  for i in range(1, self.config.step_set_orders_cnt + 1)]
         target_prices = [self.round(current_price + i * self.config.step_size)
                          for i in range(1, self.config.step_set_orders_cnt + 1)]
+        # выфильтровываем только положительные
+        target_prices = [x for x in target_prices if x > 0]
 
         # Исключаем цены, по которым уже выставлены заявки
         existing_order_prices = self.get_existing_sell_order_prices()

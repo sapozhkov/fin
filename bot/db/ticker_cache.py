@@ -178,10 +178,10 @@ class TickerCache:
                         VALUES (?, ?, ?, ?, ?, ?)
                         ''', (
                             candle.time,
-                            q2f(candle.open),
-                            q2f(candle.high),
-                            q2f(candle.low),
-                            q2f(candle.close),
+                            q2f(candle.open, self.instrument.round_signs),
+                            q2f(candle.high, self.instrument.round_signs),
+                            q2f(candle.low, self.instrument.round_signs),
+                            q2f(candle.close, self.instrument.round_signs),
                             candle.volume
                         ))
                     conn.commit()
@@ -246,10 +246,10 @@ class TickerCache:
                                     'VALUES (?, ?, ?, ?, ?, ?)',
                                     (
                                         candle.time.date(),
-                                        q2f(candle.open),
-                                        q2f(candle.high),
-                                        q2f(candle.low),
-                                        q2f(candle.close),
+                                        q2f(candle.open, self.instrument.round_signs),
+                                        q2f(candle.high, self.instrument.round_signs),
+                                        q2f(candle.low, self.instrument.round_signs),
+                                        q2f(candle.close, self.instrument.round_signs),
                                         candle.volume
                                     ))
                                 conn.commit()
@@ -291,7 +291,10 @@ class TickerCache:
                     if instrument.ticker == self.ticker:
                         min_increment = instrument.min_price_increment.units + \
                                         instrument.min_price_increment.nano * 1e-9
-                        min_increment_str = str(min_increment)
+
+                        # это для того, чтобы превратить float 2e-05 в 0.00005 и подобные тоже
+                        min_increment_str = "{:.10f}".format(min_increment).rstrip('0').rstrip('.')
+
                         decimal_point_index = min_increment_str.find('.')
                         if decimal_point_index == -1:
                             round_signs = 0

@@ -131,7 +131,7 @@ class RunConfig:
         step_shift = f"(+x{self.step_size_shift})" if self.step_size_shift else ''
         return (f"{self.ticker}{'+' if self.majority_trade else '-'} "
                 f"{self.step_max_cnt}/{base}/{self.step_set_orders_cnt} "
-                f"x l{self.step_lots} x {round(self.step_size, 2)}{step_shift}¤ "
+                f"x l{self.step_lots} x {self.step_size}{step_shift}¤ "
                 f"{thresholds}{stops}"
                 )
 

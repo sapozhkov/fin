@@ -41,6 +41,8 @@ class UpdInstrumentTask(AbstractTask):
 
         ticker_cache = TickerCache(t_config.ticker)
         i_lot = ticker_cache.get_instrument().lot
+        round_signs = ticker_cache.get_instrument().round_signs
+        step_diff = TestAlgorithm.get_step_by_price(instrument.price)
 
         test_configs = [
             (RunConfig(
@@ -59,12 +61,12 @@ class UpdInstrumentTask(AbstractTask):
                 stop_down_p=0,
                 step_size_shift=step_size_shift,
 
-                step_size=t_config.step_size + step_size_diff,
+                step_size=round(t_config.step_size + step_size_diff, round_signs),
                 step_set_orders_cnt=2,
             ))
             for max_shares in ([3, 4] if t_config.is_maj_trade() else [6, 8])
             for stop_up_p in [0, 0.01]
-            for step_size_diff in [0, .2, -.2]
+            for step_size_diff in [0, step_diff, -step_diff]
             for step_size_shift in ([0, .1, .2, .3] if t_config.is_fan_layout() else [0])
             for pretest_period in range(3, 7)
         ]

@@ -386,8 +386,21 @@ class TestAlgorithm:
             return copy.copy(original_config), 0.01
 
     @staticmethod
-    def make_config_variants(config: RunConfig) -> list[RunConfig]:
+    def get_step_by_price(price: float | None) -> float:
+        if price is None:
+            return 0.2
+
+        if price < 1:
+            return 0.002
+        elif price < 10:
+            return 0.2
+        else:
+            return 0.2
+
+    def make_config_variants(self, config: RunConfig) -> list[RunConfig]:
         step_step = 1 if config.is_maj_trade() else 2
+        step_diff = self.get_step_by_price(self.client_helper.get_current_price())
+        step_round_digits = self.client_helper.instrument.round_signs
         return [
             (RunConfig(
                 name=config.name,
@@ -441,8 +454,8 @@ class TestAlgorithm:
                 ]
             )
             for step_size in [
-                round(config.step_size, 2),
-                round(config.step_size-0.2, 2),
-                round(config.step_size+0.2, 2),
+                round(config.step_size, step_round_digits),
+                round(config.step_size - step_diff, step_round_digits),
+                round(config.step_size + step_diff, step_round_digits),
             ]
         ]
