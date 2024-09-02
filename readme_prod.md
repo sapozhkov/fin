@@ -111,6 +111,7 @@ exit
 это уже от имени обычного пользователя в директории проекта 
 ```shell
 pip install psycopg2-binary
+pip install psutil
 ```
 
 ## cron

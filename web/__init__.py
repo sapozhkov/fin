@@ -8,7 +8,8 @@ from flask_login import LoginManager, current_user
 
 from app import db, AppConfig
 from app.models import User
-from web.formater import view_format_datetime, format_currency, format_time, format_currency_class, format_status_class
+from web.formater import (view_format_datetime, format_currency, format_time, format_currency_class,
+                          format_status_class, nl2br)
 
 login = LoginManager()
 login.login_view = 'common.login'
@@ -43,7 +44,7 @@ def create_web(app):
     from web.routes import register_blueprints
     from web.views import AccountView, AccRunView, AccRunBalanceView, \
         InstrumentView, InstrumentLogView, IndexView, RunView, TaskView, CommandView, \
-        BalanceChartView
+        BalanceChartView, ServerView
     from app.models import Account, AccRun, Run, Instrument, InstrumentLog, Task, Command
 
     register_blueprints(app)
@@ -53,6 +54,7 @@ def create_web(app):
     app.jinja_env.filters['currency'] = format_currency
     app.jinja_env.filters['currency_class'] = format_currency_class
     app.jinja_env.filters['status_class'] = format_status_class
+    app.jinja_env.filters['nl2br'] = nl2br
 
     admin = Admin(app, name='FinHub', template_mode='bootstrap3', url='/', index_view=IndexView(url='/'))
 
@@ -68,6 +70,7 @@ def create_web(app):
     admin.add_view(CommandView(Command, db.session))
     # admin.add_view(AccRunBalanceView(AccRunBalance, db.session))
     admin.add_view(InstrumentLogView(InstrumentLog, db.session, name="ILog"))
+    admin.add_view(ServerView(name='Server'))
     admin.add_link(MenuLink(name='Logout', url='/logout'))
 
     return app
