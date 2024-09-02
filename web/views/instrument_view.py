@@ -1,4 +1,6 @@
+from flask import url_for
 from flask_admin.contrib.sqla import ModelView
+from markupsafe import Markup
 from wtforms import ValidationError
 
 from app.config import RunConfig
@@ -10,6 +12,10 @@ class InstrumentView(ModelView):
     column_default_sort = [('account', False), ('id', False)]
     column_list = (
         'id',
+        'profit_n_last_day',
+        'profit_n_last_week',
+        'profit_n_last_month',
+        'profit_n_all_time',
         'name',
         'account_rel.name',
         'config',
@@ -18,10 +24,7 @@ class InstrumentView(ModelView):
         'data',
         'updated_at',
         'status',
-        'profit_n_last_day',
-        'profit_n_last_week',
-        'profit_n_last_month',
-        'profit_n_all_time',
+
     )
     column_sortable_list = (
         'id', 'name', 'account_rel.name', 'config', 'status',
@@ -33,7 +36,10 @@ class InstrumentView(ModelView):
         'profit_n_last_day': view_format_percent,
         'profit_n_last_week': view_format_percent,
         'profit_n_last_month': view_format_percent,
-        'profit_n_all_time': view_format_percent,
+        'profit_n_all_time': lambda view, context, model, name: Markup(
+            f'<a href="{url_for("run.index_view", flt1_0=model.id)}" >'
+            f'{view_format_percent(view, context, model, name)}</a>'
+        ),
     }
     column_editable_list = ['status']
     column_filters = [

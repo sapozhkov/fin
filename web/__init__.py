@@ -74,4 +74,10 @@ def create_web(app):
         admin.add_view(ServerView(name='Server'))
         admin.add_link(MenuLink(name='Logout', url='/logout'))
 
+        # for rule in app.url_map.iter_rules():
+        #     print(f"Rule: {rule}")
+        #     print(f"Endpoint: {rule.endpoint}")
+        #     print(f"Methods: {', '.join(rule.methods)}")
+        #     print()
+
         return app
