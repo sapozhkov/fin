@@ -41,6 +41,10 @@ class Instrument(db.Model):
     def get_all(cls) -> List['Instrument']:
         return cls.query.order_by(cls.status.desc()).all()
 
+    @classmethod
+    def get_for_filter(cls) -> List['Instrument']:
+        return cls.query.order_by(cls.name).all()
+
     def __repr__(self):
         return f"<Instrument {self.id} '{self.config}' [{self.account}] {'On' if self.status else 'Off'}>"
 

@@ -23,54 +23,55 @@ def load_user(user_id):
 
 
 def create_web(app):
-    app.config['FLASK_ADMIN_SWATCH'] = 'cosmo' if app.config['DEBUG_MODE'] else 'cerulean'
-    app.template_folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'templates')
-    app.static_folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static')
+    with app.app_context():
+        app.config['FLASK_ADMIN_SWATCH'] = 'cosmo' if app.config['DEBUG_MODE'] else 'cerulean'
+        app.template_folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'templates')
+        app.static_folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static')
 
-    login.init_app(app)
+        login.init_app(app)
 
-    # Проверка авторизации перед каждым запросом,
-    # а определение @login.user_loader лежит в моделях
-    @app.before_request
-    def require_login():
-        if not current_user.is_authenticated and request.endpoint not in ['common.login']:
-            return redirect(url_for('common.login'))
+        # Проверка авторизации перед каждым запросом,
+        # а определение @login.user_loader лежит в моделях
+        @app.before_request
+        def require_login():
+            if not current_user.is_authenticated and request.endpoint not in ['common.login']:
+                return redirect(url_for('common.login'))
 
-    @app.context_processor
-    def inject_favicon_path():
-        return {'favicon_path': '/static/favicon/favicon_' + ('dev' if AppConfig.DEBUG_MODE else 'prod') + '.ico'}
+        @app.context_processor
+        def inject_favicon_path():
+            return {'favicon_path': '/static/favicon/favicon_' + ('dev' if AppConfig.DEBUG_MODE else 'prod') + '.ico'}
 
-    # Импортируем модели после создания приложения и расширений, иначе циклится
-    from web.routes import register_blueprints
-    from web.views import AccountView, AccRunView, AccRunBalanceView, \
-        InstrumentView, InstrumentLogView, IndexView, RunView, TaskView, CommandView, \
-        BalanceChartView, ServerView
-    from app.models import Account, AccRun, Run, Instrument, InstrumentLog, Task, Command
+        # Импортируем модели после создания приложения и расширений, иначе циклится
+        from web.routes import register_blueprints
+        from web.views import AccountView, AccRunView, AccRunBalanceView, \
+            InstrumentView, InstrumentLogView, IndexView, RunView, TaskView, CommandView, \
+            BalanceChartView, ServerView
+        from app.models import Account, AccRun, Run, Instrument, InstrumentLog, Task, Command
 
-    register_blueprints(app)
+        register_blueprints(app)
 
-    # Регистрация фильтра в приложении
-    app.jinja_env.filters['time'] = format_time
-    app.jinja_env.filters['currency'] = format_currency
-    app.jinja_env.filters['currency_class'] = format_currency_class
-    app.jinja_env.filters['status_class'] = format_status_class
-    app.jinja_env.filters['nl2br'] = nl2br
+        # Регистрация фильтра в приложении
+        app.jinja_env.filters['time'] = format_time
+        app.jinja_env.filters['currency'] = format_currency
+        app.jinja_env.filters['currency_class'] = format_currency_class
+        app.jinja_env.filters['status_class'] = format_status_class
+        app.jinja_env.filters['nl2br'] = nl2br
 
-    admin = Admin(app, name='FinHub', template_mode='bootstrap3', url='/', index_view=IndexView(url='/'))
+        admin = Admin(app, name='FinHub', template_mode='bootstrap3', url='/', index_view=IndexView(url='/'))
 
-    admin.add_view(AccountView(Account, db.session))
-    admin.add_view(AccRunView(AccRun, db.session))
-    admin.add_view(BalanceChartView(name='Balance'))
+        admin.add_view(AccountView(Account, db.session))
+        admin.add_view(AccRunView(AccRun, db.session))
+        admin.add_view(BalanceChartView(name='Balance'))
 
-    admin.add_view(InstrumentView(Instrument, db.session))
-    admin.add_view(RunView(Run, db.session, name="Inst Run"))
-    # admin.add_view(ModelView(Deal, db.session))
+        admin.add_view(InstrumentView(Instrument, db.session))
+        admin.add_view(RunView(Run, db.session, name="Inst Run"))
+        # admin.add_view(ModelView(Deal, db.session))
 
-    admin.add_view(TaskView(Task, db.session))
-    admin.add_view(CommandView(Command, db.session))
-    # admin.add_view(AccRunBalanceView(AccRunBalance, db.session))
-    admin.add_view(InstrumentLogView(InstrumentLog, db.session, name="ILog"))
-    admin.add_view(ServerView(name='Server'))
-    admin.add_link(MenuLink(name='Logout', url='/logout'))
+        admin.add_view(TaskView(Task, db.session))
+        admin.add_view(CommandView(Command, db.session))
+        # admin.add_view(AccRunBalanceView(AccRunBalance, db.session))
+        admin.add_view(InstrumentLogView(InstrumentLog, db.session, name="ILog"))
+        admin.add_view(ServerView(name='Server'))
+        admin.add_link(MenuLink(name='Logout', url='/logout'))
 
-    return app
+        return app
