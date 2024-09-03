@@ -1,4 +1,3 @@
-from flask import url_for
 from flask_admin.contrib.sqla.filters import BaseSQLAFilter
 
 from app.models import Instrument

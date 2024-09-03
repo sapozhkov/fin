@@ -37,8 +37,12 @@ class InstrumentView(ModelView):
         'profit_n_last_week': view_format_percent,
         'profit_n_last_month': view_format_percent,
         'profit_n_all_time': lambda view, context, model, name: Markup(
-            f'<a href="{InstrumentView.make_runs_rel(model.id)}" >'
+            f'<a href="{url_for("run.index_view", flt1_0=model.id)}" >'
             f'{view_format_percent(view, context, model, name)}</a>'
+        ),
+        'config': lambda view, context, model, name: Markup(
+            f'<a href="{url_for("instrumentlog.index_view", flt0_0=model.id)}" >'
+            f'{getattr(model, name)}</a>'
         ),
     }
     column_editable_list = ['status']
@@ -73,7 +77,3 @@ class InstrumentView(ModelView):
 
         # Вызываем родительский метод для продолжения стандартной обработки
         super(InstrumentView, self).on_model_change(form, model, is_created)
-
-    @staticmethod
-    def make_runs_rel(instrument_id):
-        return url_for("run.index_view", flt1_0=instrument_id)
