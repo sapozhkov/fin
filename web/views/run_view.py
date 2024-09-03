@@ -1,7 +1,7 @@
 from flask_admin.contrib.sqla import ModelView
 
 from app.constants import RunStatus
-from app.models import Instrument
+from app.models import Instrument, Run
 from web.filter import InstrumentFilter
 from web.formater import view_format_datetime, view_format_currency
 
@@ -9,7 +9,7 @@ from web.formater import view_format_datetime, view_format_currency
 class RunView(ModelView):
     column_default_sort = [('date', True), ('id', False)]
     column_filters = (
-        InstrumentFilter(column=Instrument.name, term='', name='Instrument'),
+        InstrumentFilter(column=Run.instrument, term='', name='Instrument'),
         'status',
         'date'
     )
