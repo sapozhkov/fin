@@ -1,9 +1,9 @@
-from flask import url_for
 from flask_admin.contrib.sqla import ModelView
 from markupsafe import Markup
 from wtforms import ValidationError
 
 from app.config import RunConfig
+from web.filter import InstrumentFilter
 from web.formater import view_format_datetime, view_format_currency, view_format_percent
 
 
@@ -37,7 +37,7 @@ class InstrumentView(ModelView):
         'profit_n_last_week': view_format_percent,
         'profit_n_last_month': view_format_percent,
         'profit_n_all_time': lambda view, context, model, name: Markup(
-            f'<a href="{url_for("run.index_view", flt1_0=model.id)}" >'
+            f'<a href="{InstrumentFilter.make_runs_rel(model.id)}" >'
             f'{view_format_percent(view, context, model, name)}</a>'
         ),
     }
