@@ -4,6 +4,8 @@ from markupsafe import Markup
 from wtforms import ValidationError
 
 from app.config import RunConfig
+from app.models import Instrument
+from web.filter.account_filter import AccountFilter
 from web.formater import view_format_datetime, view_format_currency, view_format_percent
 
 
@@ -47,8 +49,8 @@ class InstrumentView(ModelView):
     }
     column_editable_list = ['status']
     column_filters = [
+        AccountFilter(column=Instrument.account, term='', name='Account'),
         'status',
-        'account_rel.name'
     ]
     column_choices = {
         'status': [

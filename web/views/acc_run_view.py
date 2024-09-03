@@ -3,7 +3,9 @@ from flask_admin.contrib.sqla import ModelView
 from markupsafe import Markup
 
 from app.constants import RunStatus
+from app.models import AccRun
 from web import view_format_datetime
+from web.filter.account_filter import AccountFilter
 from web.formater import view_format_currency
 
 
@@ -99,6 +101,10 @@ class AccRunView(ModelView):
         )
     }
 
-    column_filters = ['account', 'status', 'date']
+    column_filters = [
+        AccountFilter(column=AccRun.account, term='', name='Account'),
+        'status',
+        'date'
+    ]
     form_choices = {'status': RunStatus.get_list()}
     column_choices = {'status': RunStatus.get_list()}

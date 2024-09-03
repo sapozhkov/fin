@@ -1,5 +1,5 @@
 from datetime import datetime, timezone, timedelta
-from typing import Optional
+from typing import Optional, List
 
 from app import db
 
@@ -28,6 +28,10 @@ class Account(db.Model):
     @classmethod
     def get_by_id(cls, acc_id) -> Optional['Account']:
         return cls.query.get(acc_id)
+
+    @classmethod
+    def get_for_filter(cls) -> List['Account']:
+        return cls.query.order_by(cls.name).all()
 
     @staticmethod
     def calculate_product(values):
