@@ -47,3 +47,24 @@ class CommandManager:
             Command.status == CommandStatus.NEW,
             or_(Command.expired_at.is_(None), Command.expired_at <= current_time)
         ).all()
+
+    @staticmethod
+    def expire_unfinished_commands():
+        current_time = datetime.now(timezone.utc)
+
+        # Находим все команды, которые еще не завершены (не находятся в closed_list)
+        # и либо истекли, либо не имеют срока истечения (expired_at is None)
+        commands_to_expire = Command.query.filter(
+            Command.status.notin_(CommandStatus.closed_list()),
+            Command.expired_at.is_(None) | (Command.expired_at <= current_time)
+        ).all()
+
+        # Обновляем статус найденных команд на 'Expired'
+        for command in commands_to_expire:
+            command.status = CommandStatus.EXPIRED
+            command.executed_at = current_time
+
+        # Фиксируем изменения в базе данных
+        db.session.commit()
+
+        return len(commands_to_expire)
