@@ -23,5 +23,12 @@
         {% endfor %}
     </p>
 
+    <p>
+        <i>open</i> {{ acc_run.open|currency }}
+        <i>close</i> {{ acc_run.close|currency }}
+        <i>low</i> {{ acc_run.low|currency }}
+        <i>high</i> {{ acc_run.high|currency }}
+    </p>
+
     <img src="{{ chart_url }}" alt="Balance Chart">
 {% endblock %}
