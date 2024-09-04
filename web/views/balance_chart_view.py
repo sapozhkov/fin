@@ -1,7 +1,8 @@
 from flask_admin import expose, BaseView
 from flask import redirect, url_for, render_template, request
+from sqlalchemy.orm import joinedload
 
-from app.models import AccRun
+from app.models import AccRun, Account
 
 
 class BalanceChartView(BaseView):
@@ -20,8 +21,14 @@ class BalanceChartView(BaseView):
         acc_run = AccRun.query.get_or_404(acc_run_id)
 
         # Получение всех запусков для аккаунта на текущий день
-        acc_run_list = AccRun.query.filter_by(date=acc_run.date).order_by(AccRun.account.asc()).all()
-
+        acc_run_list = (
+            AccRun.query
+            .join(AccRun.account_rel)  # Присоединяем таблицу Account
+            .filter(AccRun.date == acc_run.date)
+            .options(joinedload(AccRun.account_rel))  # Загрузка связанных данных
+            .order_by(Account.name.asc())  # Сортировка по имени аккаунта
+            .all()
+        )
         # Выбор предыдущей и следующей даты
         prev_run = AccRun.query.filter(AccRun.account == acc_run.account, AccRun.date < acc_run.date).order_by(
             AccRun.date.desc()).first()
