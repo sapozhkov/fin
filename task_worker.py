@@ -20,10 +20,6 @@ def main():
     def print_log(text=''):
         print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {text}" if text else '')
 
-    # Закрыть таски, работавшие больше дня с ошибкой
-    if random.randint(1, 100) == 1:
-        Task.clear_tasks_by_timeout()
-
     # Выйти, если есть активные задачи
     if Task.has_tasks_in_progress():
         return

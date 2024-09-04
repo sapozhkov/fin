@@ -1,4 +1,7 @@
+from datetime import datetime, timezone
 from typing import List
+
+from sqlalchemy import not_
 
 from app import db
 from app.constants import RunStatus
@@ -44,3 +47,23 @@ class AccRun(db.Model):
 
     def __repr__(self):
         return f'<AccRun {self.id} a{self.account} at {self.date}>'
+
+    @staticmethod
+    def expire_unfinished():
+        # Получаем список терминальных состояний
+        closed_statuses = RunStatus.closed_list()
+
+        # Находим все acc_runs, которые еще не находятся в терминальном состоянии
+        non_terminal_acc_runs = AccRun.query.filter(
+            not_(AccRun.status.in_(closed_statuses))
+        ).all()
+
+        # Обновляем статус каждого acc_run до терминального состояния
+        for acc_run in non_terminal_acc_runs:
+            acc_run.status = RunStatus.FAILED
+            acc_run.updated_at = datetime.now(timezone.utc)
+
+        # Сохраняем изменения
+        db.session.commit()
+
+        return len(non_terminal_acc_runs)

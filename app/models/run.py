@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import datetime, timezone
 from typing import Optional, List
 
 from sqlalchemy import desc, not_
@@ -110,3 +111,23 @@ class Run(db.Model):
                 not_(Run.status.in_(closed_statuses))
             )\
             .all()
+
+    @staticmethod
+    def expire_unfinished():
+        # Получаем список терминальных состояний
+        closed_statuses = RunStatus.closed_list()
+
+        # Находим все запуски, которые еще не находятся в терминальном состоянии
+        non_terminal_runs = Run.query.filter(
+            not_(Run.status.in_(closed_statuses))
+        ).all()
+
+        # Обновляем статус каждого запуска до терминального состояния
+        for run in non_terminal_runs:
+            run.status = RunStatus.FAILED
+            run.updated_at = datetime.now(timezone.utc)
+
+        # Сохраняем изменения
+        db.session.commit()
+
+        return len(non_terminal_runs)

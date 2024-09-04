@@ -121,6 +121,7 @@ crontab -e
 ```
 
 ```
+20 6 * * 1-6 python3 ~/fin/expire_unfinished.py >> ~/log/expired.log 2>&1
 30 6 * * 1-6 python3 ~/fin/starter.py >> ~/log/starter.log 2>&1
 33 15 * * 1-6 python3 ~/fin/task_set_upd_instr.py >> ~/log/task_set.log 2>&1
 */1 * * * * python3 ~/fin/task_worker.py >> ~/log/tasks.log 2>&1
