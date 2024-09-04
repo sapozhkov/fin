@@ -40,12 +40,12 @@ def plot_balance(acc_run_id):
         min_change = ((min(values) - start_value) / start_value) * 100
         end_change = ((values[-1] - start_value) / start_value) * 100
 
+        plt.axhline(y=max(values), color='m', linestyle='--',
+                    label=f'High: {max(values):.2f} ({max_change:+.2f}%)')
         plt.axhline(y=start_value, color='g', linestyle='--',
                     label=f'Open: {start_value:.2f}')
         plt.axhline(y=values[-1], color='r', linestyle='--',
                     label=f'Close: {values[-1]:.2f} ({end_change:+.2f}%)')
-        plt.axhline(y=max(values), color='m', linestyle='--',
-                    label=f'High: {max(values):.2f} ({max_change:+.2f}%)')
         plt.axhline(y=min(values), color='b', linestyle='--',
                     label=f'Low: {min(values):.2f} ({min_change:+.2f}%)')
 
