@@ -2,18 +2,18 @@ from flask_admin import expose, BaseView
 from flask import redirect, url_for, render_template, request
 from sqlalchemy.orm import joinedload
 
-from app.models import AccRun, Account
+from app.models import AccRun, Account, Run
 
 
-class BalanceChartView(BaseView):
+class ChartsView(BaseView):
     # Главная страница вьюшки
     @expose('/')
     def index(self):
         return redirect(url_for('accrun.edit_view'))
 
     # Страница для отображения графика
-    @expose('/chart/<int:acc_run_id>/')
-    def chart(self, acc_run_id):
+    @expose('/balance/<int:acc_run_id>/')
+    def balance(self, acc_run_id):
         # Извлечение данных для графика
         chart_url = url_for('common.img_balance_chart', acc_run_id=acc_run_id)
 
@@ -42,4 +42,19 @@ class BalanceChartView(BaseView):
             next_run=next_run,
             acc_run=acc_run,
             acc_run_list=acc_run_list,
+        )
+
+    # Страница для отображения графика
+    @expose('/run/<int:run_id>/')
+    def run(self, run_id):
+        # Извлечение данных для графика
+        chart_url = url_for('common.img_run_chart', run_id=run_id)
+
+        # Извлечение текущего запуска
+        run = Run.query.get_or_404(run_id)
+
+        return self.render(
+            'admin/run.html',
+            chart_url=chart_url,
+            run=run,
         )

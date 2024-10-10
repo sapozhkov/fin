@@ -1,22 +1,20 @@
 import io
 from datetime import timedelta
 
-from flask import Response
+from flask import Response, abort
 from matplotlib import pyplot as plt, dates as mdates
 
 from app import AppConfig
+from app.config import RunConfig
 from app.constants import HistoryOrderType
 from app.helper import q2f
-from app.models import Order
+from app.models import Order, Run
 from bot.db import TickerCache
 
 
-class PlotOrders:
-    def __init__(self, ticker_cache: TickerCache):
-        self.ticker_cache = ticker_cache
-
+class PlotRun:
     @staticmethod
-    def _get_plot(ticker, date, orders: list[Order] = list, title=None) -> plt:
+    def _get_plot(ticker: str, date: str, orders: list[Order] = list, title=None) -> plt:
         """
         Приватный метод формирует само изображение, проброс его на соответствующий выход идет в других методах
         """
@@ -30,7 +28,7 @@ class PlotOrders:
         close_prices = [q2f(candle.close) for candle in candles.candles]  # Цены закрытия каждой свечи
 
         # Визуализация
-        fig, ax = plt.subplots(figsize=(14, 7))
+        fig, ax = plt.subplots(figsize=(11, 5))
 
         # Построение графика изменения цены закрытия
         plt.plot(times, close_prices, label='Close Price', alpha=0.75)
@@ -73,8 +71,17 @@ class PlotOrders:
         plot.close()
 
     @classmethod
-    def draw_web(cls, ticker, date, orders: list[Order] = list, title=None):
-        plot = cls._get_plot(ticker, date, orders, title)
+    def draw_web(cls, run_id: int):
+        run = Run.get_by_id(run_id)
+
+        if not run:
+            abort(404)
+
+        orders = Order.get_by_run_id(run_id)
+
+        config = RunConfig.from_repr_string(run.config)
+
+        plot = cls._get_plot(config.ticker, f"{run.date}", orders, f"{run}")
 
         # Сохранение в буфер как PNG
         buf = io.BytesIO()
@@ -84,5 +91,3 @@ class PlotOrders:
 
         # Возвращаем изображение как ответ
         return Response(buf, mimetype='image/png')
-
-

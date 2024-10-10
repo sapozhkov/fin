@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import current_user, login_user, logout_user
 
-from app.plot import PlotBalance
+from app.plot import PlotBalance, PlotRun
 from app.models import User
 from app.config import AppConfig
 
@@ -57,3 +57,8 @@ def logout():
 @bp.route('/img/acc_balance_chart/<int:acc_run_id>')
 def img_balance_chart(acc_run_id):
     return PlotBalance.draw_web(acc_run_id)
+
+
+@bp.route('/img/run_chart/<int:run_id>')
+def img_run_chart(run_id):
+    return PlotRun.draw_web(run_id)

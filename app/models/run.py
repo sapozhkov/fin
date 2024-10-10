@@ -146,3 +146,7 @@ class Run(db.Model):
             Run.date == date,
             Run.config.ilike(f"%{ticker}%")
         ).all()
+
+    @classmethod
+    def get_by_id(cls, run_id) -> Optional['Run']:
+        return cls.query.get(run_id)

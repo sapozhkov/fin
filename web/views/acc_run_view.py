@@ -97,7 +97,7 @@ class AccRunView(ModelView):
         'high': view_format_currency,
         'low': view_format_currency,
         'date': lambda view, context, model, name: Markup(
-            f'<a href="{url_for("balancechartview.chart", acc_run_id=model.id)}" >{getattr(model, name)}</a>'
+            f'<a href="{url_for("chartsview.balance", acc_run_id=model.id)}" >{getattr(model, name)}</a>'
         )
     }
 

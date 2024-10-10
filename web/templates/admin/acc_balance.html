@@ -4,11 +4,11 @@
     <h1>Balance Chart for {{ acc_run.date }}</h1>
 
     {% if prev_run %}
-        <a href="{{ url_for('balancechartview.chart', acc_run_id=prev_run.id) }}">Previous Date: {{ prev_run.date }}</a>
+        <a href="{{ url_for('chartsview.balance', acc_run_id=prev_run.id) }}">Previous Date: {{ prev_run.date }}</a>
     {% endif %}
 
     {% if next_run %}
-        <a href="{{ url_for('balancechartview.chart', acc_run_id=next_run.id) }}">Next Date: {{ next_run.date }}</a>
+        <a href="{{ url_for('chartsview.balance', acc_run_id=next_run.id) }}">Next Date: {{ next_run.date }}</a>
     {% endif %}
 
     <!-- Список доступных аккаунтов -->
@@ -17,7 +17,7 @@
             {% if run.id == acc_run.id %}
                 <strong>{{ run.account_rel.name }}</strong>
             {% else %}
-                <a href="{{ url_for('balancechartview.chart', acc_run_id=run.id) }}">{{ run.account_rel.name }}</a>
+                <a href="{{ url_for('chartsview.balance', acc_run_id=run.id) }}">{{ run.account_rel.name }}</a>
             {% endif %}
             {% if not loop.last %}, {% endif %}
         {% endfor %}
