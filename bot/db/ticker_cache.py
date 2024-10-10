@@ -1,5 +1,5 @@
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from tinkoff.invest import GetCandlesResponse, HistoricCandle, Client, CandleInterval
 
@@ -158,8 +158,8 @@ class TickerCache:
 
     def fetch_candles_from_api(self, date, save=True):
         with Client(self.token) as client:
-            from_time = datetime.strptime(date + " 06:55", "%Y-%m-%d %H:%M")
-            to_time = datetime.strptime(date + " 19:00", "%Y-%m-%d %H:%M")
+            from_time = datetime.strptime(date + " 06:55", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+            to_time = datetime.strptime(date + " 15:30", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
             candles = client.market_data.get_candles(
                 figi=self.get_instrument().figi,
                 from_=from_time,
