@@ -61,7 +61,7 @@ def create_web(app):
 
         admin.add_view(AccountView(Account, db.session))
         admin.add_view(AccRunView(AccRun, db.session))
-        admin.add_view(ChartsView())
+        admin.add_view(ChartsView(name="Charts"))
 
         admin.add_view(InstrumentView(Instrument, db.session))
         admin.add_view(RunView(Run, db.session, name="Inst Run"))
