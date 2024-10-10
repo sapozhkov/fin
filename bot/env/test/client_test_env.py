@@ -272,7 +272,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         return PostOrderResponse(
             order_id=self.get_new_order_id(),
             execution_report_status=OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL,
-            order_type=OrderType.ORDER_TYPE_LIMIT,
+            order_type=OrderType.ORDER_TYPE_MARKET,
             direction=direction,
             lots_requested=lots,
             lots_executed=lots,

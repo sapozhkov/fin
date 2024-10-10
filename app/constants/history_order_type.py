@@ -24,8 +24,8 @@ class HistoryOrderType:
         OPEN_SELL_LIMIT: ('Limit sell open', 'red', 'o'),
         CANCEL_BUY_LIMIT: ('Close buy open', 'blue', 'x'),
         CANCEL_SELL_LIMIT: ('Close sell open', 'magenta', 'x'),
-        EXECUTED_BUY_LIMIT: ('Market buy', 'blue', '^'),
-        EXECUTED_SELL_LIMIT: ('Market sell', 'orange', 'v'),
+        EXECUTED_BUY_LIMIT: ('Limit buy', 'blue', '^'),
+        EXECUTED_SELL_LIMIT: ('Limit sell', 'orange', 'v'),
     }
 
     @classmethod
