@@ -35,8 +35,8 @@ class TestHelper:
         return TickerCache(ticker)
 
     @staticmethod
-    def get_accounting(client_helper=None) -> AccountingTestEnvHelper:
-        return AccountingTestEnvHelper(client_helper)
+    def get_accounting(client_helper=None, time_helper=None) -> AccountingTestEnvHelper:
+        return AccountingTestEnvHelper(client_helper, time_helper)
 
     @staticmethod
     def get_helper_pack(ticker=DEF_TICKER, do_printing=False) -> \
@@ -46,6 +46,6 @@ class TestHelper:
         time_helper = TestHelper.get_time()
         logger_helper = TestHelper.get_logger(time_helper, do_printing)
         client_helper = TestHelper.get_client(config, logger_helper, time_helper)
-        accounting_helper = TestHelper.get_accounting(client_helper)
+        accounting_helper = TestHelper.get_accounting(client_helper, time_helper)
 
         return config, time_helper, logger_helper, client_helper, accounting_helper

@@ -22,7 +22,7 @@ class TestAlgorithm:
         self.time_helper = TimeTestEnvHelper()
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
         self.client_helper = ClientTestEnvHelper(config.ticker, self.logger_helper, self.time_helper)
-        self.accounting_helper = AccountingTestEnvHelper(self.client_helper)
+        self.accounting_helper = AccountingTestEnvHelper(self.client_helper, self.time_helper)
         self.use_cache = use_cache
 
     def test(
@@ -197,7 +197,7 @@ class TestAlgorithm:
 
                 bot.stop()
 
-                operations = len(self.accounting_helper.get_deals())
+                operations = self.accounting_helper.get_executed_order_cnt()
                 end_price = self.client_helper.get_current_price()
                 end_cnt = self.accounting_helper.get_instrument_count()
                 day_sum = self.accounting_helper.get_sum()

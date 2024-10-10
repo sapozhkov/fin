@@ -54,7 +54,7 @@ if __name__ == '__main__':
         time_helper = TimeProdEnvHelper()
         logger_helper = LoggerHelper(__name__, log_name)
         client_helper = TinkoffProxyClient(config_dto.ticker, time_helper, logger_helper, account_id)
-        accounting_helper = AccountingHelper(__file__, client_helper)
+        accounting_helper = AccountingHelper(__file__, client_helper, time_helper)
 
         bot = TradingBot(
             config=config_dto,

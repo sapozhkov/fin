@@ -131,3 +131,18 @@ class Run(db.Model):
         db.session.commit()
 
         return len(non_terminal_runs)
+
+    @staticmethod
+    def get_by_date_and_ticker(date_str: str, ticker: str) -> List['Run']:
+        """
+        Получает все записи Run с указанной датой и содержащие подстроку в поле config.
+        """
+        try:
+            date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            raise ValueError("Некорректный формат даты. Используйте формат 'YYYY-MM-DD'.")
+
+        return Run.query.filter(
+            Run.date == date,
+            Run.config.ilike(f"%{ticker}%")
+        ).all()

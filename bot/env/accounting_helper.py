@@ -3,17 +3,19 @@ from abc import ABC, abstractmethod
 from tinkoff.invest import OrderDirection, PostOrderResponse
 
 from bot.helper import OrderHelper
-from bot.env import AbstractProxyClient
+from bot.env import AbstractProxyClient, AbstractTimeHelper
 
 
 class AbstractAccountingHelper(ABC):
-    def __init__(self, client):
+    def __init__(self, client, time):
         self.sum = 0
         self.num = 0
         self.operations_cnt = 0
         self.client: AbstractProxyClient = client
+        self.time: AbstractTimeHelper = time
+        self.run_id = 0
 
-    def add_deal_by_order(self, order):
+    def add_deal_by_order(self, order: PostOrderResponse):
         lots = OrderHelper.get_lots(order)
         avg_price = self.client.round(OrderHelper.get_avg_price(order))
         commission = OrderHelper.get_commission(order)
@@ -30,7 +32,8 @@ class AbstractAccountingHelper(ABC):
 
         self.operations_cnt += 1
 
-        self.add_deal(
+        self.add_executed_order(
+            order.order_type,
             order.direction,
             avg_price,
             lots,
@@ -45,7 +48,7 @@ class AbstractAccountingHelper(ABC):
         pass
 
     @abstractmethod
-    def add_deal(self, deal_type, price, count, commission, total):
+    def add_executed_order(self, order_type, order_direction, price, count, commission, total):
         pass
 
     @abstractmethod
@@ -64,3 +67,6 @@ class AbstractAccountingHelper(ABC):
 
     def get_sum(self):
         return self.sum
+
+    def set_run_id(self, id:int):
+        self.run_id = id

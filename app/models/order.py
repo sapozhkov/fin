@@ -1,9 +1,11 @@
+from typing import List
+
 from app import db
 from app.models import Instrument
 
 
-class Deal(db.Model):
-    __tablename__ = 'deals'
+class Order(db.Model):
+    __tablename__: str = 'orders'
 
     id = db.Column(db.Integer, primary_key=True)
     run = db.Column(db.Integer, db.ForeignKey('runs.id'), nullable=False)
@@ -18,9 +20,13 @@ class Deal(db.Model):
     run_rel = db.relationship('Run', backref=db.backref('run', lazy=True))
 
     def __repr__(self):
-        return f'<Deal {self.id} - {self.datetime} - {self.type} - ' \
+        return f'<Order {self.id} - {self.datetime} - {self.type} - ' \
                f'{self.price} x {self.count} + {self.commission} = {self.total}>'
 
     # Метод для получения связанного инструмента
     def get_instrument(self):
         return Instrument.query.get(self.instrument)
+
+    @staticmethod
+    def get_by_run_id(run_id: int) -> List['Order']:
+        return Order.query.filter_by(run=run_id).order_by(Order.datetime).all()

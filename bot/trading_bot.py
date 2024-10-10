@@ -84,6 +84,8 @@ class TradingBot(AbstractBot):
 
             self.update_run_state()
 
+            self.accounting.set_run_id(self.run_state.id)
+
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"
                  f"     instrument - {self.client.instrument}\n"

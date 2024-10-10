@@ -2,7 +2,7 @@ from .account import Account
 from .instrument import Instrument  # должен быть выше Deal
 from .acc_run import AccRun
 from .instrument_log import InstrumentLog
-from .deal import Deal
+from .order import Order
 from .run import Run
 from .user import User
 from .task import Task
