@@ -59,9 +59,10 @@ def create_web(app):
 
         admin = Admin(app, name='FinHub', template_mode='bootstrap3', url='/', index_view=IndexView(url='/'))
 
+        admin.add_view(ChartsView(name="Charts"))
+
         admin.add_view(AccountView(Account, db.session))
         admin.add_view(AccRunView(AccRun, db.session))
-        admin.add_view(ChartsView(name="Charts"))
 
         admin.add_view(InstrumentView(Instrument, db.session))
         admin.add_view(RunView(Run, db.session, name="Inst Run"))

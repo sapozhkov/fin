@@ -9,7 +9,7 @@ class ChartsView(BaseView):
     # Главная страница вьюшки
     @expose('/')
     def index(self):
-        return redirect(url_for('accrun.edit_view'))
+        return redirect(url_for('admin.index'))
 
     # Страница для отображения графика
     @expose('/balance/<int:acc_run_id>/')
