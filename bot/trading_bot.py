@@ -51,6 +51,8 @@ class TradingBot(AbstractBot):
             ))
             self.accounting.set_num(min(self.accounting.get_num(), self.config.use_shares))
 
+        self.trade_strategy.update_start_price_and_counter()
+
         if not self.validate_and_modify_config():
             self.state = self.STATE_FINISHED
             return
