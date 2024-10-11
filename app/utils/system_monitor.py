@@ -21,6 +21,11 @@ class SystemMonitor:
                 f"Memory Usage: {memory.percent}%\n")
 
     @staticmethod
+    def get_rest_memory_mb() -> int:
+        memory = psutil.virtual_memory()
+        return round(memory.available / (1024 ** 2))
+
+    @staticmethod
     def get_disk_info():
         # Получение информации о дисковом пространстве
         disk = psutil.disk_usage('/')

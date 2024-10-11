@@ -45,3 +45,6 @@ class AppConfig:
     """
     Сдвиг временной зоны при выводе данных 
     """
+
+    MAX_MEMORY_FOR_SCRIPT = int(os.environ.get('MAX_MEMORY_FOR_SCRIPT', 130))
+    """Максимальный объем памяти, выделенный под скрипт"""

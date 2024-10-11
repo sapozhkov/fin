@@ -10,6 +10,7 @@ from app import create_app, AppConfig, db
 from app.lib import TinkoffApi
 from app.models import Instrument, Run, Account
 from app.config import RunConfig, AccConfig
+from app.utils import SystemMonitor
 from bot.db import TickerCache
 from app.helper import TimeHelper
 from bot import TestAlgorithm
@@ -235,6 +236,19 @@ async def main():
 
                 acc_config = AccConfig.from_repr_string(account.config)
                 commands_acc.append(f"python3 {current_dir}/acc_bot.py {acc_config.to_string()} >> ~/log/all.log 2>&1")
+
+        bots_cnt = len(commands)
+        acc_bots_cnt = len(commands_acc)
+        rest_memory_mb = SystemMonitor.get_rest_memory_mb()
+        max_scripts_cnt = round(rest_memory_mb / AppConfig.MAX_MEMORY_FOR_SCRIPT) - 1
+        max_bots_cnt = max_scripts_cnt - acc_bots_cnt  # эти в любом случае надо запускать
+
+        if bots_cnt > max_bots_cnt:
+            commands = commands[:max_bots_cnt]
+            print(f"Внимание, ограничено количество запускаемых скриптов до {len(commands)}, "
+                  f"свободной памяти {rest_memory_mb}Mb, на скрипт {AppConfig.MAX_MEMORY_FOR_SCRIPT}Mb, "
+                  f"всего доступно скриптов {max_scripts_cnt}, "
+                  f"пытались запустить {bots_cnt} ботов и {acc_bots_cnt} акк ботов")
 
         for command in commands:
             tasks = [run_command(command)]
