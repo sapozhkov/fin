@@ -12,7 +12,7 @@ class Order(db.Model):
     type = db.Column(db.Integer, nullable=False)
     datetime = db.Column(db.DateTime, nullable=True)
     price = db.Column(db.Float, nullable=False)
-    commission = db.Column(db.Float, nullable=False)
+    commission = db.Column(db.Float, nullable=False, default=0)
     total = db.Column(db.Float, nullable=False)
     count = db.Column(db.Integer, nullable=False, server_default='1')
 
