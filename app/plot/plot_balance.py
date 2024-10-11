@@ -23,7 +23,7 @@ class PlotBalance:
         values = [b.balance for b in filtered_balances]
 
         # Построение графика
-        plt.figure(figsize=(10, 5))
+        plt.figure(figsize=(11, 5))
         plt.plot(times, values, marker='.')
         plt.grid(True)
 
