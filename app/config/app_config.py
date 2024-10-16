@@ -48,3 +48,6 @@ class AppConfig:
 
     MAX_MEMORY_FOR_SCRIPT = int(os.environ.get('MAX_MEMORY_FOR_SCRIPT', 130))
     """Максимальный объем памяти, выделенный под скрипт"""
+
+    MEMORY_RUN_COEFFICIENT = float(os.environ.get('MEMORY_RUN_COEFFICIENT', 0.7))
+    """Модификатор объема памяти. На сколько меньше считать объем скрипта при первичном запуске"""

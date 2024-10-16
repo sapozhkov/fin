@@ -240,13 +240,14 @@ async def main():
         bots_cnt = len(commands)
         acc_bots_cnt = len(commands_acc)
         rest_memory_mb = SystemMonitor.get_rest_memory_mb()
-        max_scripts_cnt = round(rest_memory_mb / AppConfig.MAX_MEMORY_FOR_SCRIPT) - 1
+        max_scripts_cnt = round(rest_memory_mb / (AppConfig.MAX_MEMORY_FOR_SCRIPT * AppConfig.MEMORY_RUN_COEFFICIENT))
         max_bots_cnt = max_scripts_cnt - acc_bots_cnt  # эти в любом случае надо запускать
 
         if bots_cnt > max_bots_cnt:
             commands = commands[:max_bots_cnt]
             print(f"Внимание, ограничено количество запускаемых скриптов до {len(commands)}, "
-                  f"свободной памяти {rest_memory_mb}Mb, на скрипт {AppConfig.MAX_MEMORY_FOR_SCRIPT}Mb, "
+                  f"свободной памяти {rest_memory_mb}Mb, на скрипт {AppConfig.MAX_MEMORY_FOR_SCRIPT}Mb "
+                  f"(х{AppConfig.MEMORY_RUN_COEFFICIENT}), "
                   f"всего доступно скриптов {max_scripts_cnt}, "
                   f"пытались запустить {bots_cnt} ботов и {acc_bots_cnt} акк ботов")
 
