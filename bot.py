@@ -21,8 +21,6 @@ if __name__ == '__main__':
                 step_size=1.2,
                 step_lots=2,
 
-                use_shares=0,
-
                 pretest_period=0,
                 pretest_type=RunConfig.PRETEST_NONE,
 

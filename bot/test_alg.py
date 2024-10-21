@@ -375,9 +375,6 @@ class TestAlgorithm:
 
         if best_res:
             best_conf = best_res['last_conf']
-            if last_config:
-                # пробросить, так как сбрасывается
-                best_conf.use_shares = last_config.use_shares
             # print(f"Best of {len(sorted_results)}/{len(conf_list)} {test_date} - {best_conf}")
             # print(f"{best_conf} with profit_p {best_res['profit_p']}")
             return best_conf, best_res['profit_p']
@@ -429,8 +426,6 @@ class TestAlgorithm:
                 step_set_orders_cnt=config.step_set_orders_cnt,
                 step_lots=config.step_lots,
                 step_size_shift=config.step_size_shift,
-
-                use_shares=None,  # тут None, чтобы текущая настройка с чистого листа работала
             ))
             # for step_max_cnt in [config.step_max_cnt]
             # for step_base_cnt in [config.step_max_cnt]

@@ -42,14 +42,7 @@ class TradingBot(AbstractBot):
             self.state = self.STATE_FINISHED
             return
 
-        if self.config.use_shares is None:
-            self.accounting.set_num(self.accounting.get_instrument_count())
-        else:
-            self.accounting.set_num(min(
-                self.accounting.get_instrument_count(),
-                self.config.step_max_cnt * self.config.step_lots
-            ))
-            self.accounting.set_num(min(self.accounting.get_num(), self.config.use_shares))
+        self.accounting.set_num(self.accounting.get_instrument_count())
 
         self.trade_strategy.update_start_price_and_counter()
 

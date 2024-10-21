@@ -39,8 +39,6 @@ class RunConfig:
             step_set_orders_cnt=0,
             step_lots=0,
             step_size_shift=0,
-
-            use_shares=None,
     ):
         self.name = str(name)
         self.ticker = str(ticker)
@@ -70,9 +68,6 @@ class RunConfig:
 
         self.sleep_trading = int(sleep_trading)
         self.sleep_no_trade = int(sleep_no_trade)
-
-        # ограничитель количества используемых акций из откупленных. полезно при || запуске на 1 инструмент
-        self.use_shares = int(use_shares) if use_shares is not None and use_shares != '' else None
 
         # предустановленные значения
         if self.step_base_cnt is None:
@@ -221,8 +216,7 @@ class RunConfig:
                 self.step_size == other.step_size and
                 self.step_set_orders_cnt == other.step_set_orders_cnt and
                 self.step_lots == other.step_lots and
-                self.step_size_shift == other.step_size_shift and
-                self.use_shares == other.use_shares
+                self.step_size_shift == other.step_size_shift
         )
 
     def __hash__(self):
@@ -236,5 +230,4 @@ class RunConfig:
             self.threshold_buy_steps, self.threshold_sell_steps,
             self.stop_up_p, self.stop_down_p,
             self.step_size, self.step_set_orders_cnt, self.step_lots, self.step_size_shift,
-            self.use_shares
         ))

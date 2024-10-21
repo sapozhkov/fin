@@ -12,7 +12,6 @@ class MyTestCase(unittest.TestCase):
             # те, что с None взаимодействуют
             RunConfig(
                 step_base_cnt=None,
-                use_shares=3,
             ),
 
             # полный набор - всё не стандартное. новые поля докидывать сюда
@@ -40,8 +39,6 @@ class MyTestCase(unittest.TestCase):
                 step_size=12.31,
                 step_set_orders_cnt=9,
                 step_lots=2,
-
-                use_shares=6,
             ),
         ]
 
