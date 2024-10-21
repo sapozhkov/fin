@@ -4,4 +4,44 @@
     <h1>Run {{ run.date }} conf: {{ run.config }}</h1>
 
     <img src="{{ chart_url }}" alt="Run Chart">
+
+    <div class="container">
+        <table class="table table-bordered table-sm">
+            <tbody>
+                <!-- Первая строка: Status и Exit Code -->
+                <tr>
+                    <td><strong>Status:</strong> {{ run.get_status_title() }}</td>
+                    <td><strong>Exit Code:</strong> {{ run.exit_code }}</td>
+                    <td><strong>Total:</strong> {{ run.total }}</td>
+                    <td><strong>Depo:</strong> {{ run.depo }}</td>
+                </tr>
+
+                <tr>
+                    <td><strong>Expected Profit:</strong> {{ run.expected_profit }}</td>
+                    <td><strong>Profit:</strong> {{ run.profit }}</td>
+                    <td><strong>Profit N:</strong> {{ run.profit_n }}</td>
+                    <td><strong>Updated at:</strong> {{ run.updated_at|time }}</td>
+                </tr>
+
+                <tr>
+                    <td><strong>Open:</strong> {{ run.open }}</td>
+                    <td><strong>Close:</strong> {{ run.close }}</td>
+                    <td><strong>High:</strong> {{ run.high }}</td>
+                    <td><strong>Low:</strong> {{ run.low }}</td>
+                </tr>
+
+                <tr>
+                    <td><strong>Start Count:</strong> {{ run.start_cnt }}</td>
+                    <td><strong>End Count:</strong> {{ run.end_cnt }}</td>
+                    <td><strong>Error Count:</strong> {{ run.error_cnt }}</td>
+                    <td><strong>Operations Count:</strong> {{ run.operations_cnt }}</td>
+                </tr>
+
+                <!-- Восьмая строка: Last Error (одна строка на всю ширину) -->
+                <tr>
+                    <td colspan="4"><strong>Last Error:</strong> {{ run.last_error }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 {% endblock %}
