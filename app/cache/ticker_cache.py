@@ -5,7 +5,7 @@ from tinkoff.invest import GetCandlesResponse, HistoricCandle, Client, CandleInt
 
 from app import AppConfig
 from app.helper import TimeHelper, LocalCache, f2q, q2f
-from bot.cache import InstrumentDTO
+from app.cache import InstrumentDTO
 
 
 class TickerCache:

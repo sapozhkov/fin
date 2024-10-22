@@ -11,7 +11,7 @@ from app.lib import TinkoffApi
 from app.models import Instrument, Run, Account
 from app.config import RunConfig, AccConfig
 from app.utils import SystemMonitor
-from bot.cache import TickerCache
+from app.cache import TickerCache
 from app.helper import TimeHelper
 from bot import TestAlgorithm
 

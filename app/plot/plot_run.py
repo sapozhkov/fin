@@ -9,7 +9,7 @@ from app.config import RunConfig
 from app.constants import HistoryOrderType
 from app.helper import q2f
 from app.models import Order, Run
-from bot.cache import TickerCache
+from app.cache import TickerCache
 
 
 class PlotRun:
