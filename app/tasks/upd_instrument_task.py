@@ -135,6 +135,9 @@ class UpdInstrumentTask(AbstractTask):
         figi = ticker_cache.get_instrument().figi
         instrument.price = TinkoffApi.get_last_price(figi)
 
+        task.error = (f"{t_config.ticker} {instrument.account_rel.name} {'On' if instrument.status == 1 else 'Off'} "
+                      f"p{instrument.expected_profit}")
+
         instrument.save()
 
         InstrumentLog.add_by_instrument(instrument)
