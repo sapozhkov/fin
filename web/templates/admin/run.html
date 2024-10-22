@@ -8,7 +8,6 @@
     <div class="container">
         <table class="table table-bordered table-sm">
             <tbody>
-                <!-- Первая строка: Status и Exit Code -->
                 <tr>
                     <td><strong>Status:</strong> {{ run.get_status_title() }}</td>
                     <td><strong>Exit Code:</strong> {{ run.exit_code }}</td>
@@ -37,7 +36,6 @@
                     <td><strong>Operations Count:</strong> {{ run.operations_cnt }}</td>
                 </tr>
 
-                <!-- Восьмая строка: Last Error (одна строка на всю ширину) -->
                 <tr>
                     <td colspan="4"><strong>Last Error:</strong> {{ run.last_error }}</td>
                 </tr>
