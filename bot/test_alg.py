@@ -410,7 +410,6 @@ class TestAlgorithm:
                 stop_down_p=config.stop_down_p,
 
                 sleep_trading=config.sleep_trading,
-                sleep_no_trade=config.sleep_no_trade,
 
                 pretest_period=config.pretest_period,
                 pretest_type=config.pretest_type,

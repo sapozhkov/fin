@@ -23,7 +23,6 @@ class MyTestCase(unittest.TestCase):
                 stop_down_p=.34,
 
                 sleep_trading=30,
-                sleep_no_trade=120,
 
                 step_max_cnt=21,
                 step_base_cnt=8,

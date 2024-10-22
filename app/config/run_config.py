@@ -23,7 +23,6 @@ class RunConfig:
             stop_down_p=0,
 
             sleep_trading=1 * 60,
-            sleep_no_trade=1 * 60,
 
             pretest_type=PRETEST_NONE,
             pretest_period=0,
@@ -67,7 +66,6 @@ class RunConfig:
         self.stop_down_p = float(stop_down_p)
 
         self.sleep_trading = int(sleep_trading)
-        self.sleep_no_trade = int(sleep_no_trade)
 
         # предустановленные значения
         if self.step_base_cnt is None:
@@ -203,7 +201,6 @@ class RunConfig:
                 self.start_time == other.start_time and
                 self.end_time == other.end_time and
                 self.sleep_trading == other.sleep_trading and
-                self.sleep_no_trade == other.sleep_no_trade and
                 self.step_max_cnt == other.step_max_cnt and
                 self.step_base_cnt == other.step_base_cnt and
                 self.pretest_type == other.pretest_type and
@@ -223,7 +220,7 @@ class RunConfig:
         return hash((
             self.name, self.ticker, self.instrument_id,
             self.start_time, self.end_time,
-            self.sleep_trading, self.sleep_no_trade,
+            self.sleep_trading,
             self.step_max_cnt, self.step_base_cnt,
             self.pretest_type, self.pretest_period,
             self.majority_trade,
