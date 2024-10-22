@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Tuple
 
-from bot.db import TickerCache
+from bot.instrument_cache import TickerCache
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
 from app.config import RunConfig
 

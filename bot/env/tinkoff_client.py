@@ -6,8 +6,7 @@ from tinkoff.invest import CandleInterval, Quotation, MoneyValue, OrderType, Pos
     OrderState
 
 from app import AppConfig
-from bot.db import TickerCache
-from bot.dto import InstrumentDTO
+from bot.instrument_cache import TickerCache, InstrumentDTO
 from bot.env import AbstractTimeHelper, AbstractLoggerHelper
 from app.helper import q2f
 
