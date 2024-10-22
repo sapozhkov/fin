@@ -8,7 +8,7 @@ from app.lib import TinkoffApi
 from app.models import Instrument, Task, InstrumentLog
 from app.tasks import AbstractTask
 from bot import TestAlgorithm
-from bot.instrument_cache import TickerCache
+from bot.cache import TickerCache
 
 
 class UpdInstrumentTask(AbstractTask):
