@@ -13,7 +13,7 @@ def main():
     print_log(f"ДОБАВЛЕНИЕ ЗАДАНИЙ НА ОБНОВЛЕНИЕ ИНСТРУМЕНТОВ")
 
     # выбираем все инструменты
-    instr_list = Instrument.get_all()
+    instr_list = Instrument.get_all_with_active_acc()
 
     for instrument in instr_list:
         task = UpdInstrumentTask.add(instrument.id)

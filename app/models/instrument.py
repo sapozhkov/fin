@@ -38,8 +38,15 @@ class Instrument(db.Model):
         return cls.query.filter_by(status=1).order_by(cls.updated_at).all()
 
     @classmethod
-    def get_all(cls) -> List['Instrument']:
-        return cls.query.order_by(cls.status.desc()).all()
+    def get_all_with_active_acc(cls) -> List['Instrument']:
+        """
+        Возвращает все инструменты, у которых аккаунт активен (status=1).
+        """
+        from app.models import Account  # Импорт модели Account
+
+        return cls.query.join(Account).filter(
+            Account.status == 1  # Аккаунт активен
+        ).order_by(cls.updated_at).all()
 
     @classmethod
     def get_for_filter(cls) -> List['Instrument']:
