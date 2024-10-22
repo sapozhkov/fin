@@ -4,11 +4,11 @@ from datetime import datetime, timezone
 from tinkoff.invest import OrderDirection
 
 from bot import TradingBot
-from app.cache import TickerCache
+from app.cache import TickerCache, LocalCache
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
 from bot.helper import OrderHelper
 from app.config import RunConfig
-from app.helper import TimeHelper, LocalCache
+from app.helper import TimeHelper
 
 
 class TestAlgorithm:
