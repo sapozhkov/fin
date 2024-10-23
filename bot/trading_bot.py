@@ -293,6 +293,15 @@ class TradingBot(AbstractBot):
         if not current_price:
             self.logger.error("Нулевая цена, статистика НЕ будет верной")
 
+        self.log(f"END\n"
+                 f"     config - {self.config}\n"
+                 f"     instrument - {self.client.instrument}\n"
+                 f"     depo - {self.trade_strategy.get_max_start_depo()}\n"
+                 f"     current_price - {current_price}\n"
+                 f"     error_cnt - {self.logger.error_cnt}\n"
+                 f"     end_cnt - {self.trade_strategy.get_current_count()}\n"
+                 f"     total - {self.trade_strategy.get_current_profit()}")
+
         if self.run_state:
             self.run_state.exit_code = exit_code
             self.run_state.status = RunStatus.FINISHED if not exit_code else RunStatus.FAILED
@@ -303,6 +312,9 @@ class TradingBot(AbstractBot):
                     instrument.price = current_price
 
             self.update_run_state()
+
+            self.log(f"     profit - {self.run_state.profit}\n"
+                     f"     profit_n - {self.run_state.profit_n}")
 
     def get_status_str(self) -> str:
         out = f"cur {self.trade_strategy.cached_current_price} | " \
