@@ -65,6 +65,8 @@ class TradeShiftStrategy(TradeAbstractStrategy):
             cur_set_order_price = min(cur_order_prices)
         else:
             current_price = self.cached_current_price
+            if self.bought_price:
+                current_price = self.round(self.bought_price / self.config.step_size) * self.config.step_size
             if not current_price:
                 self.logger.error("Не могу выставить заявки на покупку, нулевая цена")
                 return
@@ -104,6 +106,8 @@ class TradeShiftStrategy(TradeAbstractStrategy):
             cur_set_order_price = max(cur_order_prices)
         else:
             current_price = self.cached_current_price
+            if self.sold_price:
+                current_price = self.round(self.sold_price / self.config.step_size) * self.config.step_size
             if not current_price:
                 self.logger.error("Не могу выставить заявки на продажу, нулевая цена")
                 return
