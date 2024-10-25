@@ -34,7 +34,7 @@
 {% for acc in accounts %}
 
     {% if acc.acc_run %}
-        <h2 id="acc-{{ acc.account.id }}">{{ acc.account.name }},
+        <h2 id="acc-{{ acc.account.id }}"><a href="/#">{{ acc.account.name }}</a>,
             <span class="{{ acc.acc_run.profit|currency_class }}">
                 {% if acc.acc_run.profit > 0 %}+{% endif %}{{ acc.acc_run.profit }}%</span
             >,
