@@ -1,4 +1,13 @@
+import inspect
 import re
+
+
+def modifier(letter):
+    """Декоратор для присвоения модификационной метки свойству."""
+    def decorator(func):
+        func.modifier = letter
+        return property(func)
+    return decorator
 
 
 class RunConfig:
@@ -38,6 +47,8 @@ class RunConfig:
             step_set_orders_cnt=0,
             step_lots=0,
             step_size_shift=0,
+
+            mods='',
     ):
         self.name = str(name)
         self.ticker = str(ticker)
@@ -66,6 +77,25 @@ class RunConfig:
         self.stop_down_p = float(stop_down_p)
 
         self.sleep_trading = int(sleep_trading)
+
+        mods_list = list(str(mods))
+        mods_str = ''
+
+        # Инициализация словаря с модификациями
+        self._mods = {}
+
+        # Автоматически собираем все помеченные свойства в _mods
+        for attr_name, attr_value in self.__class__.__dict__.items():
+            # Проверяем, что атрибут — это свойство и у него есть метка
+            if isinstance(attr_value, property) and hasattr(attr_value.fget, 'modifier'):
+                # Добавляем в _mods: {'буква': {name: 'имя свойства', val: значение}}
+                self._mods[attr_value.fget.modifier] = {
+                    'name': attr_name,
+                    'val': attr_value.fget.modifier in mods_list,
+                }
+                mods_str += attr_name
+
+        self.mods = mods_str
 
         # предустановленные значения
         if self.step_base_cnt is None:
@@ -108,6 +138,24 @@ class RunConfig:
         if self.step_lots <= 0:
             self.step_lots = 1
 
+    def _get_mod_value(self):
+        # Получаем имя текущего метода
+        current_method = inspect.currentframe().f_back.f_code.co_name
+        # Получаем метку из атрибута метода
+        mod_letter = getattr(self.__class__, current_method).fget.modifier
+        # Используем метку для доступа к _mods
+        return self._mods[mod_letter]['val']
+
+    @modifier('L')
+    def only_last_config(self) -> bool:
+        """Использовать только последний конфиг для вычисления следующего """
+        return self._get_mod_value()
+
+    @modifier('R')
+    def test_recount_period(self) -> bool:
+        """при подготовке конфига на следующий день подбирать параметр pretest_period"""
+        return self._get_mod_value()
+
     def is_maj_trade(self):
         return self.majority_trade
 
@@ -115,6 +163,13 @@ class RunConfig:
         return self.pretest_type == self.PRETEST_FAN
 
     def __repr__(self):
+        mod_list = []
+        for mod_letter, mod in self._mods.items():
+            if getattr(self, mod['name']):
+                mod_list.append(mod_letter)
+
+        mods = f"{''.join(mod_list)} " if len(mod_list) > 0 else ''
+
         base = f"{self.pretest_type}{self.pretest_period}:{self.step_base_cnt}" \
             if self.pretest_type or self.pretest_period else f"{self.step_base_cnt}"
         thresholds = f"|s{self.threshold_sell_steps} b{self.threshold_buy_steps}| " \
@@ -125,7 +180,7 @@ class RunConfig:
         return (f"{self.ticker}{'+' if self.majority_trade else '-'} "
                 f"{self.step_max_cnt}/{base}/{self.step_set_orders_cnt} "
                 f"x l{self.step_lots} x {self.step_size}{step_shift}¤ "
-                f"{thresholds}{stops}"
+                f"{thresholds}{stops}{mods}"
                 )
 
     @classmethod
@@ -134,13 +189,16 @@ class RunConfig:
         # RNFT- 3/pre7:-3/3 x l2 x 1.0¤ |s0 b0| |u0.0 d0.0| maj+z+
         # RNFT- 3/pre7:-3/3 x l2 x 1.0¤
         # RNFT- 3/pre7:-3/3 x l2 x 1.0(+x0.1)¤
+        # RNFT- 3/pre7:-3/3 x l2 x 1.0(+x0.1)¤ LR
         pattern = r"^\s*(?P<ticker>\w*)(?P<majority_trade>[\+\-]) " \
                   r"(?P<step_max_cnt>\d+)/" \
                   r"((?P<pretest_type>pre|rsi|fan))?((?P<pretest_period>\d+))?\:?(?P<step_base_cnt>-?\d+)/" \
                   r"(?P<step_set_orders_cnt>\d+) " \
                   r"x l(?P<step_lots>\d+) x (?P<step_size>[\d.]+)(\(\+x(?P<step_size_shift>[\d.]+)\))?¤\s?" \
                   r"(\|s(?P<threshold_sell_steps>\d+) b(?P<threshold_buy_steps>\d+)\|\s?)?" \
-                  r"(\|u(?P<stop_up_p>[\d.]+) d(?P<stop_down_p>[\d.]+)\|\s?)?$"
+                  r"(\|u(?P<stop_up_p>[\d.]+) d(?P<stop_down_p>[\d.]+)\|\s?)?" \
+                  r"(?P<mods>\w+)?\s?$"
+
         match = re.match(pattern, input_string)
 
         if match:
@@ -160,6 +218,7 @@ class RunConfig:
             values['stop_up_p'] = float(values['stop_up_p'] or 0)
             values['stop_down_p'] = float(values['stop_down_p'] or 0)
             values['majority_trade'] = values['majority_trade'] == '+'
+            values['mods'] = str(values['mods'] or '')
 
             return RunConfig(**values)
         else:
@@ -169,6 +228,8 @@ class RunConfig:
         args = []
         base_conf = RunConfig()
         for key, value in self.__dict__.items():
+            if key.startswith('_'):
+                continue
             if value != base_conf.__dict__[key]:
                 if value is None:
                     value = ''
@@ -213,7 +274,8 @@ class RunConfig:
                 self.step_size == other.step_size and
                 self.step_set_orders_cnt == other.step_set_orders_cnt and
                 self.step_lots == other.step_lots and
-                self.step_size_shift == other.step_size_shift
+                self.step_size_shift == other.step_size_shift and
+                self.mods == other.mods
         )
 
     def __hash__(self):
@@ -227,4 +289,5 @@ class RunConfig:
             self.threshold_buy_steps, self.threshold_sell_steps,
             self.stop_up_p, self.stop_down_p,
             self.step_size, self.step_set_orders_cnt, self.step_lots, self.step_size_shift,
+            self.mods
         ))

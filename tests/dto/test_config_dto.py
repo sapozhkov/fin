@@ -38,6 +38,7 @@ class MyTestCase(unittest.TestCase):
                 step_size=12.31,
                 step_set_orders_cnt=9,
                 step_lots=2,
+                mods='L',
             ),
         ]
 
@@ -127,6 +128,8 @@ class MyTestCase(unittest.TestCase):
         method_code = RunConfig.__eq__.__code__
         fields = vars(RunConfig())
         for field in fields:
+            if field.startswith('_'):
+                continue
             self.assertIn(field, method_code.co_names,
                           f"Field '{field}' is not used in __eq__ method")
 
@@ -134,6 +137,8 @@ class MyTestCase(unittest.TestCase):
         method_code = RunConfig.__hash__.__code__
         fields = vars(RunConfig())
         for field in fields:
+            if field.startswith('_'):
+                continue
             self.assertIn(field, method_code.co_names,
                           f"Field '{field}' is not used in __hash__ method")
 
@@ -200,6 +205,7 @@ class MyTestCase(unittest.TestCase):
                 step_set_orders_cnt=9,
                 step_lots=2,
                 step_size_shift=2.2,
+                mods='L',
             ),
         ]
 

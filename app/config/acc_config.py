@@ -56,7 +56,7 @@ class AccConfig:
 
             return AccConfig(**values)
         else:
-            raise ValueError(f"Cannot create RunConfig from string '{input_string}'")
+            raise ValueError(f"Cannot create AccConfig from string '{input_string}'")
 
     def to_string(self):
         args = []
