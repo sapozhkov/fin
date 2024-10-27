@@ -93,7 +93,7 @@ class RunConfig:
                     'name': attr_name,
                     'val': attr_value.fget.modifier in mods_list,
                 }
-                mods_str += attr_name
+                mods_str += attr_value.fget.modifier
 
         self.mods = mods_str
 
