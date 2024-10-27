@@ -1,4 +1,5 @@
 import copy
+import math
 from datetime import datetime, timezone
 
 from tinkoff.invest import OrderDirection
@@ -47,7 +48,6 @@ class TestAlgorithm:
             return None
 
         # внутренние переменные
-        profit = 0
         success_days = 0
         balance_change_list = []
         operations_cnt = 0
@@ -66,15 +66,16 @@ class TestAlgorithm:
 
         self.accounting_helper.set_num(shares_count)
 
-        # для расчета прибыли за весь период. купил в начале, в конце продал
-        started_t = False
-        start_price_t = 0
-        # end_price_t = 0
-
         original_config = copy.copy(self.config)
         maj_commission = 0
         total_maj_commission = 0
         config = None
+
+        balance = 100000  # руб / usd / ...
+        start_balance = balance
+
+        # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
+        maj_k = 2 if original_config.majority_trade else 1
 
         # закручиваем цикл по датам
         for test_date in days_list:
@@ -86,7 +87,7 @@ class TestAlgorithm:
             if not TimeHelper.is_working_day(TimeHelper.to_datetime(test_date)):
                 continue
 
-            if auto_conf_days_freq:
+            if auto_conf_days_freq and config is not None:
                 config = self.make_best_config(
                     start_date=days_list[0],
                     test_date=test_date,
@@ -172,6 +173,7 @@ class TestAlgorithm:
                         started = True
                         start_price = self.client_helper.get_current_price()
                         start_cnt = self.accounting_helper.get_num()
+                        config.step_lots = math.floor(balance / (maj_k * start_price * config.step_max_cnt))
 
                     for order_id, order in self.client_helper.orders.items():
                         if order_id in self.client_helper.executed_orders_ids:
@@ -217,10 +219,6 @@ class TestAlgorithm:
 
                 # конец не кэшированной части
 
-            if not started_t:
-                started_t = True
-                start_price_t = start_price
-
             operations_cnt += operations
             operations_cnt_list.append(operations)
 
@@ -236,39 +234,32 @@ class TestAlgorithm:
 
             # end_price_t = end_price
 
-            profit = round(profit + balance_change, 2)
+            balance = round(balance + balance_change, 2)
 
             if balance_change > 0:
                 success_days += 1
 
             balance_change_list.append(balance_change)
 
+            # if auto_conf_prev_days:
+            #     print(f"{test_date}\t{config}\t{balance_change:.2f}\t{balance}")
+
         # последние несколько дней могут быть не рабочими, учитываем накопленную комиссию
         total_maj_commission += maj_commission
-        profit += maj_commission
+        balance += maj_commission
 
         last_config = config
         config = original_config
 
-        # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
-        maj_k = 2 if config.majority_trade else 1
-
-        profit_p = round(100 * profit / (start_price_t * config.step_max_cnt * config.step_lots * maj_k), 2) \
-            if start_price_t and config.step_max_cnt else 0
-
-        # # это для обычной торговли. купил в начале, в конце продал
-        # potential_profit = round((end_price_t - start_price_t) * config.step_max_cnt * config.step_lots, 2)
-        # # сколько от обычной торговли в процентах ты сделал
-        # potential_profit_p = round(profit / potential_profit, 2) if potential_profit > 0 else 0
+        profit = round(balance - start_balance)
+        profit_p = round(100 * profit / start_balance, 2)
 
         return {
             'profit': profit,
             'profit_p': profit_p,  # не удалять
             'profit_p_avg': round(profit_p / test_days_num, 2),  # не удалять
-            # 'pot_p': potential_profit_p,
             'config': config,  # не удалять
             'last_conf': last_config,
-            # 'maj_com': round(total_maj_commission, 2),
 
             # 'profit_avg': round(sum(balance_change_list) / test_days_num, 2),
             #
@@ -317,7 +308,7 @@ class TestAlgorithm:
             auto_conf_days_freq: int,
             auto_conf_prev_days: int,
             original_config: RunConfig,
-            last_config: RunConfig | None
+            last_config: RunConfig | None = None
     ) -> RunConfig:
         config, _ = self.make_best_config_with_profit(
             start_date,
@@ -336,7 +327,7 @@ class TestAlgorithm:
             auto_conf_days_freq: int,
             auto_conf_prev_days: int,
             original_config: RunConfig,
-            last_config: RunConfig | None
+            last_config: RunConfig | None = None
     ) -> (RunConfig, float):
         need_run = self.is_nth_day_from_start(start_date, test_date, auto_conf_days_freq)
 
@@ -425,6 +416,8 @@ class TestAlgorithm:
                 step_set_orders_cnt=config.step_set_orders_cnt,
                 step_lots=config.step_lots,
                 step_size_shift=config.step_size_shift,
+
+                mods=config.mods
             ))
             # for step_max_cnt in [config.step_max_cnt]
             # for step_base_cnt in [config.step_max_cnt]
