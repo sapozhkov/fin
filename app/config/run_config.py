@@ -89,11 +89,13 @@ class RunConfig:
             # Проверяем, что атрибут — это свойство и у него есть метка
             if isinstance(attr_value, property) and hasattr(attr_value.fget, 'modifier'):
                 # Добавляем в _mods: {'буква': {name: 'имя свойства', val: значение}}
+                mod_val = attr_value.fget.modifier in mods_list
                 self._mods[attr_value.fget.modifier] = {
                     'name': attr_name,
-                    'val': attr_value.fget.modifier in mods_list,
+                    'val': mod_val,
                 }
-                mods_str += attr_value.fget.modifier
+                if mod_val:
+                    mods_str += attr_value.fget.modifier
 
         self.mods = mods_str
 
