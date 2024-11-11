@@ -148,14 +148,9 @@ class RunConfig:
         # Используем метку для доступа к _mods
         return self._mods[mod_letter]['val']
 
-    @modifier('L')
-    def only_last_config(self) -> bool:
-        """Использовать только последний конфиг для вычисления следующего """
-        return self._get_mod_value()
-
-    @modifier('R')
-    def test_recount_period(self) -> bool:
-        """при подготовке конфига на следующий день подбирать параметр pretest_period"""
+    @modifier('E')
+    def mod_make_experiment(self) -> bool:
+        """Тестовый флаг для быстрого тестирования гипотез"""
         return self._get_mod_value()
 
     def is_maj_trade(self):

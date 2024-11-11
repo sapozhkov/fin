@@ -255,6 +255,7 @@ class TestAlgorithm:
         profit_p = round(100 * profit / start_balance, 2)
 
         return {
+            'exp': f"{config.ticker} {config.pretest_type} {config.mods}",
             'profit': profit,
             'profit_p': profit_p,  # не удалять
             'profit_p_avg': round(profit_p / test_days_num, 2),  # не удалять

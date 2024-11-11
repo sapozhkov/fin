@@ -4,6 +4,14 @@ from app.config import RunConfig
 
 
 class MyTestCase(unittest.TestCase):
+    def test_mods(self):
+        conf_no = RunConfig(mods='')
+        conf_l = RunConfig(mods='E')
+        conf_many = RunConfig(mods='LEQ')  # вот этот потом может смоваться. выкинуть существующие ключи
+
+        self.assertEqual(conf_l, conf_many)
+        self.assertNotEquals(conf_l, conf_no)
+
     def test_string_transferring(self):
         config_list = [
             # пустой набор - всё стандартное
@@ -107,7 +115,6 @@ class MyTestCase(unittest.TestCase):
 
         self.assertTrue(config.is_fan_layout())
         self.assertTrue(config.is_maj_trade())
-
 
     def test_failing(self):
         with self.assertRaises(ValueError):

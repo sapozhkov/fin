@@ -77,7 +77,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         #     print('----- Падение запроса ------')
         #     return None
 
-        if price <= 0:
+        if price is not None and price <= 0:
             self.logger.error(f'try to make order with wrong price {price}')
             return None
 
