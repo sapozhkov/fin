@@ -1,7 +1,7 @@
 from flask_admin.contrib.sqla import ModelView
 
 from app.constants import TaskStatus
-from web.formater import view_format_datetime, view_format_class_name
+from web.formater import view_format_datetime, view_format_class_name, nl2br, view_nl2br
 
 
 class TaskView(ModelView):
@@ -11,6 +11,7 @@ class TaskView(ModelView):
         'class_name': view_format_class_name,
         'created_at': view_format_datetime,
         'updated_at': view_format_datetime,
+        'error': view_nl2br,
     }
     form_choices = {'status': TaskStatus.get_list()}
     column_choices = {'status': TaskStatus.get_list()}

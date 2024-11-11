@@ -6,3 +6,4 @@ from .view_currency import view_format_currency
 from .view_percent import view_format_percent
 from .class_highlight import format_status_class, format_currency_class
 from .nl2br import nl2br
+from .view_nl2br import view_nl2br
