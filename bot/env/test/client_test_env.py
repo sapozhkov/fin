@@ -77,6 +77,10 @@ class ClientTestEnvHelper(AbstractProxyClient):
         #     print('----- Падение запроса ------')
         #     return None
 
+        if price <= 0:
+            self.logger.error(f'try to make order with wrong price {price}')
+            return None
+
         # покупка по рыночной цене
         if order_type == OrderType.ORDER_TYPE_MARKET:
             # считаем сразу исполненной по указанной цене минус комиссия
