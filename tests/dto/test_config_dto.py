@@ -9,6 +9,12 @@ class MyTestCase(unittest.TestCase):
             # пустой набор - всё стандартное
             RunConfig(),
 
+            # max 4 для maj инстркментов
+            RunConfig(
+                step_max_cnt=4,
+                majority_trade=True,
+            ),
+
             # те, что с None взаимодействуют
             RunConfig(
                 step_base_cnt=None,

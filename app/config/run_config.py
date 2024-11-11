@@ -232,7 +232,8 @@ class RunConfig:
         for key, value in self.__dict__.items():
             if key.startswith('_'):
                 continue
-            if value != base_conf.__dict__[key]:
+            force_include = key in ['step_max_cnt']
+            if value != base_conf.__dict__[key] or force_include:
                 if value is None:
                     value = ''
                 elif isinstance(value, bool) and not value:
