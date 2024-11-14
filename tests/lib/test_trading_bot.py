@@ -18,26 +18,27 @@ class MyTestCase(unittest.TestCase):
             accounting_helper=self.accounting_helper,
         )
 
-    def test_is_trading_day(self):
-        # пятница - обычный день
-        date = datetime.strptime('2024-04-26 06:30', "%Y-%m-%d %H:%M")
-        self.time_helper.set_time(date)
-        self.assertTrue(self.bot.is_trading_day())
-
-        # рабочая суббота
-        date = datetime.strptime('2024-04-27 06:30', "%Y-%m-%d %H:%M")
-        self.time_helper.set_time(date)
-        self.assertTrue(self.bot.is_trading_day())
-
-        # обычное воскресенье
-        date = datetime.strptime('2024-04-28 06:30', "%Y-%m-%d %H:%M")
-        self.time_helper.set_time(date)
-        self.assertFalse(self.bot.is_trading_day())
-
-        # 1 мая - среда - не работаем
-        date = datetime.strptime('2024-05-01 06:30', "%Y-%m-%d %H:%M")
-        self.time_helper.set_time(date)
-        self.assertFalse(self.bot.is_trading_day())
+    # todo #148 del?
+    # def test_is_trading_day(self):
+    #     # пятница - обычный день
+    #     date = datetime.strptime('2024-04-26 06:30', "%Y-%m-%d %H:%M")
+    #     self.time_helper.set_time(date)
+    #     self.assertTrue(self.bot.is_trading_day())
+    #
+    #     # рабочая суббота
+    #     date = datetime.strptime('2024-04-27 06:30', "%Y-%m-%d %H:%M")
+    #     self.time_helper.set_time(date)
+    #     self.assertTrue(self.bot.is_trading_day())
+    #
+    #     # обычное воскресенье
+    #     date = datetime.strptime('2024-04-28 06:30', "%Y-%m-%d %H:%M")
+    #     self.time_helper.set_time(date)
+    #     self.assertFalse(self.bot.is_trading_day())
+    #
+    #     # 1 мая - среда - не работаем
+    #     date = datetime.strptime('2024-05-01 06:30', "%Y-%m-%d %H:%M")
+    #     self.time_helper.set_time(date)
+    #     self.assertFalse(self.bot.is_trading_day())
 
     @staticmethod
     def test_data():

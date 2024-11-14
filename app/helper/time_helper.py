@@ -33,6 +33,10 @@ class TimeHelper:
 
     @classmethod
     def is_working_day(cls, dt: datetime | str | None = None) -> bool:
+        # todo #148 переделать если у нас остаются выходные, иначе грохнуть
+
+        return True
+
         if dt is None:
             dt = cls.now()
 
