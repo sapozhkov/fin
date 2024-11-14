@@ -25,8 +25,8 @@ class RunConfig:
             ticker='',
             instrument_id=0,
 
-            start_time='07:00',  # 10:00
-            end_time='15:29',  # 18:29
+            start_time='04:00',  # 7:00
+            end_time='20:48',  # 23:48
 
             stop_up_p=0,
             stop_down_p=0,

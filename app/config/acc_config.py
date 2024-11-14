@@ -7,8 +7,8 @@ class AccConfig:
             account_id='',
             name='',
 
-            start_time='07:00',  # 10:00
-            end_time='15:31',  # 18:31 (+2 мин к RunConfig)
+            start_time='04:00',  # 7:00
+            end_time='20:52',  # 23:52 (+N мин к RunConfig)
 
             stop_up_p=0,
             stop_down_p=0,
