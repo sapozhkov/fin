@@ -65,7 +65,7 @@ class TradingBot(AbstractBot):
                 profit=0,
                 expected_profit=instrument.expected_profit,
                 data='',
-                instrument_data=f"{instrument.data}, exp {instrument.expected_profit}",
+                instrument_data=f"exp profit {instrument.expected_profit}",
                 config=str(self.config),
                 start_cnt=self.trade_strategy.start_count,
                 end_cnt=0,

@@ -1,9 +1,7 @@
-import multiprocessing
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
 from app import AppConfig
 from app.config import RunConfig
 from app.constants import TaskStatus
+from app.helper import TimeHelper
 from app.lib import TinkoffApi
 from app.models import Instrument, Task, InstrumentLog
 from app.tasks import AbstractTask
@@ -37,78 +35,35 @@ class UpdInstrumentTask(AbstractTask):
         # достать из базы инструмент
         instrument = Instrument.get_by_id(int(task.data))
 
+        # его конфиг
         t_config = RunConfig.from_repr_string(instrument.config)
 
-        ticker_cache = TickerCache(t_config.ticker)
-        i_lot = ticker_cache.get_instrument().lot
-        round_signs = ticker_cache.get_instrument().round_signs
-        step_diff = TestAlgorithm.get_step_by_price(instrument.price)
+        # выбираем дату. после торгов - текущая, иначе предыдущий день (он полный)
+        if TimeHelper.is_evening():
+            test_date = TimeHelper.get_current_date()
+        else:
+            test_date = TimeHelper.get_previous_date()
 
-        test_configs = [
-            (RunConfig(
-                ticker=t_config.ticker,
-                step_max_cnt=max_shares,
-                step_base_cnt=0,
-                step_lots=1 * i_lot,
+        # выбираем лучший конфиг
+        test_alg = TestAlgorithm(do_printing=False, config=t_config)
+        new_config, new_profit = test_alg.make_best_config_with_profit(
+            start_date=test_date,
+            test_date=test_date,
+            auto_conf_days_freq=0,
+            auto_conf_prev_days=t_config.pretest_period,
+            original_config=t_config
+        )
 
-                majority_trade=t_config.majority_trade,
-                pretest_period=pretest_period,
-                pretest_type=t_config.pretest_type,
+        # приводим лотность к единице, при запуске будет перерасчитана нужная
+        new_config.step_lots = 1
 
-                threshold_buy_steps=0,
-                threshold_sell_steps=0,
-                stop_up_p=stop_up_p,
-                stop_down_p=0,
-                step_size_shift=step_size_shift,
+        print(f"Инструмент: {instrument}")
+        print(f"Расчет на дату {test_date}, глубина дней: {t_config.pretest_period}")
+        print(f"Исходный: {t_config}")
+        print(f"Новый:    {new_config}, profit {new_profit}")
 
-                step_size=round(t_config.step_size + step_size_diff, round_signs),
-                step_set_orders_cnt=2,
-            ))
-            for max_shares in ([3, 4] if t_config.is_maj_trade() else [6, 8])
-            for stop_up_p in [0, 0.01]
-            for step_size_diff in [0, step_diff, -step_diff]
-            for step_size_shift in ([0, .1, .2, .3] if t_config.is_fan_layout() else [0])
-            for pretest_period in range(3, 7)
-        ]
-
-        def run_test(config: RunConfig):
-            test_alg = TestAlgorithm(do_printing=False, config=config)
-            return test_alg.test(
-                last_test_date=None,  # будет взята текущая дата
-                test_days_num=AppConfig.INSTRUMENT_TEST_DAYS,
-                shares_count=0,
-
-                auto_conf_days_freq=1,
-                auto_conf_prev_days=config.pretest_period,
-            )
-
-        unique_configs = set(test_configs)
-
-        results = []
-
-        with ThreadPoolExecutor(max_workers=min(multiprocessing.cpu_count(), 4)) as executor:
-            future_to_params = {executor.submit(run_test, config): config for config in unique_configs}
-
-            for future in as_completed(future_to_params):
-                res = future.result()
-                if res:
-                    results.append(res)
-
-        # Вывод результатов или их дальнейшая обработка
-        sorted_results = sorted(results, key=lambda x: float(x['profit_p']), reverse=True)
-
-        print()
-        for item in sorted_results:
-            print(item)
-
-        best_res = sorted_results[0]
-        new_config: RunConfig = best_res['last_conf']
-        new_profit = float(best_res['profit_p_avg'])
-
-        print(f"Сохраним вот это: {new_config}, profit {new_profit}")
-
+        # анализируем пригодность для запуска. ниже порогового значения - отключаем
         threshold = AppConfig.INSTRUMENT_ON_THRESHOLD
-
         cur_status = bool(instrument.status)
         new_status = new_profit >= threshold
 
@@ -119,16 +74,9 @@ class UpdInstrumentTask(AbstractTask):
         else:
             print("Активность не меняем")
 
+        # обновляем данные инструмента в базе
         instrument.config = str(new_config)
         instrument.expected_profit = round(new_profit, 2)
-
-        all_avg_profit = [x['profit_p_avg'] for x in sorted_results]
-        if len(all_avg_profit):
-            min_avg_profit = min(all_avg_profit)
-            max_avg_profit = max(all_avg_profit)
-            avg_avg_profit = round(sum(all_avg_profit) / len(all_avg_profit), 2)
-            instrument.data = f"profit: min {min_avg_profit}, avg {avg_avg_profit}, max {max_avg_profit}"
-            print(f"Data: {instrument.data}")
 
         # обновить цену заодно
         ticker_cache = TickerCache(t_config.ticker)
@@ -140,6 +88,7 @@ class UpdInstrumentTask(AbstractTask):
 
         instrument.save()
 
+        # и кладем в лог новое значение
         InstrumentLog.add_by_instrument(instrument)
 
         return True

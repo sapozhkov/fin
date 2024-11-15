@@ -8,12 +8,11 @@ from sqlalchemy.orm import joinedload
 
 from app import create_app, AppConfig, db
 from app.lib import TinkoffApi
-from app.models import Instrument, Run, Account
+from app.models import Instrument, Account
 from app.config import RunConfig, AccConfig
 from app.utils import SystemMonitor
 from app.cache import TickerCache
 from app.helper import TimeHelper
-from bot import TestAlgorithm
 
 
 async def run_command(command):
@@ -32,7 +31,9 @@ async def run_command(command):
 
 
 class Stock:
-    instrument_id: int = 0
+    """
+    DTO класс для запуска инструмента. Содержит данные для расчета баланса и прочие нужные параметры
+    """
     config: RunConfig
     ticker: str = ''
     figi: str = ''
@@ -80,48 +81,6 @@ def distribute_budget(stocks: list[Stock], budget):
         stock.config.step_lots = stock.lots
 
 
-def get_best_config(stock):
-    conf = stock.config
-
-    # вот сюда втыкаем выбор лучшего конфига по текущему
-    test_alg = TestAlgorithm(
-        do_printing=False,
-        config=conf,
-    )
-
-    if conf.pretest_type == RunConfig.PRETEST_PRE:
-        pretest_freq = 1
-        pretest_days = conf.pretest_period
-    else:
-        pretest_freq = 0
-        pretest_days = 0
-
-    print(f"{datetime.datetime.now()} Анализ {conf}")
-
-    last_config = None
-    prev_run = Run.get_prev_run(stock.instrument_id)
-    if prev_run:
-        try:
-            last_config = RunConfig.from_repr_string(prev_run.config)
-            print(f"{datetime.datetime.now()} + пред {last_config} от {prev_run.date}")
-        except ValueError:
-            print(f"Не удалось разобрать конфиг {prev_run}")
-
-    best_conf, profit_p = test_alg.make_best_config_with_profit(
-        start_date=TimeHelper.get_current_date(),
-        test_date=TimeHelper.get_current_date(),
-        auto_conf_days_freq=pretest_freq,
-        auto_conf_prev_days=pretest_days,
-        original_config=conf,
-        last_config=last_config
-    )
-
-    print(f"{datetime.datetime.now()} Выбран {best_conf} с прибылью {profit_p}")
-    print('')
-
-    return best_conf
-
-
 async def main():
     app = create_app()
     with app.app_context():
@@ -140,40 +99,30 @@ async def main():
         for instrument in instruments:
             grouped_instruments[instrument.account].append(instrument)
 
+        # Перебираем все аккаунты (группы инструментов)
         for account_id, instruments in grouped_instruments.items():
             account = instruments[0].account_rel
             print(f"Account ID: {account_id}, {account.name}")
             print()
 
+            # составляем набор инструментов для запуска
             stocks = []
             for instrument in instruments:
                 print(f"Instrument ID: {instrument.id}, Name: {instrument.name}")
                 config = RunConfig.from_repr_string(instrument.config)
+                config.instrument_id = instrument.id
                 ticker = config.ticker
                 ticker_cache = TickerCache(ticker)
                 figi = ticker_cache.get_instrument().figi
                 instrument_lots = ticker_cache.get_instrument().lot
 
                 stock = Stock()
-                stock.instrument_id = instrument.id
                 stock.config = config
                 stock.ticker = ticker
                 stock.figi = figi
                 stock.instrument_lots = instrument_lots
 
                 stocks.append(stock)
-
-            print()
-
-            # определение лучшего конфига
-            for stock in stocks:
-
-                best_conf = get_best_config(stock)
-
-                # проброс в конфиг значения номера инструмента (будет привязка при запуске)
-                best_conf.instrument_id = stock.instrument_id
-
-                stock.config = best_conf
 
             # последние цены и базовый бюджет
             last_prices = TinkoffApi.get_last_prices(figi_list=[s.figi for s in stocks])
@@ -221,10 +170,13 @@ async def main():
                 print(stock)
             print()
 
+            # добавляем команду на запуск бота по инструменту
             for stock in stocks:
                 commands.append(f"python3 {current_dir}/bot.py {stock.config.to_string()} >> ~/log/all.log 2>&1")
 
+            # и добавляем команду на запуск аккаунт бота
             if len(stocks) > 0:
+                # если в базе у аккаунта нет конфига, то сделать дефолтный
                 if not account.config:
                     acc_config = AccConfig(
                         account_id=account.id,
@@ -234,16 +186,20 @@ async def main():
                     db.session.add(account)
                     db.session.commit()
 
+                # добавляем команду в список
                 acc_config = AccConfig.from_repr_string(account.config)
                 commands_acc.append(f"python3 {current_dir}/acc_bot.py {acc_config.to_string()} >> ~/log/all.log 2>&1")
 
+        # рассчитываем пройдем ли по памяти с таким количеством ботов на запуск
         bots_cnt = len(commands)
         acc_bots_cnt = len(commands_acc)
         rest_memory_mb = SystemMonitor.get_rest_memory_mb()
         max_scripts_cnt = round(rest_memory_mb / (AppConfig.MAX_MEMORY_FOR_SCRIPT * AppConfig.MEMORY_RUN_COEFFICIENT))
         max_bots_cnt = max_scripts_cnt - acc_bots_cnt  # эти в любом случае надо запускать
 
+        # если не пролезаем по памяти
         if bots_cnt > max_bots_cnt:
+            # урезаем список и уведомляем администратора
             commands = commands[:max_bots_cnt]
             print(f"Внимание, ограничено количество запускаемых скриптов до {len(commands)}, "
                   f"свободной памяти {rest_memory_mb}Mb, на скрипт {AppConfig.MAX_MEMORY_FOR_SCRIPT}Mb "
@@ -251,6 +207,7 @@ async def main():
                   f"всего доступно скриптов {max_scripts_cnt}, "
                   f"пытались запустить {bots_cnt} ботов и {acc_bots_cnt} акк ботов")
 
+        # запускаем торговых ботов
         for command in commands:
             tasks = [run_command(command)]
             await asyncio.gather(*tasks)
@@ -258,6 +215,7 @@ async def main():
         # дождемся пока все прогрузятся и забьют себе место в базе
         sleep(20)
 
+        # запускаем акк ботов
         for command in commands_acc:
             tasks = [run_command(command)]
             await asyncio.gather(*tasks)
