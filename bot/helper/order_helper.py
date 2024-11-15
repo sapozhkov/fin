@@ -34,7 +34,12 @@ class OrderHelper:
         :param order:
         :return:
         """
-        return round(q2f(order.initial_order_price) / OrderHelper.get_avg_price(order))
+        price = OrderHelper.get_avg_price(order)
+        if price == 0:
+            # print(f"fail zero {order.initial_order_price} {price}")
+            return 1
+        lots = round(q2f(order.initial_order_price) / price)
+        return lots if lots > 0 else 1
 
     @staticmethod
     def get_commission(order: PostOrderResponse | OrderState):
