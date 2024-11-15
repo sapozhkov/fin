@@ -6,6 +6,7 @@ from .day_exclusions import DayExclusions
 class TimeHelper:
     DATE_FORMAT = "%Y-%m-%d"
 
+    # todo #148 вот это тоже поменять или так и применять в этом виде
     START_TIME = '07:00'
     END_TIME = '15:29'
 
