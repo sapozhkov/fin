@@ -209,7 +209,6 @@ class TradingBot(AbstractBot):
 
         self.start()
 
-        # todo 5
         # Обновляем список активных заявок, тут же заявки на продажу при удачной покупке
         self.trade_strategy.update_orders_status()
 
@@ -226,34 +225,6 @@ class TradingBot(AbstractBot):
         # Выставляем заявки
         self.trade_strategy.place_buy_orders()
         self.trade_strategy.place_sell_orders()
-        # todo вот до сюда
-
-        # todo новый вариант
-        # if False:
-        #     # Обновляем список активных заявок, тут же заявки на продажу при удачной покупке
-        #     bought_price, sold_price = self.update_orders_status()
-        #
-        #     if bought_price:
-        #         self.cancel_active_sell_orders()
-        #
-        #     if sold_price:
-        #         self.cancel_active_buy_orders()
-        #
-        #     if bought_price > 0 and sold_price > 0:
-        #         bought_and_sold = True
-        #         bought_price = 0
-        #         sold_price = 0
-        #     else:
-        #         bought_and_sold = False
-        #
-        #     # закрываем заявки, которые не входят в лимиты
-        #     self.cancel_orders_by_limits()
-        #
-        #     # Выставляем заявки
-        #     # todo второй параметр не нужен?
-        #     self.place_buy_orders(sold_price, bought_and_sold)
-        #     self.place_sell_orders(bought_price, bought_and_sold)
-        #     # todo новый вариант до сюда
 
         if self.run_state:
             self.run_state.status = RunStatus.WORKING
