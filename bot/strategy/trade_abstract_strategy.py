@@ -98,14 +98,12 @@ class TradeAbstractStrategy(ABC):
         return order
 
     def buy(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
-        if self.client.can_market_order():
-            return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_BUY, lots, None, retry)
-        return self.place_order(OrderType.ORDER_TYPE_BESTPRICE, OrderDirection.ORDER_DIRECTION_BUY, lots, None, retry)
+        order_type = OrderType.ORDER_TYPE_MARKET if self.client.can_market_order() else OrderType.ORDER_TYPE_BESTPRICE
+        return self.place_order(order_type, OrderDirection.ORDER_DIRECTION_BUY, lots, None, retry)
 
     def sell(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
-        if self.client.can_market_order():
-            return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_SELL, lots, None, retry)
-        return self.place_order(OrderType.ORDER_TYPE_BESTPRICE, OrderDirection.ORDER_DIRECTION_SELL, lots, None, retry)
+        order_type = OrderType.ORDER_TYPE_MARKET if self.client.can_market_order() else OrderType.ORDER_TYPE_BESTPRICE
+        return self.place_order(order_type, OrderDirection.ORDER_DIRECTION_SELL, lots, None, retry)
 
     def sell_limit(self, price: float, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
         return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_SELL, lots, price, retry)
