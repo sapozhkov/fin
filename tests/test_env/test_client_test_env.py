@@ -48,6 +48,17 @@ class TestOrderHelper(unittest.TestCase):
                                                price, OrderType.ORDER_TYPE_LIMIT)
         self.assertEqual(self.get_order_avg_price(order), price)
 
+        # покупка по лучшей цене
+        order = self.client_helper.place_order(lots, OrderDirection.ORDER_DIRECTION_BUY,
+                                               None, OrderType.ORDER_TYPE_BESTPRICE)
+        self.assertEqual(self.get_order_avg_price(order), price)
+        self.assertEqual(OrderHelper.get_lots(order), lots)
+
+        # продажа по лучшей цене
+        order = self.client_helper.place_order(lots, OrderDirection.ORDER_DIRECTION_SELL,
+                                               None, OrderType.ORDER_TYPE_BESTPRICE)
+        self.assertEqual(self.get_order_avg_price(order), price)
+
     def test_get_avg_price_on_state(self):
         price = 100
         lots = 10

@@ -121,12 +121,12 @@ class TinkoffApi:
     def sell(account_id, figi, quantity):
         with Client(AppConfig.TOKEN) as client:
             try:
-                # Создаем рыночный ордер на продажу
+                # Создаем ордер на продажу по лучшей цене, так как это работает почти всегда в отличие от рыночного
                 client.orders.post_order(
                     figi=figi,
                     quantity=quantity,
                     account_id=str(account_id),
-                    order_type=OrderType.ORDER_TYPE_MARKET,
+                    order_type=OrderType.ORDER_TYPE_BESTPRICE,
                     direction=OrderDirection.ORDER_DIRECTION_SELL,
                     order_id=str(datetime.now(timezone.utc)),
                 )

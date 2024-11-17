@@ -8,18 +8,24 @@ class HistoryOrderType:
     CANCEL_SELL_LIMIT = 6
     EXECUTED_BUY_LIMIT = 7
     EXECUTED_SELL_LIMIT = 8
+    BUY_BESTPRICE = 9
+    SELL_BESTPRICE = 10
 
     EXECUTED_TYPES = {
         BUY_MARKET,
         SELL_MARKET,
         EXECUTED_BUY_LIMIT,
-        EXECUTED_SELL_LIMIT
+        EXECUTED_SELL_LIMIT,
+        BUY_BESTPRICE,
+        SELL_BESTPRICE
     }
 
     VARIANTS = {
         UNKNOWN: ('Unknown', 'black', 'o'),
         BUY_MARKET: ('Market buy', 'black', '^'),
         SELL_MARKET: ('Market sell', 'black', 'v'),
+        BUY_BESTPRICE: ('Bestprice buy', 'gray', '^'),
+        SELL_BESTPRICE: ('Bestprice sell', 'gray', 'v'),
         OPEN_BUY_LIMIT: ('Limit buy open', 'cyan', 'o'),
         OPEN_SELL_LIMIT: ('Limit sell open', 'red', 'o'),
         CANCEL_BUY_LIMIT: ('Close buy open', 'blue', 'x'),

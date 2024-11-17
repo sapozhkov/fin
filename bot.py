@@ -15,23 +15,23 @@ if __name__ == '__main__':
             config_dto = RunConfig(
                 ticker='RNFT',
 
-                step_max_cnt=5,
+                step_max_cnt=4,
                 step_base_cnt=0,
                 step_set_orders_cnt=3,
-                step_size=1.2,
+                step_size=0.2,
                 step_lots=2,
 
                 pretest_period=0,
-                pretest_type=RunConfig.PRETEST_NONE,
+                pretest_type=RunConfig.PRETEST_FAN,
 
                 threshold_sell_steps=0,
-                threshold_buy_steps=6,
+                threshold_buy_steps=0,
 
                 step_size_shift=0.2,
                 majority_trade=True,
 
-                stop_up_p=.05,
-                stop_down_p=.15,
+                stop_up_p=.01,
+                stop_down_p=.01,
 
                 instrument_id=4,
             )

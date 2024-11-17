@@ -60,8 +60,22 @@ class ClientTestEnvHelper(AbstractProxyClient):
         hours, minutes = map(int, str_time.split(':'))
         return datetime_time(hours, minutes)
 
+    def update_cached_status(self):
+        pass
+
     def can_trade(self):
         return TimeHelper.is_working_hours(self.time.now())
+
+    def can_limit_order(self):
+        return self.can_trade()
+
+    def can_market_order(self):
+        # todo #148 вот это надо будет исправить - не должно работать с утра и возможно вечером
+        return self.can_trade()
+
+    def can_bestprice_order(self):
+        # todo #148 и вот это проверить вместе с предыдущим
+        return self.can_trade()
 
     def float_to_money_value(self, price) -> MoneyValue:
         return MoneyValue(self.instrument.currency, units=int(price), nano=int((self.round(price - int(price))) * 1e9))
@@ -70,8 +84,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
         self.order_next_index += 1
         return str(self.order_next_index)
 
-    def place_order(self, lots: int, direction, price: float | None,
-                    order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
+    def place_order(self, lots: int, direction, price: float | None, order_type: int) -> PostOrderResponse | None:
 
         # if random.randint(1, 3) == 1:
         #     print('----- Падение запроса ------')
@@ -85,6 +98,11 @@ class ClientTestEnvHelper(AbstractProxyClient):
         if order_type == OrderType.ORDER_TYPE_MARKET:
             # считаем сразу исполненной по указанной цене минус комиссия
             return self.get_post_order_response_market(direction, lots)
+
+        # покупка по лучшей цене
+        elif order_type == OrderType.ORDER_TYPE_BESTPRICE:
+            # считаем сразу исполненной по указанной цене минус комиссия
+            return self.get_post_order_response_bestprice(direction, lots)
 
         # иначе лимитная заявка
         elif order_type == OrderType.ORDER_TYPE_LIMIT:
@@ -211,6 +229,13 @@ class ClientTestEnvHelper(AbstractProxyClient):
                 self.get_order_state(order)
             )
 
+        if order.order_type == OrderType.ORDER_TYPE_BESTPRICE:
+            # считаем сразу исполненной по указанной цене минус комиссия
+            return (
+                True,
+                self.get_order_state(order)
+            )
+
         # иначе лимитная заявка
         elif order.order_type == OrderType.ORDER_TYPE_LIMIT:
             res = False
@@ -277,6 +302,48 @@ class ClientTestEnvHelper(AbstractProxyClient):
             order_id=self.get_new_order_id(),
             execution_report_status=OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL,
             order_type=OrderType.ORDER_TYPE_MARKET,
+            direction=direction,
+            lots_requested=lots,
+            lots_executed=lots,
+            initial_order_price=self.float_to_money_value(lots * self.current_price * i_lot),
+            executed_order_price=self.float_to_money_value(self.current_price),
+            total_order_amount=self.float_to_money_value(lots * self.current_price * i_lot),
+            initial_commission=self.float_to_money_value(lots * self.current_price * i_lot * self.commission),
+            executed_commission=self.float_to_money_value(0),  # как в оригинале
+            initial_security_price=self.float_to_money_value(self.current_price),
+        )
+
+    def get_post_order_response_bestprice(self, direction, lots):
+        # Реальный ответ от официального клиента
+        # PostOrderResponse(
+        #     order_id='RE***DKW',
+        #     execution_report_status=<OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL: 1>,
+        #     lots_requested=1,
+        #     lots_executed=1,
+        #     initial_order_price=MoneyValue(currency='rub', units=138, nano=350000000),
+        #     executed_order_price=MoneyValue(currency='rub', units=137, nano=900000000),
+        #     total_order_amount=MoneyValue(currency='rub', units=137, nano=900000000),
+        #     initial_commission=MoneyValue(currency='rub', units=0, nano=0),
+        #     executed_commission=MoneyValue(currency='rub', units=0, nano=0),
+        #     aci_value=MoneyValue(currency='', units=0, nano=0),
+        #     figi='BBG00F9XX7H4',
+        #     direction=<OrderDirection.ORDER_DIRECTION_BUY: 1>,
+        #     initial_security_price=MoneyValue(currency='rub', units=138, nano=350000000),
+        #     order_type=<OrderType.ORDER_TYPE_BESTPRICE: 3>,
+        #     message='',
+        #     initial_order_price_pt=Quotation(units=0, nano=0),
+        #     instrument_uid='c7485564-ed92-45fd-a724-1214aa202904',
+        #     order_request_id='2024-11-17 12:35:54.430818+00:00',
+        #     response_metadata=ResponseMetadata(
+        #         tracking_id='43***16',
+        #         server_time=datetime.datetime(2024, 11, 17, 12, 35, 55, 798427, tzinfo=datetime.timezone.utc)
+        #     )
+        # )
+        i_lot = self.instrument.lot
+        return PostOrderResponse(
+            order_id=self.get_new_order_id(),
+            execution_report_status=OrderExecutionReportStatus.EXECUTION_REPORT_STATUS_FILL,
+            order_type=OrderType.ORDER_TYPE_BESTPRICE,
             direction=direction,
             lots_requested=lots,
             lots_executed=lots,
@@ -378,7 +445,9 @@ class ClientTestEnvHelper(AbstractProxyClient):
         #   instrument_uid = 'c7***904',
         #   order_request_id = '2024-04-22 14:41:39.559532 00:00')
 
-        is_executed = order.order_id in self.executed_orders_ids or order.order_type == OrderType.ORDER_TYPE_MARKET
+        is_executed = (order.order_id in self.executed_orders_ids
+                       or order.order_type == OrderType.ORDER_TYPE_MARKET
+                       or order.order_type == OrderType.ORDER_TYPE_BESTPRICE)
         price_0 = f2q(0)
         avg_init_price = self.float_to_money_value(
             self.q2f(order.initial_order_price) / (order.lots_requested * self.instrument.lot))

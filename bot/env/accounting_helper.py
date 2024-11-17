@@ -41,6 +41,9 @@ class AbstractAccountingHelper(ABC):
         if order.order_type == OrderType.ORDER_TYPE_MARKET:
             type_ = HistoryOrderType.BUY_MARKET if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
                 else HistoryOrderType.SELL_MARKET
+        elif order.order_type == OrderType.ORDER_TYPE_BESTPRICE:
+            type_ = HistoryOrderType.BUY_BESTPRICE if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
+                else HistoryOrderType.SELL_BESTPRICE
         else:
             type_ = HistoryOrderType.EXECUTED_BUY_LIMIT if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
                 else HistoryOrderType.EXECUTED_SELL_LIMIT
@@ -61,6 +64,9 @@ class AbstractAccountingHelper(ABC):
         if order.order_type == OrderType.ORDER_TYPE_MARKET:
             type_ = HistoryOrderType.BUY_MARKET if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
                 else HistoryOrderType.SELL_MARKET
+        elif order.order_type == OrderType.ORDER_TYPE_BESTPRICE:
+            type_ = HistoryOrderType.BUY_BESTPRICE if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
+                else HistoryOrderType.SELL_BESTPRICE
         else:
             type_ = HistoryOrderType.OPEN_BUY_LIMIT if order.direction == OrderDirection.ORDER_DIRECTION_BUY \
                 else HistoryOrderType.OPEN_SELL_LIMIT

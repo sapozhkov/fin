@@ -36,7 +36,23 @@ class AbstractProxyClient(ABC):
         self.instrument: InstrumentDTO = self.get_instrument()
 
     @abstractmethod
+    def update_cached_status(self):
+        pass
+
+    @abstractmethod
     def can_trade(self):
+        pass
+
+    @abstractmethod
+    def can_limit_order(self):
+        pass
+
+    @abstractmethod
+    def can_market_order(self):
+        pass
+
+    @abstractmethod
+    def can_bestprice_order(self):
         pass
 
     def q2f(self, quotation: Quotation | MoneyValue, digits=None):
@@ -49,8 +65,7 @@ class AbstractProxyClient(ABC):
                      self.instrument.round_signs)
 
     @abstractmethod
-    def place_order(self, lots: int, direction, price: float | None,
-                    order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
+    def place_order(self, lots: int, direction, price: float | None, order_type: int) -> PostOrderResponse | None:
         pass
 
     # Базовая функция для загрузки данных последних свечей

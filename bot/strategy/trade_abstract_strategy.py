@@ -76,6 +76,14 @@ class TradeAbstractStrategy(ABC):
             else:
                 prefix = "SELL MARKET executed"
 
+        elif order_type == OrderType.ORDER_TYPE_BESTPRICE:
+            self.accounting.add_deal_by_order(order)
+            if direction == OrderDirection.ORDER_DIRECTION_BUY:
+                prefix = "BUY BESTPRICE executed"
+                avg_price = -avg_price
+            else:
+                prefix = "SELL BESTPRICE executed"
+
         else:
             if direction == OrderDirection.ORDER_DIRECTION_BUY:
                 self.active_buy_orders[order.order_id] = order
@@ -100,6 +108,12 @@ class TradeAbstractStrategy(ABC):
 
     def buy_limit(self, price: float, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
         return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_BUY, lots, price, retry)
+
+    def buy_bestprice(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
+        return self.place_order(OrderType.ORDER_TYPE_BESTPRICE, OrderDirection.ORDER_DIRECTION_BUY, lots, None, retry)
+
+    def sell_bestprice(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
+        return self.place_order(OrderType.ORDER_TYPE_BESTPRICE, OrderDirection.ORDER_DIRECTION_SELL, lots, None, retry)
 
     def apply_order_execution(self, order: OrderState):
         lots = OrderHelper.get_lots(order)
@@ -266,8 +280,14 @@ class TradeAbstractStrategy(ABC):
 
         # докупаем недостающие по рыночной цене
         if need_operations > 0:
-            self.buy(need_operations, self.RETRY_ON_START)
+            if self.client.can_market_order():
+                self.buy(need_operations, self.RETRY_ON_START)
+            else:
+                self.buy_bestprice(need_operations, self.RETRY_ON_START)
 
         # или продаем лишние. в минус без мажоритарной уйти не должны - учтено в конфиге
         if need_operations < 0:
-            self.sell(-need_operations, self.RETRY_ON_START)
+            if self.client.can_market_order():
+                self.sell(-need_operations, self.RETRY_ON_START)
+            else:
+                self.sell_bestprice(-need_operations, self.RETRY_ON_START)

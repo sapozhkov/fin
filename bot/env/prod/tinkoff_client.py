@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Tuple
 
 from tinkoff.invest import Client, RequestError, OrderType, PostOrderResponse, OrderDirection, GetCandlesResponse, \
-    CandleInterval, OrderState, OrderExecutionReportStatus
+    CandleInterval, OrderState, OrderExecutionReportStatus, GetTradingStatusResponse
 
 from bot.env import AbstractProxyClient
 from app.helper import f2q
@@ -13,6 +13,7 @@ class TinkoffProxyClient(AbstractProxyClient):
     def __init__(self, ticker, time, logger, account_id: str):
         super().__init__(ticker, time, logger)
         self.account_id: str = account_id
+        self.status = self._get_trade_status()
 
     def get_current_price(self) -> float | None:
         """
@@ -24,20 +25,38 @@ class TinkoffProxyClient(AbstractProxyClient):
             self.logger.error(f"Ошибка при запросе текущей цены для FIGI {self.get_figi()}")
         return price
 
-    def can_trade(self):
+    def _get_trade_status(self) -> GetTradingStatusResponse | None:
         try:
             with Client(self.token) as client:
                 trading_status = client.market_data.get_trading_status(figi=self.get_figi())
-                if not trading_status.limit_order_available_flag:
-                    self.logger.log('Торговля закрыта (ответ из API)')
-                    return False
         except RequestError as e:
             self.logger.log(f"Ошибка при запросе статуса торговли: {e}")
-            return False
-        return True
+            return None
+        return trading_status
 
-    def place_order(self, lots: int, direction, price: float | None,
-                    order_type=OrderType.ORDER_TYPE_MARKET) -> PostOrderResponse | None:
+    def update_cached_status(self):
+        new_status = self._get_trade_status()
+        # это защита от случаев, когда сам метод сбоит, а остальное работает
+        if new_status is not None:
+            self.status = new_status
+        return self.status
+
+    def can_trade(self):
+        # todo #148 вот это надо исправить, флаг всегда True
+        #   заменить на белый лист статусов из
+        #   https://russianinvestments.github.io/investAPI/marketdata/#securitytradingstatus
+        return self.status and self.status.limit_order_available_flag
+
+    def can_limit_order(self):
+        return self.status and self.status.limit_order_available_flag
+
+    def can_market_order(self):
+        return self.status and self.status.market_order_available_flag
+
+    def can_bestprice_order(self):
+        return self.status and self.status.bestprice_order_available_flag
+
+    def place_order(self, lots: int, direction, price: float | None, order_type: int) -> PostOrderResponse | None:
         try:
             price_quotation = f2q(price) if price else None
             with Client(self.token) as client:
@@ -51,8 +70,15 @@ class TinkoffProxyClient(AbstractProxyClient):
                     price=price_quotation
                 )
         except RequestError as e:
+            if order_type == OrderType.ORDER_TYPE_MARKET:
+                order_type_text = 'market'
+            elif order_type == OrderType.ORDER_TYPE_BESTPRICE:
+                order_type_text = 'bestprice'
+            else:
+                order_type_text = 'limit'
+
             self.logger.error(f"Не выставлена заявка: "
-                              f"order_type: {'market' if order_type == OrderType.ORDER_TYPE_MARKET else 'limit'}, "
+                              f"order_type: {order_type_text}, "
                               f"direction: {'buy' if direction == OrderDirection.ORDER_DIRECTION_BUY else 'sell'}, "
                               f"lots: {lots}, price: {self.round(price) if price is not None else 'None'}, Error: {e}")
             return None

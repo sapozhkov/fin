@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import pandas as pd
 
 from app import db
@@ -165,6 +167,15 @@ class TradingBot(AbstractBot):
             self.run_iteration()
         self.log('END')
 
+    def can_trade(self) -> Tuple[bool, int]:
+        result = super().can_trade()
+
+        if self.client.can_trade():
+            return result
+
+        self.logger.error('API сообщил о недоступности торгов, спим')
+        return False, self.config.sleep_trading
+
     def start(self):
         """Начало работы скрипта. первый старт"""
 
@@ -182,6 +193,8 @@ class TradingBot(AbstractBot):
             self.update_run_state()
 
     def run_iteration(self):
+        self.client.update_cached_status()
+
         can_trade, sleep_sec = self.can_trade()
         if not can_trade:
             if sleep_sec:
