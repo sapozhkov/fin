@@ -98,22 +98,20 @@ class TradeAbstractStrategy(ABC):
         return order
 
     def buy(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_BUY, lots, None, retry)
+        if self.client.can_market_order():
+            return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_BUY, lots, None, retry)
+        return self.place_order(OrderType.ORDER_TYPE_BESTPRICE, OrderDirection.ORDER_DIRECTION_BUY, lots, None, retry)
 
     def sell(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_SELL, lots, None, retry)
+        if self.client.can_market_order():
+            return self.place_order(OrderType.ORDER_TYPE_MARKET, OrderDirection.ORDER_DIRECTION_SELL, lots, None, retry)
+        return self.place_order(OrderType.ORDER_TYPE_BESTPRICE, OrderDirection.ORDER_DIRECTION_SELL, lots, None, retry)
 
     def sell_limit(self, price: float, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
         return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_SELL, lots, price, retry)
 
     def buy_limit(self, price: float, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
         return self.place_order(OrderType.ORDER_TYPE_LIMIT, OrderDirection.ORDER_DIRECTION_BUY, lots, price, retry)
-
-    def buy_bestprice(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_BESTPRICE, OrderDirection.ORDER_DIRECTION_BUY, lots, None, retry)
-
-    def sell_bestprice(self, lots: int = 1, retry=RETRY_DEFAULT) -> PostOrderResponse | None:
-        return self.place_order(OrderType.ORDER_TYPE_BESTPRICE, OrderDirection.ORDER_DIRECTION_SELL, lots, None, retry)
 
     def apply_order_execution(self, order: OrderState):
         lots = OrderHelper.get_lots(order)
@@ -280,14 +278,8 @@ class TradeAbstractStrategy(ABC):
 
         # докупаем недостающие по рыночной цене
         if need_operations > 0:
-            if self.client.can_market_order():
-                self.buy(need_operations, self.RETRY_ON_START)
-            else:
-                self.buy_bestprice(need_operations, self.RETRY_ON_START)
+            self.buy(need_operations, self.RETRY_ON_START)
 
         # или продаем лишние. в минус без мажоритарной уйти не должны - учтено в конфиге
         if need_operations < 0:
-            if self.client.can_market_order():
-                self.sell(-need_operations, self.RETRY_ON_START)
-            else:
-                self.sell_bestprice(-need_operations, self.RETRY_ON_START)
+            self.sell(-need_operations, self.RETRY_ON_START)
