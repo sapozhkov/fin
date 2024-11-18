@@ -9,7 +9,7 @@ from bot.helper import OrderHelper
 class TradeAbstractStrategy(ABC):
     RETRY_DEFAULT = 1
     RETRY_ON_START = 3
-    RETRY_SLEEP = 5
+    RETRY_SLEEP = 20
 
     def __init__(
             self,
