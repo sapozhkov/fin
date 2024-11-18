@@ -168,13 +168,20 @@ class TradingBot(AbstractBot):
         self.log('END')
 
     def can_trade(self) -> Tuple[bool, int]:
-        result = super().can_trade()
+        # запросить основную логику
+        super_can_trade, super_sleep = super().can_trade()
 
-        if self.client.can_trade():
-            return result
+        # если там отказ - вернуть сразу
+        if not super_can_trade:
+            return super_can_trade, super_sleep
 
-        self.logger.error('API сообщил о недоступности торгов, спим')
-        return False, self.config.sleep_trading
+        # проверить доступность через API. отказ - ждем
+        if not self.client.can_trade():
+            self.logger.log('API сообщил о недоступности торгов, спим')
+            return False, self.config.sleep_trading
+
+        # проверки прошли - вернуть всё ок
+        return True, 0
 
     def start(self):
         """Начало работы скрипта. первый старт"""
