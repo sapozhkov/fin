@@ -141,6 +141,11 @@ class RunConfig:
             self.step_lots = 1
 
     def _get_mod_value(self):
+        """
+        Получить значение модификатора
+        Список есть в задаче #253
+        :return:
+        """
         # Получаем имя текущего метода
         current_method = inspect.currentframe().f_back.f_code.co_name
         # Получаем метку из атрибута метода
@@ -151,6 +156,11 @@ class RunConfig:
     @modifier('E')
     def mod_make_experiment(self) -> bool:
         """Тестовый флаг для быстрого тестирования гипотез"""
+        return self._get_mod_value()
+
+    @modifier('F')
+    def mod_do_not_change_instrument_activity(self) -> bool:
+        """Включать/выключать инструмент при пересчете конфига и ожидаемого профита"""
         return self._get_mod_value()
 
     def is_maj_trade(self):

@@ -68,11 +68,20 @@ class UpdInstrumentTask(AbstractTask):
         new_status = new_profit >= threshold
 
         print(f"Порог прибыли {threshold}, расчетная прибыль {new_profit}")
-        if cur_status != new_status:
-            print(f"Изменяем статус активности на {new_status}")
-            instrument.status = 1 if new_status else 0
+
+        if new_config.mod_do_not_change_instrument_activity:
+            if cur_status != new_status:
+                print(f"Изменение активности заблокировано модификатором F. instrument.status={instrument.status}, "
+                      f"а должен был быть установлен {int(new_status)}")
+            else:
+                print("Изменение активности заблокировано модификатором F, но менять и не надо")
+
         else:
-            print("Активность не меняем")
+            if cur_status != new_status:
+                print(f"Изменяем статус активности на {new_status}")
+                instrument.status = 1 if new_status else 0
+            else:
+                print("Активность не меняем")
 
         # обновляем данные инструмента в базе
         instrument.config = str(new_config)
