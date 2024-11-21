@@ -13,6 +13,9 @@ from bot.env import AbstractLoggerHelper, AbstractTimeHelper
 
 
 class TradingAccountBot(AbstractBot):
+
+    TICKS_TO_STOP = 5
+
     def __init__(
             self,
             config: AccConfig,
@@ -43,6 +46,12 @@ class TradingAccountBot(AbstractBot):
 
         self.sell_all_on_exit = False
         '''Флаг: Распродать все при выходе'''
+
+        self.need_stop_up_cnt = 0
+        '''Счетчик срабатываний для выхода по верхней планке'''
+
+        self.need_stop_down_cnt = 0
+        '''Счетчик срабатываний для выхода по нижней планке'''
 
         self.run_state: AccRun | None = None
         if self.account:
@@ -187,15 +196,28 @@ class TradingAccountBot(AbstractBot):
 
         need_up_t = self.round(self.open_balance * (1 + self.config.stop_up_p / 100))
         if self.config.stop_up_p and self.cur_balance > need_up_t:
-            self.log(f"Останавливаем по получению нужного уровня прибыли. "
-                     f"cur_balance={self.cur_balance}, stop_up_p={self.config.stop_up_p}, need_up_t={need_up_t}")
-            return True
+            self.need_stop_up_cnt += 1
+            if self.need_stop_up_cnt >= self.TICKS_TO_STOP:
+                self.log(f"Останавливаем по получению нужного уровня прибыли. "
+                         f"cur_balance={self.cur_balance}, stop_up_p={self.config.stop_up_p}, need_up_t={need_up_t}")
+                return True
+            else:
+                self.log(f"Останавливаем по получению нужного уровня прибыли. Шаг {self.need_stop_up_cnt}")
+                return False
 
         need_down_t = self.round(self.open_balance * (1 - self.config.stop_down_p / 100))
         if self.config.stop_down_p and self.cur_balance < need_down_t:
-            self.log(f"Останавливаем по достижению критического уровня потерь. "
-                     f"cur_balance={self.cur_balance}, stop_down_p={self.config.stop_down_p}, need={need_down_t}")
-            return True
+            self.need_stop_down_cnt += 1
+            if self.need_stop_down_cnt >= self.TICKS_TO_STOP:
+                self.log(f"Останавливаем по достижению критического уровня потерь. "
+                         f"cur_balance={self.cur_balance}, stop_down_p={self.config.stop_down_p}, need={need_down_t}")
+                return True
+            else:
+                self.log(f"Останавливаем по получению нужного уровня потерь. Шаг {self.need_stop_down_cnt}")
+                return False
+
+        self.need_stop_up_cnt = 0
+        self.need_stop_down_cnt = 0
 
         return False
 
