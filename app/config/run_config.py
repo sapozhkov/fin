@@ -16,8 +16,8 @@ class RunConfig:
     PRETEST_PRE = 'pre'  # анализ и выбор лучшего варианта том же алгоритме за pretest_period дней с вариациями конфига
     PRETEST_FAN = 'fan'  # веерная раскладка, она же нелинейный шаг
 
-    MIN_MAJ_MAX_CNT = 2
-    MIN_NON_MAJ_MAX_CNT = 4
+    MIN_MAJ_MAX_CNT = 3
+    MIN_NON_MAJ_MAX_CNT = 6
 
     def __init__(
             self,
