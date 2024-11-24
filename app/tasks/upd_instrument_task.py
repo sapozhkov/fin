@@ -39,7 +39,7 @@ class UpdInstrumentTask(AbstractTask):
         t_config = RunConfig.from_repr_string(instrument.config)
 
         # выбираем дату. после торгов - текущая, иначе предыдущий день (он полный)
-        if TimeHelper.is_evening():
+        if TimeHelper.trades_are_finished():
             test_date = TimeHelper.get_current_date()
         else:
             test_date = TimeHelper.get_previous_date()

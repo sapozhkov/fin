@@ -224,8 +224,8 @@ async def main():
 if __name__ == '__main__':
     print(f'start {datetime.datetime.now()}')
 
-    date = TimeHelper.get_next_date() if TimeHelper.is_evening() else TimeHelper.get_current_date()
-    if not TimeHelper.is_working_day(date):
+    date = TimeHelper.get_next_date() if TimeHelper.trades_are_finished() else TimeHelper.get_current_date()
+    if not TimeHelper.is_trading_day(date):
         print(f'{datetime.datetime.now()} Выходной, спим')
         exit()
 

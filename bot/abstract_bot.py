@@ -28,7 +28,7 @@ class AbstractBot(ABC):
         self.state = self.STATE_NEW
 
     def is_trading_day(self):
-        return TimeHelper.is_working_day(self.time.now())
+        return TimeHelper.is_trading_day(self.time.now())
 
     def log(self, message, repeat=False):
         self.logger.log(message, repeat)

@@ -55,14 +55,12 @@ class TestAlgorithm:
 
         if last_test_date is None:
             # до утра гоняем предыдущий день, а то откинется лишний
-            if TimeHelper.is_morning():
+            if TimeHelper.trades_are_not_started():
                 last_test_date = TimeHelper.get_previous_date()
             else:
                 last_test_date = TimeHelper.get_current_date()
 
-        # #162 #159 тип выбора предыдущих дней - рабочие/все. может пригодиться для тестирования/экспериментов
-        # days_list = TickerCache.get_days_list(last_test_date, test_days_num)
-        days_list = TickerCache.get_days_list_working_only(last_test_date, test_days_num)
+        days_list = TickerCache.get_trade_days_only(last_test_date, test_days_num)
 
         self.accounting_helper.set_num(shares_count)
 
@@ -84,7 +82,7 @@ class TestAlgorithm:
                 # print(f"{test_date} - maj_commission {round(maj_commission, 2)} = "
                 #       f"{self.client_helper.get_current_price()} * {self.accounting_helper.get_num()} * {0.0012}")
 
-            if not TimeHelper.is_working_day(TimeHelper.to_datetime(test_date)):
+            if not TimeHelper.is_trading_day(TimeHelper.to_datetime(test_date)):
                 continue
 
             if auto_conf_days_freq and config is not None:
@@ -102,8 +100,8 @@ class TestAlgorithm:
             config.end_time = self.get_end_time(test_date, config.end_time)
 
             # прогоняем по дню (время в UTC)
-            date_from = datetime.strptime(test_date + ' ' + config.start_time, "%Y-%m-%d %H:%M")
-            date_to = datetime.strptime(test_date + ' ' + config.end_time, "%Y-%m-%d %H:%M")
+            date_from = datetime.strptime(test_date + ' ' + config.start_time, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+            date_to = datetime.strptime(test_date + ' ' + config.end_time, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
 
             # задаем параметры дня
             self.time_helper.set_current_time(date_from)

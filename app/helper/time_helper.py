@@ -6,7 +6,6 @@ from .day_exclusions import DayExclusions
 class TimeHelper:
     DATE_FORMAT = "%Y-%m-%d"
 
-    # todo #148 вот это тоже поменять или так и применять в этом виде. изменено, дотюнить
     START_TIME = '04:00'
     END_TIME = '20:49'
 
@@ -19,11 +18,13 @@ class TimeHelper:
         return date == cls.now().strftime(cls.DATE_FORMAT)
 
     @classmethod
-    def is_evening(cls) -> bool:
+    def trades_are_finished(cls) -> bool:
+        """True если торги уже закончены на этот день"""
         return cls.now().time() > cls.to_time(cls.END_TIME)
 
     @classmethod
-    def is_morning(cls) -> bool:
+    def trades_are_not_started(cls) -> bool:
+        """True если торги еще не начаты"""
         return cls.now().time() < cls.to_time(cls.START_TIME)
 
     @classmethod
@@ -33,11 +34,12 @@ class TimeHelper:
         return cls.to_time(cls.START_TIME) <= dt.time() <= cls.to_time(cls.END_TIME)
 
     @classmethod
-    def is_working_day(cls, dt: datetime | str | None = None) -> bool:
-        # todo #148 переделать если у нас остаются выходные, иначе грохнуть
-
+    def is_trading_day(cls, dt: datetime | str | None = None) -> bool:
+        """True если торги доступны в этот день"""
         return True
 
+    @classmethod
+    def is_weekend(cls, dt: datetime | str | None = None) -> bool:
         if dt is None:
             dt = cls.now()
 
@@ -48,7 +50,9 @@ class TimeHelper:
         is_exclusion = ex.is_exclusion(dt)
         is_working_day = dt.weekday() < 5
 
-        return is_working_day ^ is_exclusion  # xor
+        return not (is_working_day ^ is_exclusion)  # xor
+
+
 
     @staticmethod
     def to_time(str_time) -> time:

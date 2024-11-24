@@ -1,8 +1,8 @@
-from datetime import time as datetime_time, timedelta, datetime
+from datetime import time as datetime_time, timedelta, datetime, timezone
 from typing import Tuple
 
 from tinkoff.invest import HistoricCandle, PostOrderResponse, MoneyValue, OrderType, GetCandlesResponse, OrderState, \
-    OrderDirection, OrderExecutionReportStatus
+    OrderDirection, OrderExecutionReportStatus, SecurityTradingStatus
 
 from bot.env import AbstractProxyClient
 from bot.env.test import TimeTestEnvHelper
@@ -10,8 +10,58 @@ from app.helper import TimeHelper, f2q
 
 
 class ClientTestEnvHelper(AbstractProxyClient):
-    START_TIME = '07:00'
-    END_TIME = '15:29'
+    """
+    Класс для имитации работы реального клиента при тестировании алгоритмов
+    """
+
+    """
+    Данные о торговом режиме, полученные экспериментально
+    m - market
+    l - limit
+    b- bestprice
+    
+    Воскресенье
+    00:58 - m0 l0 b0 ..._NOT_AVAILABLE_FOR_TRADING: 1
+    07:00 - m0 l1 b1 ..._DEALER_NORMAL_TRADING: 14
+    23:50 - m0 l0 b0 ..._NOT_AVAILABLE_FOR_TRADING: 1
+    
+    Понедельник
+    00:00 - m0 l0 b0 ..._NOT_AVAILABLE_FOR_TRADING: 1
+    07:00 - m0 l1 b1 ..._DEALER_NORMAL_TRADING: 14
+    09:40 - m0 l0 b0 ..._BREAK_IN_TRADING: 4
+    09:50 - m1 l1 b1 ..._OPENING_AUCTION_PERIOD: 9
+    10:00 - m1 l1 b1 ..._NORMAL_TRADING: 5
+    18:40 - m1 l1 b1 ..._CLOSING_AUCTION: 6
+    18:45 - m0 l1 b1 ..._TRADING_AT_CLOSING_AUCTION_PRICE: 10
+    18:50 - m0 l0 b0 ..._NOT_AVAILABLE_FOR_TRADING: 1
+    19:00 - m1 l1 b1 ..._OPENING_AUCTION_PERIOD: 9
+    19:04 - m0 l0 b0 ..._NOT_AVAILABLE_FOR_TRADING: 1
+    19:05 - m1 l1 b1 ..._NORMAL_TRADING: 5
+    23:50 - m0 l0 b0 ..._NOT_AVAILABLE_FOR_TRADING: 1
+    """
+
+    # Временные интервалы для рабочего дня (всё в GMT)
+    WORK_DAY_SCHEDULE = {
+        '00:00': SecurityTradingStatus.SECURITY_TRADING_STATUS_NOT_AVAILABLE_FOR_TRADING,
+        '04:00': SecurityTradingStatus.SECURITY_TRADING_STATUS_DEALER_NORMAL_TRADING,
+        '06:40': SecurityTradingStatus.SECURITY_TRADING_STATUS_BREAK_IN_TRADING,
+        '06:50': SecurityTradingStatus.SECURITY_TRADING_STATUS_OPENING_AUCTION_PERIOD,
+        '07:00': SecurityTradingStatus.SECURITY_TRADING_STATUS_NORMAL_TRADING,
+        '15:40': SecurityTradingStatus.SECURITY_TRADING_STATUS_CLOSING_AUCTION,
+        '15:45': SecurityTradingStatus.SECURITY_TRADING_STATUS_TRADING_AT_CLOSING_AUCTION_PRICE,
+        '15:50': SecurityTradingStatus.SECURITY_TRADING_STATUS_NOT_AVAILABLE_FOR_TRADING,
+        '16:00': SecurityTradingStatus.SECURITY_TRADING_STATUS_OPENING_AUCTION_PERIOD,
+        '16:04': SecurityTradingStatus.SECURITY_TRADING_STATUS_NOT_AVAILABLE_FOR_TRADING,
+        '16:05': SecurityTradingStatus.SECURITY_TRADING_STATUS_NORMAL_TRADING,
+        '20:50': SecurityTradingStatus.SECURITY_TRADING_STATUS_NOT_AVAILABLE_FOR_TRADING,
+    }
+
+    # Временные интервалы для выходного дня
+    WEEKEND_DAY_SCHEDULE = {
+        '00:00': SecurityTradingStatus.SECURITY_TRADING_STATUS_NOT_AVAILABLE_FOR_TRADING,
+        '04:00': SecurityTradingStatus.SECURITY_TRADING_STATUS_DEALER_NORMAL_TRADING,
+        '20:50': SecurityTradingStatus.SECURITY_TRADING_STATUS_NOT_AVAILABLE_FOR_TRADING,
+    }
 
     def __init__(self,
                  ticker,
@@ -39,9 +89,9 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
     def set_candles_list_by_date(self, date):
         is_today = TimeHelper.is_today(date)
-        is_evening = TimeHelper.is_evening()
+        trades_are_finished = TimeHelper.trades_are_finished()
 
-        candles = self.ticker_cache.get_candles(date, force_cache=is_today and is_evening)
+        candles = self.ticker_cache.get_candles(date, force_cache=is_today and trades_are_finished)
         self.candles_1_min_dict = {(candle.time.hour, candle.time.minute): candle for candle in candles.candles}
         self.orders = {}
         self.executed_orders_ids = []
@@ -63,18 +113,37 @@ class ClientTestEnvHelper(AbstractProxyClient):
     def update_cached_status(self):
         pass
 
+    def get_status_for_time(self):
+        current_time = self.time.now()
+        current_time_str = current_time.replace(tzinfo=timezone.utc).strftime('%H:%M')
+        is_workday = not TimeHelper.is_weekend(current_time)
+
+        """Возвращает статус для текущего времени."""
+        schedule = self.WORK_DAY_SCHEDULE if is_workday else self.WEEKEND_DAY_SCHEDULE
+        status = SecurityTradingStatus.SECURITY_TRADING_STATUS_NOT_AVAILABLE_FOR_TRADING
+
+        for key in sorted(schedule.keys()):
+            if current_time_str < key:
+                return status
+            status = schedule[key]
+
+        return status
+
     def can_trade(self):
-        return TimeHelper.is_working_hours(self.time.now())
+        return self.get_status_for_time() in [
+            SecurityTradingStatus.SECURITY_TRADING_STATUS_DEALER_NORMAL_TRADING,
+            SecurityTradingStatus.SECURITY_TRADING_STATUS_NORMAL_TRADING,
+        ]
 
     def can_limit_order(self):
         return self.can_trade()
 
     def can_market_order(self):
-        # todo #148 вот это надо будет исправить - не должно работать с утра и возможно вечером
-        return self.can_trade()
+        return self.get_status_for_time() in [
+            SecurityTradingStatus.SECURITY_TRADING_STATUS_NORMAL_TRADING,
+        ]
 
     def can_bestprice_order(self):
-        # todo #148 и вот это проверить вместе с предыдущим
         return self.can_trade()
 
     def float_to_money_value(self, price) -> MoneyValue:
@@ -106,6 +175,8 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
         # иначе лимитная заявка
         elif order_type == OrderType.ORDER_TYPE_LIMIT:
+            if price is None:
+                raise f"None price for order_type == OrderType.ORDER_TYPE_LIMIT"
             order = self.get_post_order_response_limit(direction, lots, price)
             self.orders[order.order_id] = order
             return order

@@ -90,7 +90,7 @@ class TickerCache:
         return out
 
     @staticmethod
-    def get_days_list_working_only(end_date, days_num):
+    def get_trade_days_only(end_date, days_num):
         """
         Возвращает список предыдущих будних дней, но только рабочих
 
@@ -103,7 +103,7 @@ class TickerCache:
 
         while len(out) < days_num:
             current_date -= timedelta(days=1)
-            if TimeHelper.is_working_day(current_date):
+            if TimeHelper.is_trading_day(current_date):
                 out.append(current_date.strftime("%Y-%m-%d"))
 
         out.reverse()
