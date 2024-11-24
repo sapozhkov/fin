@@ -74,11 +74,11 @@ class MyTestCase(unittest.TestCase):
     def test_param_modify(self):
 
         config_normal = RunConfig(
-            step_max_cnt=5,
-            step_base_cnt=2,
+            step_max_cnt=16,
+            step_base_cnt=8,
         )
         config_none = RunConfig(
-            step_max_cnt=5,
+            step_max_cnt=16,
             step_base_cnt=None,
         )
 
@@ -86,16 +86,16 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(str(config_normal), str(config_none))
 
         config_max = RunConfig(
-            step_max_cnt=5,
-            step_base_cnt=7,
+            step_max_cnt=12,
+            step_base_cnt=16,
             step_set_orders_cnt=5,
             threshold_buy_steps=5,
             threshold_sell_steps=5,
 
         )
         config_over = RunConfig(
-            step_max_cnt=5,
-            step_base_cnt=5,
+            step_max_cnt=12,
+            step_base_cnt=12,
             step_set_orders_cnt=5,
             threshold_buy_steps=2,
             threshold_sell_steps=2,
@@ -130,9 +130,9 @@ class MyTestCase(unittest.TestCase):
 
     def test_hash(self):
         configs = [
-            RunConfig(step_max_cnt=5),
-            RunConfig(step_max_cnt=4),
-            RunConfig(step_max_cnt=5),
+            RunConfig(step_max_cnt=12),
+            RunConfig(step_max_cnt=10),
+            RunConfig(step_max_cnt=12),
         ]
         unique_configs = set(configs)
         self.assertEqual(len(unique_configs), 2)

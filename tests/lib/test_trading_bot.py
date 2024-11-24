@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime
 
+from app.helper import TimeHelper
 from bot import TradingBot, TestHelper
 
 
@@ -17,28 +18,6 @@ class MyTestCase(unittest.TestCase):
             client_helper=self.client_helper,
             accounting_helper=self.accounting_helper,
         )
-
-    # todo #148 del?
-    # def test_is_trading_day(self):
-    #     # пятница - обычный день
-    #     date = datetime.strptime('2024-04-26 06:30', "%Y-%m-%d %H:%M")
-    #     self.time_helper.set_time(date)
-    #     self.assertTrue(self.bot.is_trading_day())
-    #
-    #     # рабочая суббота
-    #     date = datetime.strptime('2024-04-27 06:30', "%Y-%m-%d %H:%M")
-    #     self.time_helper.set_time(date)
-    #     self.assertTrue(self.bot.is_trading_day())
-    #
-    #     # обычное воскресенье
-    #     date = datetime.strptime('2024-04-28 06:30', "%Y-%m-%d %H:%M")
-    #     self.time_helper.set_time(date)
-    #     self.assertFalse(self.bot.is_trading_day())
-    #
-    #     # 1 мая - среда - не работаем
-    #     date = datetime.strptime('2024-05-01 06:30', "%Y-%m-%d %H:%M")
-    #     self.time_helper.set_time(date)
-    #     self.assertFalse(self.bot.is_trading_day())
 
     @staticmethod
     def test_data():
@@ -76,7 +55,7 @@ class MyTestCase(unittest.TestCase):
         ]
 
     def test_round(self):
-        # todo когда появится спец тест на клиентов, утащить туда
+        # когда появится спец тест на клиентов, утащить туда
         for min_increment, round_signs, price, rounded_price in self.test_data():
             with self.subTest(min_increment=min_increment, round_signs=round_signs,
                               price=price, rounded_price=rounded_price):

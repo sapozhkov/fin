@@ -42,9 +42,6 @@ class TinkoffProxyClient(AbstractProxyClient):
         return self.status
 
     def can_trade(self):
-        # todo #148 вот это надо исправить, флаг всегда True
-        #   заменить на белый лист статусов из
-        #   https://russianinvestments.github.io/investAPI/marketdata/#securitytradingstatus
         return self.status and self.status.limit_order_available_flag
 
     def can_limit_order(self):
