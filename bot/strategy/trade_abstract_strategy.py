@@ -281,3 +281,7 @@ class TradeAbstractStrategy(ABC):
         # или продаем лишние. в минус без мажоритарной уйти не должны - учтено в конфиге
         if need_operations < 0:
             self.sell(-need_operations, self.RETRY_ON_START)
+
+    def to_zero_on_end(self) -> bool:
+        """Возвращает True если нужно выходить в 0 при завершении работы бота"""
+        return False

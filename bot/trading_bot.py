@@ -267,6 +267,9 @@ class TradingBot(AbstractBot):
 
         self.state = self.STATE_FINISHED
 
+        if self.trade_strategy.to_zero_on_end():
+            to_zero = True
+
         self.log("Остановка бота...")
         self.trade_strategy.cancel_active_orders()
 

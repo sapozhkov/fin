@@ -132,3 +132,7 @@ class TradeShiftStrategy(TradeAbstractStrategy):
 
             # выставление заявки
             self.sell_limit(cur_set_order_price, self.config.step_lots)
+
+    def to_zero_on_end(self) -> bool:
+        """Возвращает True если нужно выходить в 0 при завершении работы бота"""
+        return True
