@@ -59,7 +59,6 @@ class TradeShiftStrategy(TradeAbstractStrategy):
             return
 
         if self.sold_price:
-            # todo cancel all
             cur_set_order_price = self.sold_price
         elif cur_orders_cnt > 0:
             cur_set_order_price = min(cur_order_prices)

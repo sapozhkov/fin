@@ -117,10 +117,6 @@ class RunConfig:
         if self.pretest_type not in [self.PRETEST_NONE, self.PRETEST_RSI, self.PRETEST_PRE, self.PRETEST_FAN]:
             self.pretest_type = self.PRETEST_NONE
 
-        # todo вот это чекнуть
-        # if self.pretest_type == self.PRETEST_NONE:
-        #     self.pretest_period = 0
-
         if self.step_base_cnt > self.step_max_cnt:
             self.step_base_cnt = self.step_max_cnt
 
