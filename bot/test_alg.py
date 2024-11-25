@@ -423,12 +423,12 @@ class TestAlgorithm:
             # for step_size in [config.step_size]
             # for step_set_orders_cnt in [config.step_set_orders_cnt]
             for step_max_cnt in [
-                config.step_max_cnt,
-                config.step_max_cnt+step_step,
                 max(
                     config.step_max_cnt-step_step,
                     RunConfig.MIN_MAJ_MAX_CNT if config.is_maj_trade() else RunConfig.MIN_NON_MAJ_MAX_CNT
                 ),
+                config.step_max_cnt,
+                config.step_max_cnt+step_step,
             ]
             for step_base_cnt in (
                 [
@@ -440,8 +440,8 @@ class TestAlgorithm:
                 ]
             )
             for step_size in [
-                round(config.step_size, step_round_digits),
                 round(config.step_size - step_diff, step_round_digits),
+                round(config.step_size, step_round_digits),
                 round(config.step_size + step_diff, step_round_digits),
             ]
         ]
