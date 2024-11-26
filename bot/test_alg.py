@@ -32,16 +32,14 @@ class TestAlgorithm:
         test_days_num,
         shares_count=0,
 
-        auto_conf_days_freq=0,
-        auto_conf_prev_days=0,
+        try_find_best_config: bool = False,
     ):
         """
         Провести тестирование по заданному конфигу
         :param last_test_date: последняя дата для теста
         :param test_days_num: сколько дней надо проверить
         :param shares_count: сколько инструментов на балансе
-        :param auto_conf_days_freq: частота подстройки конфига. если задано, то подстраивается
-        :param auto_conf_prev_days: сколько дней претестить для каждого дня
+        :param try_find_best_config: подбирать лучший конфиг. рекурсивно вызывает эту же функцию. !осторожно - цикл
         :return:
         """
         if test_days_num == 0:
@@ -85,12 +83,10 @@ class TestAlgorithm:
             if not TimeHelper.is_trading_day(TimeHelper.to_datetime(test_date)):
                 continue
 
-            if auto_conf_days_freq and config is not None:
+            if try_find_best_config and config is not None:
                 config = self.make_best_config(
-                    start_date=days_list[0],
                     test_date=test_date,
-                    auto_conf_days_freq=auto_conf_days_freq,
-                    auto_conf_prev_days=auto_conf_prev_days,
+                    prev_days=original_config.pretest_period,
                     original_config=original_config,
                     last_config=config)
             else:
@@ -289,31 +285,16 @@ class TestAlgorithm:
 
         return min_time.strftime("%H:%M")
 
-    @staticmethod
-    def is_nth_day_from_start(start_date_string: str, date_string: str, n: int):
-        if n == 0:
-            return True
-
-        start_date = datetime.strptime(start_date_string, "%Y-%m-%d")
-        target_date = datetime.strptime(date_string, "%Y-%m-%d")
-
-        days_difference = (target_date - start_date).days
-        return days_difference % n == 0
-
     def make_best_config(
             self,
-            start_date: str,
             test_date: str,
-            auto_conf_days_freq: int,
-            auto_conf_prev_days: int,
+            prev_days: int,
             original_config: RunConfig,
             last_config: RunConfig | None = None
     ) -> RunConfig:
         config, _ = self.make_best_config_with_profit(
-            start_date,
             test_date,
-            auto_conf_days_freq,
-            auto_conf_prev_days,
+            prev_days,
             original_config,
             last_config
         )
@@ -321,18 +302,11 @@ class TestAlgorithm:
 
     def make_best_config_with_profit(
             self,
-            start_date: str,
             test_date: str,
-            auto_conf_days_freq: int,
-            auto_conf_prev_days: int,
+            prev_days: int,
             original_config: RunConfig,
             last_config: RunConfig | None = None
     ) -> (RunConfig, float):
-        need_run = self.is_nth_day_from_start(start_date, test_date, auto_conf_days_freq)
-
-        if not need_run:
-            return copy.copy(last_config) if last_config is not None else copy.copy(original_config), 1
-
         conf_list = self.make_config_variants(original_config)
 
         if last_config is not None:
@@ -347,12 +321,11 @@ class TestAlgorithm:
             test_alg = TestAlgorithm(do_printing=False, config=config, use_cache=self.use_cache)
             res = test_alg.test(
                 last_test_date=TimeHelper.get_previous_date(TimeHelper.to_datetime(test_date)),
-                test_days_num=auto_conf_prev_days,
+                test_days_num=prev_days,
                 shares_count=0,
 
                 # не менять, чтобы в рекурсию не уйти
-                auto_conf_days_freq=0,
-                auto_conf_prev_days=0,
+                try_find_best_config=False,
             )
             if res:
                 results.append(res)
@@ -370,7 +343,7 @@ class TestAlgorithm:
             return best_conf, best_res['profit_p']
         else:
             print(f"Ошибка при получении лучшей конфигурации")
-            return copy.copy(original_config), 0.01
+            return copy.copy(original_config), 0
 
     @staticmethod
     def get_step_by_price(price: float | None) -> float:

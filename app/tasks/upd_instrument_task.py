@@ -47,10 +47,8 @@ class UpdInstrumentTask(AbstractTask):
         # выбираем лучший конфиг
         test_alg = TestAlgorithm(do_printing=False, config=t_config)
         new_config, new_profit = test_alg.make_best_config_with_profit(
-            start_date=test_date,
             test_date=test_date,
-            auto_conf_days_freq=0,
-            auto_conf_prev_days=t_config.pretest_period,
+            prev_days=t_config.pretest_period,
             original_config=t_config
         )
 
