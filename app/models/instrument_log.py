@@ -22,7 +22,7 @@ class InstrumentLog(db.Model):
             instrument_id=instrument.id,
             updated_at=instrument.updated_at,
             config=instrument.config,
-            data=instrument.data,
+            data='',
             expected_profit=instrument.expected_profit,
         )
 
