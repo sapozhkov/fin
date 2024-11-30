@@ -32,6 +32,7 @@ class PlotRun:
 
         # Построение графика изменения цены закрытия
         plt.plot(times, close_prices, label='Close Price', alpha=0.75)
+        plt.grid(True)
 
         # # бары
         # low_prices = [q2f(candle.low) for candle in candles.candles]
@@ -57,7 +58,8 @@ class PlotRun:
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))  # Формат времени
 
         plt.xticks(rotation=45)  # Поворот меток времени
-        plt.title(title if title else f"Изменение цены закрытия за день")
+        if title:
+            plt.title(title)
         plt.xlabel('Время')
         plt.ylabel('Цена закрытия')
         plt.legend()
@@ -81,7 +83,7 @@ class PlotRun:
 
         config = RunConfig.from_repr_string(run.config)
 
-        plot = cls._get_plot(config.ticker, f"{run.date}", orders, f"{run}")
+        plot = cls._get_plot(config.ticker, f"{run.date}", orders)
 
         # Сохранение в буфер как PNG
         buf = io.BytesIO()
