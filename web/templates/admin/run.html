@@ -3,43 +3,66 @@
 {% block body %}
     <h1>Run {{ run.date }} conf: {{ run.config }}</h1>
 
+    <table class="table table-striped table-bordered">
+        <thead class="thead-dark">
+            <tr>
+                <th>Config</th>
+                <th>Status</th>
+                <th>Profit</th>
+                <th>Depo</th>
+                <th>StartCnt</th>
+                <th>EndCnt</th>
+                <th>Data</th>
+                <th>Errs</th>
+                <th>OpCnt</th>
+                <th>UpdAt</th>
+            </tr>
+        </thead>
+        <tbody id="run-table-body">
+            <tr>
+                <td>
+                    {{ run.config }}<br />
+
+                    (<span class="{{ run.instrument_rel.profit_n_last_day|currency_class }}"
+                        >d{% if run.instrument_rel.profit_n_last_day > 0 %}+{% endif %}{{ run.instrument_rel.profit_n_last_day }}%</span
+                    >,
+                    <span class="{{ run.instrument_rel.profit_n_last_week|currency_class }}"
+                        >w{% if run.instrument_rel.profit_n_last_week > 0 %}+{% endif %}{{ run.instrument_rel.profit_n_last_week }}%</span
+                    >,
+                    <span class="{{ run.instrument_rel.profit_n_last_month|currency_class }}">
+                        m{% if run.instrument_rel.profit_n_last_month > 0 %}+{% endif %}{{ run.instrument_rel.profit_n_last_month }}%</span
+                    >,
+                    <span class="{{ run.instrument_rel.profit_n_all_time|currency_class }}">
+                        a{% if run.instrument_rel.profit_n_all_time > 0 %}+{% endif %}{{ run.instrument_rel.profit_n_all_time }}%</span
+                    >, <a href="{{ url_for("chartsview.run", run_id=run.id) }}" class="ms-2">
+                        <i class="bi bi-bar-chart">chart</i
+                        ></a
+                    >, <a href="{{ url_for("run.index_view", flt1_0=run.instrument_rel.id) }}" class="ms-2">
+                        <i class="bi bi-bar-chart">runs</i
+                        ></a
+                    >)
+                </td>
+                <td class="{{ run.status|status_class }}">
+                    {{ run.get_status_title() }}
+                </td>
+                <td class="{{ run.total|currency_class }}">
+                    {{ run.total }} ({{ run.profit }}%)
+                </td>
+                <td>{{ run.depo|currency }}</td>
+                <td>{{ run.start_cnt }}</td>
+                <td>{{ run.end_cnt }}</td>
+                <td>{{ run.data }}<br />{{ run.instrument_data }}</td>
+                <td title="{{ run.last_error }}">{{ run.error_cnt }}</td>
+                <td>{{ run.operations_cnt }}</td>
+                <td>{{ run.updated_at|time }}</td>
+            </tr>
+            {% if run.last_error %}
+                <tr>
+                    <td colspan="10"><strong>Last Error:</strong> {{ run.last_error }}</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
     <img src="{{ chart_url }}" alt="Run Chart">
-
-    <div class="container">
-        <table class="table table-bordered table-sm">
-            <tbody>
-                <tr>
-                    <td><strong>Status:</strong> {{ run.get_status_title() }}</td>
-                    <td><strong>Exit Code:</strong> {{ run.exit_code }}</td>
-                    <td><strong>Total:</strong> {{ run.total }}</td>
-                    <td><strong>Depo:</strong> {{ run.depo }}</td>
-                </tr>
-
-                <tr>
-                    <td><strong>Expected Profit:</strong> {{ run.expected_profit }}</td>
-                    <td><strong>Profit:</strong> {{ run.profit }}</td>
-                    <td><strong>Profit N:</strong> {{ run.profit_n }}</td>
-                    <td><strong>Updated at:</strong> {{ run.updated_at|time }}</td>
-                </tr>
-
-                <tr>
-                    <td><strong>Open:</strong> {{ run.open }}</td>
-                    <td><strong>Close:</strong> {{ run.close }}</td>
-                    <td><strong>High:</strong> {{ run.high }}</td>
-                    <td><strong>Low:</strong> {{ run.low }}</td>
-                </tr>
-
-                <tr>
-                    <td><strong>Start Count:</strong> {{ run.start_cnt }}</td>
-                    <td><strong>End Count:</strong> {{ run.end_cnt }}</td>
-                    <td><strong>Error Count:</strong> {{ run.error_cnt }}</td>
-                    <td><strong>Operations Count:</strong> {{ run.operations_cnt }}</td>
-                </tr>
-
-                <tr>
-                    <td colspan="4"><strong>Last Error:</strong> {{ run.last_error }}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
 {% endblock %}
