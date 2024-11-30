@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from tinkoff.invest import PostOrderResponse, OrderType, OrderDirection, OrderState, Quotation, MoneyValue
 
-from bot.env import AbstractProxyClient
+from bot.env import AbstractProxyClient, AbstractAccountingHelper
 from bot.helper import OrderHelper
 
 
@@ -21,7 +21,7 @@ class TradeAbstractStrategy(ABC):
         self.time = bot.time
         self.logger = bot.logger
         self.client: AbstractProxyClient = bot.client
-        self.accounting = bot.accounting
+        self.accounting: AbstractAccountingHelper = bot.accounting
 
         self.active_buy_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на покупку
         self.active_sell_orders: dict[str, PostOrderResponse] = {}  # Массив активных заявок на продажу
@@ -57,6 +57,7 @@ class TradeAbstractStrategy(ABC):
 
         order = self.client.place_order(lots // self.client.instrument.lot, direction, price, order_type)
         if order is None:
+            self.accounting.add_order_fail(price, lots)
             if retry > 0:
                 self.logger.error(f"RETRY order. {lots}, {direction}, {price}, {order_type}, "
                                   f"sleep {self.RETRY_SLEEP}, retry num={retry}")

@@ -10,6 +10,7 @@ class HistoryOrderType:
     EXECUTED_SELL_LIMIT = 8
     BUY_BESTPRICE = 9
     SELL_BESTPRICE = 10
+    ORDER_FAIL = 11
 
     EXECUTED_TYPES = {
         BUY_MARKET,
@@ -32,6 +33,7 @@ class HistoryOrderType:
         CANCEL_SELL_LIMIT: ('Close sell open', 'magenta', 'x'),
         EXECUTED_BUY_LIMIT: ('Limit buy', 'blue', '^'),
         EXECUTED_SELL_LIMIT: ('Limit sell', 'orange', 'v'),
+        ORDER_FAIL: ('Order set Fail', 'red', '*'),
     }
 
     @classmethod

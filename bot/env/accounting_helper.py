@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from tinkoff.invest import OrderDirection, PostOrderResponse, OrderType
+from tinkoff.invest import OrderDirection, PostOrderResponse, OrderType, OrderState
 
 from app.constants import HistoryOrderType
 from bot.helper import OrderHelper
@@ -21,7 +21,7 @@ class AbstractAccountingHelper(ABC):
     def register_order(self, order: Order):
         pass
 
-    def add_deal_by_order(self, order: PostOrderResponse):
+    def add_deal_by_order(self, order: PostOrderResponse | OrderState):
         lots = OrderHelper.get_lots(order)
         avg_price = self.client.round(OrderHelper.get_avg_price(order))
         commission = OrderHelper.get_commission(order)
@@ -82,6 +82,18 @@ class AbstractAccountingHelper(ABC):
 
         self.register_order(order)
 
+    def add_order_fail(self, avg_price: float, lots: int = 1):
+        order = Order(
+            run=self.run_id,
+            type=HistoryOrderType.ORDER_FAIL,
+            datetime=self.time.now(),
+            price=avg_price,
+            total=self.client.round(lots * avg_price),
+            count=lots
+        )
+
+        self.register_order(order)
+
     def del_order(self, order: PostOrderResponse):
         lots = OrderHelper.get_lots(order)
         avg_price = self.client.round(OrderHelper.get_avg_price(order))
@@ -116,5 +128,5 @@ class AbstractAccountingHelper(ABC):
     def get_sum(self):
         return self.sum
 
-    def set_run_id(self, id:int):
-        self.run_id = id
+    def set_run_id(self, _id: int):
+        self.run_id = _id
