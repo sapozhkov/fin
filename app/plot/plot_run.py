@@ -60,8 +60,6 @@ class PlotRun:
         plt.xticks(rotation=45)  # Поворот меток времени
         if title:
             plt.title(title)
-        plt.xlabel('Время')
-        plt.ylabel('Цена закрытия')
         plt.legend()
         plt.tight_layout()  # Автоматическая корректировка подложки
         return plt
