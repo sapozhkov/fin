@@ -9,6 +9,26 @@ class TimeHelper:
     START_TIME = '04:00'
     END_TIME = '20:49'
 
+    # расписание есть в ClientTestEnvHelper
+    MORNING_BREAK_START = '06:40'
+    MORNING_BREAK_END = '07:00'
+    EVENING_BREAK_START = '15:40'
+    EVENING_BREAK_END = '16:05'
+
+    WORKDAY_BREAKS = [
+        START_TIME,
+        END_TIME,
+        MORNING_BREAK_START,
+        MORNING_BREAK_END,
+        EVENING_BREAK_START,
+        EVENING_BREAK_END,
+    ]
+
+    WEEKEND_BREAKS = [
+        START_TIME,
+        END_TIME,
+    ]
+
     @classmethod
     def now(cls) -> datetime:
         return datetime.now(timezone.utc)

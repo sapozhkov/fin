@@ -1,5 +1,5 @@
 import io
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from flask import Response, abort
 from matplotlib import pyplot as plt, dates as mdates
@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt, dates as mdates
 from app import AppConfig
 from app.config import RunConfig
 from app.constants import HistoryOrderType
-from app.helper import q2f
+from app.helper import q2f, TimeHelper
 from app.models import Order, Run
 from app.cache import TickerCache
 
@@ -51,6 +51,12 @@ class PlotRun:
 
             # Помечаем метку как добавленную
             labels_added.add(order.type)
+
+        # Добавление вертикальных линий для начала и конца аукционов
+
+        for time in TimeHelper.WEEKEND_BREAKS if TimeHelper.is_weekend(date) else TimeHelper.WORKDAY_BREAKS:
+            time_stamp = (datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M") + t_shift)
+            plt.axvline(x=time_stamp, color='blue', linestyle='--', alpha=0.3)
 
         # Форматирование оси времени
         ax.xaxis_date()  # Интерпретировать ось X как даты
