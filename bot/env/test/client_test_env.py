@@ -84,7 +84,7 @@ class ClientTestEnvHelper(AbstractProxyClient):
     def set_current_price(self, price: float):
         self.current_price = price
 
-    def get_current_price(self):
+    def get_current_price(self) -> float | None:
         return self.current_price
 
     def set_candles_list_by_date(self, date):

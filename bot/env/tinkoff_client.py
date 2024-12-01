@@ -100,7 +100,7 @@ class AbstractProxyClient(ABC):
         pass
 
     @abstractmethod
-    def get_current_price(self):
+    def get_current_price(self) -> float | None:
         pass
 
     def get_instrument(self) -> InstrumentDTO:

@@ -28,7 +28,7 @@ class TinkoffApi:
                 return out
 
     @staticmethod
-    def get_last_price(figi: str) -> float:
+    def get_last_price(figi: str) -> float | None:
         """
         Отдает последнюю цену для указанного инструмента (по figi)
         :param figi: str

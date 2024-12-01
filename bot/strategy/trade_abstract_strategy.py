@@ -57,7 +57,10 @@ class TradeAbstractStrategy(ABC):
 
         order = self.client.place_order(lots // self.client.instrument.lot, direction, price, order_type)
         if order is None:
-            self.accounting.add_order_fail(price, lots)
+            fail_price = price if price is not None else self.cached_current_price
+            if fail_price is None:
+                fail_price = 0.0
+            self.accounting.add_order_fail(fail_price, lots)
             if retry > 0:
                 self.logger.error(f"RETRY order. {lots}, {direction}, {price}, {order_type}, "
                                   f"sleep {self.RETRY_SLEEP}, retry num={retry}")
