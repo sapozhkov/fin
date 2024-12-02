@@ -90,7 +90,6 @@ class PlotBalance:
         # Возвращаем изображение как ответ
         return Response(buf, mimetype='image/png')
 
-    # todo del
     @classmethod
     def draw_notebook(cls, acc_run_id: int):
         plot = cls._get_plot(acc_run_id)
