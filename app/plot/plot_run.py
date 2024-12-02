@@ -57,7 +57,7 @@ class PlotRun:
         # Добавление вертикальных линий для начала и конца аукционов
 
         for time in TimeHelper.WEEKEND_BREAKS if TimeHelper.is_weekend(date) else TimeHelper.WORKDAY_BREAKS:
-            if last_time and time >= last_time:
+            if last_time and time > last_time:
                 continue
             time_stamp = (datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M") + t_shift)
             time_stamp_num = mdates.date2num(time_stamp)
