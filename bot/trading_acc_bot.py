@@ -76,7 +76,7 @@ class TradingAccountBot(AbstractBot):
             )
             self.update_run_state()
 
-            self.save_balance_to_log()
+            # self.save_balance_to_log()
 
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"

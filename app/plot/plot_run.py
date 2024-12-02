@@ -27,6 +27,8 @@ class PlotRun:
         times = [(candle.time + t_shift) for candle in candles.candles]  # Время каждой свечи
         close_prices = [q2f(candle.close) for candle in candles.candles]  # Цены закрытия каждой свечи
 
+        last_time = candles.candles[-1].time.strftime('%H:%M') if candles.candles else ''
+
         # Визуализация
         fig, ax = plt.subplots(figsize=(11, 5))
 
@@ -55,8 +57,12 @@ class PlotRun:
         # Добавление вертикальных линий для начала и конца аукционов
 
         for time in TimeHelper.WEEKEND_BREAKS if TimeHelper.is_weekend(date) else TimeHelper.WORKDAY_BREAKS:
+            if last_time and time >= last_time:
+                continue
             time_stamp = (datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M") + t_shift)
-            plt.axvline(x=time_stamp, color='blue', linestyle='--', alpha=0.3)
+            time_stamp_num = mdates.date2num(time_stamp)
+            # Добавляем вертикальную линию
+            plt.axvline(x=time_stamp_num, color='blue', linestyle='--', alpha=0.3)
 
         # Форматирование оси времени
         ax.xaxis_date()  # Интерпретировать ось X как даты

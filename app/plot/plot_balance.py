@@ -2,9 +2,11 @@ import matplotlib.pyplot as plt
 import io
 from flask import Response
 from matplotlib.ticker import MaxNLocator
+import matplotlib.dates as mdates
 from app import AppConfig
+from app.helper import TimeHelper
 from app.models import AccRunBalance
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 
 class PlotBalance:
@@ -19,8 +21,12 @@ class PlotBalance:
         ]
 
         # Сдвигаем время на 3 часа
-        times = [(b.datetime + timedelta(hours=AppConfig.TIME_SHIFT_HOURS)).strftime('%H:%M') for b in filtered_balances]
+        t_shift = timedelta(hours=AppConfig.TIME_SHIFT_HOURS)
+        times = [(b.datetime + t_shift) for b in filtered_balances]
         values = [b.balance for b in filtered_balances]
+
+        date = filtered_balances[-1].datetime.strftime('%Y-%m-%d') if filtered_balances else ''
+        last_time = filtered_balances[-1].datetime.strftime('%H:%M') if filtered_balances else ''
 
         # Построение графика
         plt.figure(figsize=(11, 5))
@@ -53,6 +59,22 @@ class PlotBalance:
 
             plt.legend()
 
+        # вертикальные линии режимов работы торгов
+        if date:
+            for time in TimeHelper.WEEKEND_BREAKS if TimeHelper.is_weekend(date) else TimeHelper.WORKDAY_BREAKS:
+                if last_time and time >= last_time:
+                    continue
+                time_stamp = datetime.strptime(f"{date} {time}", "%Y-%m-%d %H:%M") + t_shift
+                time_stamp_num = mdates.date2num(time_stamp)
+                plt.axvline(x=time_stamp_num, color='blue', linestyle='--', alpha=0.3)
+
+        # Форматирование оси времени
+        ax = plt.gca()
+        ax.xaxis_date()  # Интерпретировать ось X как даты
+        ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))  # Устанавливаем интервал меток в 1 час
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))  # Формат отображения времени
+        plt.xticks(rotation=45)  # Наклон подписей времени
+
         return plt
 
     @classmethod
@@ -67,3 +89,11 @@ class PlotBalance:
 
         # Возвращаем изображение как ответ
         return Response(buf, mimetype='image/png')
+
+    # todo del
+    @classmethod
+    def draw_notebook(cls, acc_run_id: int):
+        plot = cls._get_plot(acc_run_id)
+        plot.show()
+        plot.close()
+
