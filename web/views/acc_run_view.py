@@ -6,7 +6,7 @@ from app.constants import RunStatus
 from app.models import AccRun
 from web import view_format_datetime
 from web.filter.account_filter import AccountFilter
-from web.formater import view_format_currency
+from web.formater import view_format_currency, view_format_percent
 
 
 class AccRunView(ModelView):
@@ -32,8 +32,8 @@ class AccRunView(ModelView):
 
     column_list = [
         'id',
-        'date',
         'account_rel.name',
+        'date',
         'profit',
         'status',
         'open',
@@ -43,15 +43,12 @@ class AccRunView(ModelView):
         'created_at',
         'updated_at',
         'exit_code',
-        'last_error',
-        'profit_n',
-        'data',
         'error_cnt'
     ]
     column_sortable_list = [
         'id',
-        'date',
         'account_rel.name',
+        'date',
         'profit',
         'status',
         'open',
@@ -61,9 +58,6 @@ class AccRunView(ModelView):
         'created_at',
         'updated_at',
         'exit_code',
-        'last_error',
-        'profit_n',
-        'data',
         'error_cnt'
     ]
 
@@ -96,8 +90,9 @@ class AccRunView(ModelView):
         'close': view_format_currency,
         'high': view_format_currency,
         'low': view_format_currency,
+        'profit': view_format_percent,
         'date': lambda view, context, model, name: Markup(
-            f'<a href="{url_for("chartsview.balance", acc_run_id=model.id)}" >{getattr(model, name)}</a>'
+            f'<a style="white-space: pre;" href="{url_for("chartsview.balance", acc_run_id=model.id)}" >{getattr(model, name)}</a>'
         )
     }
 
