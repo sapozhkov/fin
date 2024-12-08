@@ -7,3 +7,4 @@ from .view_percent import view_format_percent
 from .class_highlight import format_status_class, format_currency_class
 from .nl2br import nl2br
 from .view_nl2br import view_nl2br
+from .view_format_preserve_newlines import view_format_preserve_newlines

@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 import pytz
 import locale
 
+from markupsafe import Markup
+
 # Устанавливаем русскую локаль
 locale.setlocale(locale.LC_TIME, 'ru_RU.UTF-8')
 
@@ -21,8 +23,10 @@ def view_format_datetime(view, context, model, name):
     diff = now - value
 
     if value >= today:
-        return value.strftime('%H:%M')
+        formatted_value = value.strftime('%H:%M')
     elif diff < timedelta(days=7):
-        return value.strftime('%a, %H:%M')
+        formatted_value = value.strftime('%a, %H:%M')
     else:
-        return value.strftime('%Y-%m-%d %H:%M')
+        formatted_value = value.strftime('%Y-%m-%d %H:%M')
+
+    return Markup(f'<span style="white-space: pre;">{formatted_value}</span>')

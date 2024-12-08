@@ -5,7 +5,7 @@ from markupsafe import Markup
 from app.constants import RunStatus
 from app.models import Instrument, Run
 from web.filter import InstrumentFilter
-from web.formater import view_format_datetime, view_format_currency
+from web.formater import view_format_datetime, view_format_currency, view_format_percent, view_format_preserve_newlines
 
 
 class RunView(ModelView):
@@ -16,6 +16,14 @@ class RunView(ModelView):
         'date'
     )
     column_display_pk = True
+    column_list = (
+        'id', 'instrument', 'config', 'date', 'profit',
+        'start_cnt', 'end_cnt', 'status', 'error_cnt', 'operations_cnt',
+        'exit_code', 'total', 'depo',
+        'profit_n', 'expected_profit',
+        'open', 'close', 'high', 'low',
+        'created_at', 'updated_at',
+    )
     form_columns = (
         'instrument_rel', 'date', 'status', 'exit_code', 'last_error', 'total', 'depo',
         'profit', 'profit_n', 'expected_profit', 'data', 'config', 'start_cnt', 'end_cnt',
@@ -26,15 +34,17 @@ class RunView(ModelView):
     form_choices = {'status': RunStatus.get_list()}
     column_choices = {'status': RunStatus.get_list()}
     column_formatters = {
+        'config': view_format_preserve_newlines,
         'created_at': view_format_datetime,
         'updated_at': view_format_datetime,
+        'profit': view_format_percent,
         'depo': view_format_currency,
         'open': view_format_currency,
         'close': view_format_currency,
         'high': view_format_currency,
         'low': view_format_currency,
         'date': lambda view, context, model, name: Markup(
-            f'<a href="{url_for("chartsview.run", run_id=model.id)}" >{getattr(model, name)}</a>'
+            f'<a style="white-space: pre;" href="{url_for("chartsview.run", run_id=model.id)}" >{getattr(model, name)}</a>'
         )
     }
 
