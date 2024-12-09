@@ -1,9 +1,11 @@
 import copy
 import math
 from datetime import datetime, timezone
+from typing import Tuple, Optional
 
 from tinkoff.invest import OrderDirection
 
+from app import AppConfig
 from bot import TradingBot
 from app.cache import TickerCache, LocalCache
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
@@ -84,11 +86,18 @@ class TestAlgorithm:
                 continue
 
             if try_find_best_config and config is not None:
-                config = self.make_best_config(
+                config, expected_profit = self.make_best_config_with_profit(
                     test_date=test_date,
                     prev_days=original_config.pretest_period,
                     original_config=original_config,
                     last_config=config)
+
+                mod_do_not_disable = config.mod_do_not_change_instrument_activity
+                is_low_profit = expected_profit < AppConfig.INSTRUMENT_ON_THRESHOLD
+
+                if is_low_profit and not mod_do_not_disable:
+                    continue
+
             else:
                 config = copy.copy(original_config)
 
@@ -305,8 +314,8 @@ class TestAlgorithm:
             test_date: str,
             prev_days: int,
             original_config: RunConfig,
-            last_config: RunConfig | None = None
-    ) -> (RunConfig, float):
+            last_config: Optional[RunConfig] = None
+    ) -> Tuple[RunConfig, float]:
         conf_list = self.make_config_variants(original_config)
 
         if last_config is not None:
