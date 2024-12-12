@@ -316,10 +316,11 @@ class TestAlgorithm:
             original_config: RunConfig,
             last_config: Optional[RunConfig] = None
     ) -> Tuple[RunConfig, float]:
-        conf_list = self.make_config_variants(original_config)
+        prev_test_date = TimeHelper.get_previous_date(TimeHelper.to_datetime(test_date))
+        conf_list = self.make_config_variants(original_config, prev_test_date)
 
         if last_config is not None:
-            conf_list2 = self.make_config_variants(last_config)
+            conf_list2 = self.make_config_variants(last_config, prev_test_date)
             conf_list += conf_list2
 
         unique_conf_list = list(set(conf_list))
@@ -329,7 +330,7 @@ class TestAlgorithm:
         for config in unique_conf_list:
             test_alg = TestAlgorithm(do_printing=False, config=config, use_cache=self.use_cache)
             res = test_alg.test(
-                last_test_date=TimeHelper.get_previous_date(TimeHelper.to_datetime(test_date)),
+                last_test_date=prev_test_date,
                 test_days_num=prev_days,
                 shares_count=0,
 
@@ -366,7 +367,7 @@ class TestAlgorithm:
         else:
             return 0.2
 
-    def make_config_variants(self, config: RunConfig) -> list[RunConfig]:
+    def make_config_variants(self, config: RunConfig, prev_test_date: str) -> list[RunConfig]:
         step_step = 1 if config.is_maj_trade() else 2
         step_diff = self.get_step_by_price(self.client_helper.get_current_price())
         step_round_digits = self.client_helper.instrument.round_signs
@@ -404,14 +405,23 @@ class TestAlgorithm:
             # for step_base_cnt in [config.step_max_cnt]
             # for step_size in [config.step_size]
             # for step_set_orders_cnt in [config.step_set_orders_cnt]
-            for step_max_cnt in [
-                max(
-                    config.step_max_cnt-step_step,
-                    RunConfig.MIN_MAJ_MAX_CNT if config.is_maj_trade() else RunConfig.MIN_NON_MAJ_MAX_CNT
-                ),
-                config.step_max_cnt,
-                config.step_max_cnt+step_step,
+            for step_size in [
+                round(config.step_size - step_diff, step_round_digits),
+                round(config.step_size, step_round_digits),
+                round(config.step_size + step_diff, step_round_digits),
             ]
+            for step_max_cnt in (
+                [
+                    self.get_max_steps_by_step_size(config, step_size, prev_test_date)
+                ] if config.is_fan_layout() and prev_test_date else [
+                    max(
+                        config.step_max_cnt-step_step,
+                        RunConfig.MIN_MAJ_MAX_CNT if config.is_maj_trade() else RunConfig.MIN_NON_MAJ_MAX_CNT
+                    ),
+                    config.step_max_cnt,
+                    config.step_max_cnt+step_step,
+                ]
+            )
             for step_base_cnt in (
                 [
                     0 if config.is_maj_trade() else step_max_cnt // 2
@@ -421,9 +431,37 @@ class TestAlgorithm:
                     -step_max_cnt if config.is_maj_trade() else step_max_cnt // 2
                 ]
             )
-            for step_size in [
-                round(config.step_size - step_diff, step_round_digits),
-                round(config.step_size, step_round_digits),
-                round(config.step_size + step_diff, step_round_digits),
-            ]
         ]
+
+    def get_max_steps_by_step_size(
+            self,
+            config: RunConfig,
+            step_size: float,
+            prev_test_date: str,
+    ) -> int:
+        max_steps = RunConfig.MIN_MAJ_MAX_CNT if config.is_maj_trade() else RunConfig.MIN_NON_MAJ_MAX_CNT
+
+        if not config.pretest_period:
+            return max_steps
+
+        # перебираем указанные дни
+        days_list = TickerCache.get_trade_days_only(prev_test_date, config.pretest_period)
+        candles = self.client_helper.get_day_candles(
+            datetime.strptime(days_list[0], "%Y-%m-%d"),
+            datetime.strptime(days_list[-1], "%Y-%m-%d"))
+
+        # берем максимальное изменение за эти дни в абсолютных значениях
+        for candle in candles.candles:
+            # берем дневную свечу
+            c_open = self.client_helper.q2f(candle.open)
+            c_high = self.client_helper.q2f(candle.high)
+            c_low = self.client_helper.q2f(candle.low)
+
+            # берем максимальное отклонение от открытия
+            max_steps = max(
+                max_steps,
+                math.ceil(abs((c_open - c_high) / step_size)) if step_size > 0 else max_steps,
+                math.ceil(abs((c_open - c_low) / step_size)) if step_size > 0 else max_steps,
+            )
+
+        return max_steps
