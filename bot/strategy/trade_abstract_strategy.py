@@ -259,6 +259,8 @@ class TradeAbstractStrategy(ABC):
 
     # остаток количества акций - сколько ЛИШНИХ от количества полных лотов
     def get_current_step_rest_count(self) -> int:
+        if self.config.step_lots == 0:
+            return 0
         return self.get_current_count() % self.config.step_lots
 
     def update_cached_price(self):
