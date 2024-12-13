@@ -37,7 +37,7 @@ class TestAlgorithm:
         try_find_best_config: bool = False,
     ):
         """
-        Провести тестирование по заданному конфигу
+        Провести тестирование по конфигу
         :param last_test_date: последняя дата для теста
         :param test_days_num: сколько дней надо проверить
         :param shares_count: сколько инструментов на балансе
@@ -105,8 +105,10 @@ class TestAlgorithm:
             config.end_time = self.get_end_time(test_date, config.end_time)
 
             # прогоняем по дню (время в UTC)
-            date_from = datetime.strptime(test_date + ' ' + config.start_time, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-            date_to = datetime.strptime(test_date + ' ' + config.end_time, "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+            date_from = datetime.strptime(test_date + ' ' + config.start_time, "%Y-%m-%d %H:%M").replace(
+                tzinfo=timezone.utc)
+            date_to = datetime.strptime(test_date + ' ' + config.end_time, "%Y-%m-%d %H:%M").replace(
+                tzinfo=timezone.utc)
 
             # задаем параметры дня
             self.time_helper.set_current_time(date_from)
