@@ -25,8 +25,6 @@ class TestAlgorithm:
         self.config: RunConfig = config
         # первичный конфиг, с которым зашли в алгоритм
         self.original_config: RunConfig = copy.copy(self.config)
-        # конфиг предыдущего дня, на первом прогоне будет пустым
-        self.last_config: RunConfig | None = copy.copy(self.config)
 
         self.time_helper = TimeTestEnvHelper()
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
@@ -72,10 +70,6 @@ class TestAlgorithm:
 
         self.accounting_helper.set_num(shares_count)
 
-        # todo и это добро в переменные объекта
-        self.maj_commission = 0
-        self.total_maj_commission = 0
-
         balance = 100000  # руб / usd / ...
         start_balance = balance
 
@@ -84,58 +78,8 @@ class TestAlgorithm:
 
         # закручиваем цикл по датам
         for test_date in days_list:
-
-            def set_day(test_date_: str) -> Tuple[datetime, datetime]:
-                if self.accounting_helper.get_num() < 0:
-                    self.maj_commission += self.client_helper.get_current_price() * self.accounting_helper.get_num() * 0.0012
-
-                # прогоняем по дню (время в UTC)
-                date_from_ = datetime.strptime(test_date_ + ' ' + self.original_config.start_time,
-                                               "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-                date_to_ = datetime.strptime(test_date_ + ' ' + self.original_config.end_time,
-                                             "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-
-                # задаем параметры дня
-                self.time_helper.set_current_time(date_from_)
-
-                # сбрасываем все заказы и заявки
-                self.accounting_helper.reset()
-
-                return date_from_, date_to_
-
-            def update_config(test_date_, try_find_best_config_) -> bool:
-                if not TimeHelper.is_trading_day(TimeHelper.to_datetime(test_date_)):
-                    return False
-
-                if try_find_best_config_ and self.last_config is not None:
-                    self.config, expected_profit = self.make_best_config_with_profit(
-                        test_date=test_date_,
-                        prev_days=self.original_config.pretest_period,
-                        original_config=self.original_config,
-                        last_config=self.config)
-
-                    mod_do_not_disable = self.config.mod_do_not_change_instrument_activity
-                    is_low_profit = expected_profit < AppConfig.INSTRUMENT_ON_THRESHOLD
-
-                    if is_low_profit and not mod_do_not_disable:
-                        return False
-
-                else:
-                    self.config = copy.copy(self.original_config)
-
-                # дальше текущего времени не убегаем
-                self.config.end_time = self.get_end_time(test_date_, self.config.end_time)
-
-                normal_trade_day = self.client_helper.set_candles_list_by_date(test_date_)
-                if not normal_trade_day:
-                    # print(f"{test_date} - skip, no candles")
-                    return False
-
-                return True
-
-            date_from, date_to = set_day(test_date)
-            process_this_day = update_config(test_date, try_find_best_config)
-            self.last_config = self.config
+            date_from, date_to = self.set_day(test_date)
+            process_this_day = self.update_config(test_date, try_find_best_config)
 
             if not process_this_day:
                 continue
@@ -297,7 +241,7 @@ class TestAlgorithm:
             'profit_p': profit_p,  # не удалять
             'profit_p_avg': round(profit_p / test_days_num, 2),  # не удалять
             'config': self.original_config,  # не удалять
-            'last_conf': self.last_config,
+            'last_conf': self.config,
 
             # 'profit_avg': round(sum(self.balance_change_list) / test_days_num, 2),
             #
@@ -309,6 +253,54 @@ class TestAlgorithm:
             #
             'op': self.operations_cnt,
         }
+
+    def set_day(self, test_date: str) -> Tuple[datetime, datetime]:
+        if self.accounting_helper.get_num() < 0:
+            self.maj_commission += self.client_helper.get_current_price() * self.accounting_helper.get_num() * 0.0012
+
+        # прогоняем по дню (время в UTC)
+        date_from_ = datetime.strptime(test_date + ' ' + self.original_config.start_time,
+                                       "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+        date_to_ = datetime.strptime(test_date + ' ' + self.original_config.end_time,
+                                     "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+
+        # задаем параметры дня
+        self.time_helper.set_current_time(date_from_)
+
+        # сбрасываем все заказы и заявки
+        self.accounting_helper.reset()
+
+        return date_from_, date_to_
+
+    def update_config(self, test_date, try_find_best_config) -> bool:
+        if not TimeHelper.is_trading_day(TimeHelper.to_datetime(test_date)):
+            return False
+
+        if try_find_best_config and self.config is not None:
+            self.config, expected_profit = self.make_best_config_with_profit(
+                test_date=test_date,
+                prev_days=self.original_config.pretest_period,
+                original_config=self.original_config,
+                last_config=self.config)
+
+            mod_do_not_disable = self.config.mod_do_not_change_instrument_activity
+            is_low_profit = expected_profit < AppConfig.INSTRUMENT_ON_THRESHOLD
+
+            if is_low_profit and not mod_do_not_disable:
+                return False
+
+        else:
+            self.config = copy.copy(self.original_config)
+
+        # дальше текущего времени не убегаем
+        self.config.end_time = self.get_end_time(test_date, self.config.end_time)
+
+        normal_trade_day = self.client_helper.set_candles_list_by_date(test_date)
+        if not normal_trade_day:
+            # print(f"{test_date} - skip, no candles")
+            return False
+
+        return True
 
     @staticmethod
     def get_end_time(test_date, end_time):
