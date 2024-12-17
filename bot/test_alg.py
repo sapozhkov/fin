@@ -41,6 +41,9 @@ class TestAlgorithm:
         self.maj_commission = 0
         self.total_maj_commission = 0
 
+        self.balance = 100000
+        self.start_balance = self.balance
+
     def test(
             self,
             last_test_date,
@@ -114,21 +117,8 @@ class TestAlgorithm:
 
         # ---------------
 
-        if test_days_num == 0:
-            return None
-
-        # внутренние переменные
-        self.success_days = 0
-        self.balance_change_list = []
-        self.operations_cnt = 0
-        self.operations_cnt_list = []
-
-        days_list = TestHelper.get_trade_days_only(last_test_date, test_days_num)
-
+        days_list = self.get_days_list(last_test_date, test_days_num)
         self.accounting_helper.set_num(shares_count)
-
-        balance = 100000  # руб / usd / ...
-        start_balance = balance
 
         # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
         maj_k = 2 if self.original_config.majority_trade else 1
@@ -207,7 +197,8 @@ class TestAlgorithm:
                         started = True
                         start_price = self.client_helper.get_current_price()
                         start_cnt = self.accounting_helper.get_num()
-                        self.config.step_lots = math.floor(balance / (maj_k * start_price * self.config.step_max_cnt))
+                        self.config.step_lots = math.floor(
+                            self.balance / (maj_k * start_price * self.config.step_max_cnt))
 
                     for order_id, order in self.client_helper.orders.items():
                         if order_id in self.client_helper.executed_orders_ids:
@@ -273,7 +264,7 @@ class TestAlgorithm:
 
             # end_price_t = end_price
 
-            balance = round(balance + balance_change, 2)
+            self.balance = round(self.balance + balance_change, 2)
 
             if balance_change > 0:
                 self.success_days += 1
@@ -287,16 +278,16 @@ class TestAlgorithm:
 
         # последние несколько дней могут быть не рабочими, учитываем накопленную комиссию
         self.total_maj_commission += self.maj_commission
-        balance += self.maj_commission
+        self.balance += self.maj_commission
 
-        profit = round(balance - start_balance)
-        profit_p = round(100 * profit / start_balance, 2)
+        profit = round(self.balance - self.start_balance)
+        profit_p = round(100 * profit / self.start_balance, 2)
 
         return {
             'exp': f"{self.original_config.ticker} {self.original_config.pretest_type} {self.original_config.mods}",
             'profit': profit,
             'profit_p': profit_p,  # не удалять
-            'profit_p_avg': round(profit_p / test_days_num, 2),  # не удалять
+            'profit_p_avg': round(profit_p / test_days_num, 2) if test_days_num > 0 else 0,  # не удалять
             'config': self.original_config,  # не удалять
             'last_conf': self.config,
 
@@ -310,6 +301,10 @@ class TestAlgorithm:
             #
             'op': self.operations_cnt,
         }
+
+    @classmethod
+    def get_days_list(cls, last_test_date, test_days_num):
+        return TestHelper.get_trade_days_only(last_test_date, test_days_num)
 
     def set_day(self, test_date: str) -> Tuple[datetime, datetime]:
         if self.accounting_helper.get_num() < 0:
@@ -528,7 +523,7 @@ class TestAlgorithm:
             return max_steps
 
         # перебираем указанные дни
-        days_list = TestHelper.get_trade_days_only(prev_test_date, config.pretest_period)
+        days_list = self.get_days_list(prev_test_date, config.pretest_period)
         candles = self.client_helper.get_day_candles(
             datetime.strptime(days_list[0], "%Y-%m-%d"),
             datetime.strptime(days_list[-1], "%Y-%m-%d"))
