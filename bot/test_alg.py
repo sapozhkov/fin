@@ -38,6 +38,7 @@ class TestAlgorithm:
         self.operations_cnt = 0
         self.operations_cnt_list = []
 
+        self.maj_k = 2 if self.original_config.majority_trade else 1
         self.maj_commission = 0
         self.total_maj_commission = 0
 
@@ -70,7 +71,7 @@ class TestAlgorithm:
         #     process_this_day = self.update_config(test_date, try_find_best_config)
         #
         #     if not process_this_day:
-        #         continue
+        # ✅        continue
         #
         #     if not self.get_from_cache(test_date):
         #         self.create_bot()
@@ -119,9 +120,6 @@ class TestAlgorithm:
 
         days_list = self.get_days_list(last_test_date, test_days_num)
         self.accounting_helper.set_num(shares_count)
-
-        # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
-        maj_k = 2 if self.original_config.majority_trade else 1
 
         # закручиваем цикл по датам
         for test_date in days_list:
@@ -198,7 +196,7 @@ class TestAlgorithm:
                         start_price = self.client_helper.get_current_price()
                         start_cnt = self.accounting_helper.get_num()
                         self.config.step_lots = math.floor(
-                            self.balance / (maj_k * start_price * self.config.step_max_cnt))
+                            self.balance / (self.maj_k * start_price * self.config.step_max_cnt))
 
                     for order_id, order in self.client_helper.orders.items():
                         if order_id in self.client_helper.executed_orders_ids:
