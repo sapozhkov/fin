@@ -57,6 +57,63 @@ class TestAlgorithm:
         :param try_find_best_config: подбирать лучший конфиг. рекурсивно вызывает эту же функцию. !осторожно - цикл
         :return:
         """
+
+        # # целевой код метода
+        # days_list = TestHelper.get_trade_days_only(last_test_date, test_days_num)
+        # self.accounting_helper.set_num(shares_count)
+        #
+        # for test_date in days_list:
+        #     date_from, date_to = self.set_day(test_date)
+        #     process_this_day = self.update_config(test_date, try_find_best_config)
+        #
+        #     if not process_this_day:
+        #         continue
+        #
+        #     if not self.get_from_cache(test_date):
+        #         self.create_bot()
+        #         time_list = self.time_helper.get_hour_minute_pairs(date_from, date_to)
+        #         for dt in time_list:
+        #             self.time_helper.set_time(dt)
+        #             self.execute_bot()
+        #         self.stop_bot()
+        #
+        #         self.calculate_day_results()
+        #         self.save_to_cahe()
+        #
+        # self.calculate_total_results()
+        # return self.get_results()
+        #
+        # # а вот так целевой код для аккаунта с ботами
+        #
+        # bot_list: List[TestAlgorithm] = []
+        #
+        # days_list = TestHelper.get_trade_days_only(last_test_date, test_days_num) # для полного промежутка без конфига
+        # # self.accounting_helper.set_num(shares_count) - это при инициализации должно быть
+        #
+        # for test_date in days_list:
+        #     date_from, date_to = self.set_day(test_date)
+        #
+        #     # обновление конфигов и возможность точечного отключения на день ботов
+        #     self.bots_upd_config()
+        #
+        #     self.bots_create()
+        #
+        #     time_list = self.time_helper.get_hour_minute_pairs(date_from, date_to)
+        #     for dt in time_list:
+        #         self.time_helper.set_time(dt)
+        #         self.bots_execute()
+        #         self.acc_execute()
+        #
+        #     self.bots_stop()
+        #     self.acc_stop()
+        #
+        #     self.calculate_day_results()
+        #
+        # self.calculate_total_results()
+        # return self.get_results()
+
+        # ---------------
+
         if test_days_num == 0:
             return None
 
