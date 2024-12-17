@@ -21,7 +21,13 @@ class TestAlgorithm:
             do_printing=False,
             use_cache=True,
     ):
-        self.config = config
+        # текущий конфиг прогона
+        self.config: RunConfig = config
+        # первичный конфиг, с которым зашли в алгоритм
+        self.original_config: RunConfig = copy.copy(self.config)
+        # конфиг предыдущего дня, на первом прогоне будет пустым
+        self.last_config: RunConfig | None = copy.copy(self.config)
+
         self.time_helper = TimeTestEnvHelper()
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
         self.client_helper = ClientTestEnvHelper(config.ticker, self.logger_helper, self.time_helper)
@@ -34,10 +40,8 @@ class TestAlgorithm:
         self.operations_cnt = 0
         self.operations_cnt_list = []
 
-        self.original_config: RunConfig | None = None
         self.maj_commission = 0
         self.total_maj_commission = 0
-        config: RunConfig | None = None
 
     def test(
             self,
@@ -69,10 +73,8 @@ class TestAlgorithm:
         self.accounting_helper.set_num(shares_count)
 
         # todo и это добро в переменные объекта
-        self.original_config = copy.copy(self.config)
         self.maj_commission = 0
         self.total_maj_commission = 0
-        config = None
 
         balance = 100000  # руб / usd / ...
         start_balance = balance
@@ -101,39 +103,44 @@ class TestAlgorithm:
 
                 return date_from_, date_to_
 
+            def update_config(test_date_, try_find_best_config_) -> bool:
+                if not TimeHelper.is_trading_day(TimeHelper.to_datetime(test_date_)):
+                    return False
+
+                if try_find_best_config_ and self.last_config is not None:
+                    self.config, expected_profit = self.make_best_config_with_profit(
+                        test_date=test_date_,
+                        prev_days=self.original_config.pretest_period,
+                        original_config=self.original_config,
+                        last_config=self.config)
+
+                    mod_do_not_disable = self.config.mod_do_not_change_instrument_activity
+                    is_low_profit = expected_profit < AppConfig.INSTRUMENT_ON_THRESHOLD
+
+                    if is_low_profit and not mod_do_not_disable:
+                        return False
+
+                else:
+                    self.config = copy.copy(self.original_config)
+
+                # дальше текущего времени не убегаем
+                self.config.end_time = self.get_end_time(test_date_, self.config.end_time)
+
+                normal_trade_day = self.client_helper.set_candles_list_by_date(test_date_)
+                if not normal_trade_day:
+                    # print(f"{test_date} - skip, no candles")
+                    return False
+
+                return True
+
             date_from, date_to = set_day(test_date)
+            process_this_day = update_config(test_date, try_find_best_config)
+            self.last_config = self.config
 
-
-            if not TimeHelper.is_trading_day(TimeHelper.to_datetime(test_date)):
+            if not process_this_day:
                 continue
 
-            if try_find_best_config and config is not None:
-                config, expected_profit = self.make_best_config_with_profit(
-                    test_date=test_date,
-                    prev_days=self.original_config.pretest_period,
-                    original_config=self.original_config,
-                    last_config=config)
-
-                mod_do_not_disable = config.mod_do_not_change_instrument_activity
-                is_low_profit = expected_profit < AppConfig.INSTRUMENT_ON_THRESHOLD
-
-                if is_low_profit and not mod_do_not_disable:
-                    continue
-
-            else:
-                config = copy.copy(self.original_config)
-
-            # дальше текущего времени не убегаем
-            config.end_time = self.get_end_time(test_date, config.end_time)
-
-            normal_trade_day = self.client_helper.set_candles_list_by_date(test_date)
-            if not normal_trade_day:
-                # print(f"{test_date} - skip, no candles")
-                continue
-
-            # todo вот до сюда можно вынести в установку дня
-
-            cache_name = f"b_{test_date}-{config}-{self.accounting_helper.get_num()}"
+            cache_name = f"b_{test_date}-{self.config}-{self.accounting_helper.get_num()}"
             cached_val = LocalCache.get(cache_name) if self.use_cache else None
 
             # Ищем в кэше обходов, если нашли, берем значения оттуда
@@ -156,7 +163,7 @@ class TestAlgorithm:
 
                 # создаем бота с настройками
                 bot = TradingBot(
-                    config=config,
+                    config=self.config,
                     time_helper=self.time_helper,
                     logger_helper=self.logger_helper,
                     client_helper=self.client_helper,
@@ -199,7 +206,7 @@ class TestAlgorithm:
                         started = True
                         start_price = self.client_helper.get_current_price()
                         start_cnt = self.accounting_helper.get_num()
-                        config.step_lots = math.floor(balance / (maj_k * start_price * config.step_max_cnt))
+                        self.config.step_lots = math.floor(balance / (maj_k * start_price * self.config.step_max_cnt))
 
                     for order_id, order in self.client_helper.orders.items():
                         if order_id in self.client_helper.executed_orders_ids:
@@ -281,19 +288,16 @@ class TestAlgorithm:
         self.total_maj_commission += self.maj_commission
         balance += self.maj_commission
 
-        last_config = config
-        config = self.original_config
-
         profit = round(balance - start_balance)
         profit_p = round(100 * profit / start_balance, 2)
 
         return {
-            'exp': f"{config.ticker} {config.pretest_type} {config.mods}",
+            'exp': f"{self.original_config.ticker} {self.original_config.pretest_type} {self.original_config.mods}",
             'profit': profit,
             'profit_p': profit_p,  # не удалять
             'profit_p_avg': round(profit_p / test_days_num, 2),  # не удалять
-            'config': config,  # не удалять
-            'last_conf': last_config,
+            'config': self.original_config,  # не удалять
+            'last_conf': self.last_config,
 
             # 'profit_avg': round(sum(self.balance_change_list) / test_days_num, 2),
             #
