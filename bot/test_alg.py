@@ -6,8 +6,8 @@ from typing import Tuple, Optional
 from tinkoff.invest import OrderDirection
 
 from app import AppConfig
-from bot import TradingBot
-from app.cache import TickerCache, LocalCache
+from bot import TradingBot, TestHelper
+from app.cache import LocalCache
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
 from bot.helper import OrderHelper
 from app.config import RunConfig
@@ -28,13 +28,24 @@ class TestAlgorithm:
         self.accounting_helper = AccountingTestEnvHelper(self.client_helper, self.time_helper)
         self.use_cache = use_cache
 
-    def test(
-        self,
-        last_test_date,
-        test_days_num,
-        shares_count=0,
+        # внутренние переменные
+        self.success_days = 0
+        self.balance_change_list = []
+        self.operations_cnt = 0
+        self.operations_cnt_list = []
 
-        try_find_best_config: bool = False,
+        self.original_config: RunConfig | None = None
+        self.maj_commission = 0
+        self.total_maj_commission = 0
+        config: RunConfig | None = None
+
+    def test(
+            self,
+            last_test_date,
+            test_days_num,
+            shares_count=0,
+
+            try_find_best_config: bool = False,
     ):
         """
         Провести тестирование по конфигу
@@ -48,38 +59,35 @@ class TestAlgorithm:
             return None
 
         # внутренние переменные
-        success_days = 0
-        balance_change_list = []
-        operations_cnt = 0
-        operations_cnt_list = []
+        self.success_days = 0
+        self.balance_change_list = []
+        self.operations_cnt = 0
+        self.operations_cnt_list = []
 
-        if last_test_date is None:
-            # до утра гоняем предыдущий день, а то откинется лишний
-            if TimeHelper.trades_are_not_started():
-                last_test_date = TimeHelper.get_previous_date()
-            else:
-                last_test_date = TimeHelper.get_current_date()
-
-        days_list = TickerCache.get_trade_days_only(last_test_date, test_days_num)
+        days_list = TestHelper.get_trade_days_only(last_test_date, test_days_num)
 
         self.accounting_helper.set_num(shares_count)
 
-        original_config = copy.copy(self.config)
-        maj_commission = 0
-        total_maj_commission = 0
+        # todo и это добро в переменные объекта
+        self.original_config = copy.copy(self.config)
+        self.maj_commission = 0
+        self.total_maj_commission = 0
         config = None
 
         balance = 100000  # руб / usd / ...
         start_balance = balance
 
         # коэф мажоритарной торговли. с ней заявок в 2 раза больше ставится, так как в 2 стороны открываем торги
-        maj_k = 2 if original_config.majority_trade else 1
+        maj_k = 2 if self.original_config.majority_trade else 1
 
         # закручиваем цикл по датам
         for test_date in days_list:
+
+            # todo в установку дня
+
             if self.accounting_helper.get_num() < 0:
-                maj_commission += self.client_helper.get_current_price() * self.accounting_helper.get_num() * 0.0012
-                # print(f"{test_date} - maj_commission {round(maj_commission, 2)} = "
+                self.maj_commission += self.client_helper.get_current_price() * self.accounting_helper.get_num() * 0.0012
+                # print(f"{test_date} - self.maj_commission {round(self.maj_commission, 2)} = "
                 #       f"{self.client_helper.get_current_price()} * {self.accounting_helper.get_num()} * {0.0012}")
 
             if not TimeHelper.is_trading_day(TimeHelper.to_datetime(test_date)):
@@ -88,8 +96,8 @@ class TestAlgorithm:
             if try_find_best_config and config is not None:
                 config, expected_profit = self.make_best_config_with_profit(
                     test_date=test_date,
-                    prev_days=original_config.pretest_period,
-                    original_config=original_config,
+                    prev_days=self.original_config.pretest_period,
+                    original_config=self.original_config,
                     last_config=config)
 
                 mod_do_not_disable = config.mod_do_not_change_instrument_activity
@@ -99,7 +107,7 @@ class TestAlgorithm:
                     continue
 
             else:
-                config = copy.copy(original_config)
+                config = copy.copy(self.original_config)
 
             # дальше текущего времени не убегаем
             config.end_time = self.get_end_time(test_date, config.end_time)
@@ -121,6 +129,8 @@ class TestAlgorithm:
                 # print(f"{test_date} - skip, no candles")
                 continue
 
+            # todo вот до сюда можно вынести в установку дня
+
             cache_name = f"b_{test_date}-{config}-{self.accounting_helper.get_num()}"
             cached_val = LocalCache.get(cache_name) if self.use_cache else None
 
@@ -140,6 +150,8 @@ class TestAlgorithm:
 
             else:
 
+                # todo и вот это в установку по идее надо
+
                 # создаем бота с настройками
                 bot = TradingBot(
                     config=config,
@@ -157,13 +169,20 @@ class TestAlgorithm:
                 start_price = 0
                 start_cnt = 0
 
+                # todo вот до сюда
+
+                # todo расчет времени утащить в метод (есть как раз отдельный)
+
                 # Использование итератора для вывода каждой пары час-минута
                 for dt in self.time_helper.get_hour_minute_pairs(date_from, date_to):
                     if not bot.continue_trading():
                         break
 
                     # задаем время
+                    # todo вот это оставляем в итераторе
                     self.time_helper.set_time(dt)
+
+                    # todo  дальше всё едет в запуск минуты
 
                     candle = self.client_helper.get_candle(dt)
                     if candle is None:
@@ -202,8 +221,12 @@ class TestAlgorithm:
                         # запускаем итерацию торгового алгоритма
                         bot.run_iteration()
 
+                    # todo вот до сюда запуск минуты
+
+                # todo вот это можно оставить отдельным запуском
                 bot.stop()
 
+                # todo расчет результатов можно утащить в метод
                 operations = self.accounting_helper.get_executed_order_cnt()
                 end_price = self.client_helper.get_current_price()
                 end_cnt = self.accounting_helper.get_instrument_count()
@@ -224,37 +247,40 @@ class TestAlgorithm:
 
                 # конец не кэшированной части
 
-            operations_cnt += operations
-            operations_cnt_list.append(operations)
+            # todo расчет дневных результатов - в метод
+            self.operations_cnt += operations
+            self.operations_cnt_list.append(operations)
 
             balance_change = (
                     - start_price * start_cnt
                     + day_sum
                     + end_price * end_cnt
-                    + maj_commission
+                    + self.maj_commission
             )
 
-            total_maj_commission += maj_commission
-            maj_commission = 0
+            self.total_maj_commission += self.maj_commission
+            self.maj_commission = 0
 
             # end_price_t = end_price
 
             balance = round(balance + balance_change, 2)
 
             if balance_change > 0:
-                success_days += 1
+                self.success_days += 1
 
-            balance_change_list.append(balance_change)
+            self.balance_change_list.append(balance_change)
 
             # if auto_conf_prev_days:
             #     print(f"{test_date}\t{config}\t{balance_change:.2f}\t{balance}")
 
+        # todo финальные подсчеты могут остаться тут
+
         # последние несколько дней могут быть не рабочими, учитываем накопленную комиссию
-        total_maj_commission += maj_commission
-        balance += maj_commission
+        self.total_maj_commission += self.maj_commission
+        balance += self.maj_commission
 
         last_config = config
-        config = original_config
+        config = self.original_config
 
         profit = round(balance - start_balance)
         profit_p = round(100 * profit / start_balance, 2)
@@ -267,15 +293,15 @@ class TestAlgorithm:
             'config': config,  # не удалять
             'last_conf': last_config,
 
-            # 'profit_avg': round(sum(balance_change_list) / test_days_num, 2),
+            # 'profit_avg': round(sum(self.balance_change_list) / test_days_num, 2),
             #
             # 'pot_profit': potential_profit,
             #
             # 'days': test_days_num,
-            # 'success_days': success_days,
-            # 'success_p': round(success_days / test_days_num, 2),
+            # 'self.success_days': self.success_days,
+            # 'success_p': round(self.success_days / test_days_num, 2),
             #
-            'op': operations_cnt,
+            'op': self.operations_cnt,
         }
 
     @staticmethod
@@ -417,11 +443,11 @@ class TestAlgorithm:
                     self.get_max_steps_by_step_size(config, step_size, prev_test_date)
                 ] if config.is_fan_layout() and prev_test_date else [
                     max(
-                        config.step_max_cnt-step_step,
+                        config.step_max_cnt - step_step,
                         RunConfig.MIN_MAJ_MAX_CNT if config.is_maj_trade() else RunConfig.MIN_NON_MAJ_MAX_CNT
                     ),
                     config.step_max_cnt,
-                    config.step_max_cnt+step_step,
+                    config.step_max_cnt + step_step,
                 ]
             )
             for step_base_cnt in (
@@ -447,7 +473,7 @@ class TestAlgorithm:
             return max_steps
 
         # перебираем указанные дни
-        days_list = TickerCache.get_trade_days_only(prev_test_date, config.pretest_period)
+        days_list = TestHelper.get_trade_days_only(prev_test_date, config.pretest_period)
         candles = self.client_helper.get_day_candles(
             datetime.strptime(days_list[0], "%Y-%m-%d"),
             datetime.strptime(days_list[-1], "%Y-%m-%d"))
