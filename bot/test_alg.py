@@ -83,12 +83,26 @@ class TestAlgorithm:
         # закручиваем цикл по датам
         for test_date in days_list:
 
-            # todo в установку дня
+            def set_day(test_date_: str) -> Tuple[datetime, datetime]:
+                if self.accounting_helper.get_num() < 0:
+                    self.maj_commission += self.client_helper.get_current_price() * self.accounting_helper.get_num() * 0.0012
 
-            if self.accounting_helper.get_num() < 0:
-                self.maj_commission += self.client_helper.get_current_price() * self.accounting_helper.get_num() * 0.0012
-                # print(f"{test_date} - self.maj_commission {round(self.maj_commission, 2)} = "
-                #       f"{self.client_helper.get_current_price()} * {self.accounting_helper.get_num()} * {0.0012}")
+                # прогоняем по дню (время в UTC)
+                date_from_ = datetime.strptime(test_date_ + ' ' + self.original_config.start_time,
+                                               "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+                date_to_ = datetime.strptime(test_date_ + ' ' + self.original_config.end_time,
+                                             "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+
+                # задаем параметры дня
+                self.time_helper.set_current_time(date_from_)
+
+                # сбрасываем все заказы и заявки
+                self.accounting_helper.reset()
+
+                return date_from_, date_to_
+
+            date_from, date_to = set_day(test_date)
+
 
             if not TimeHelper.is_trading_day(TimeHelper.to_datetime(test_date)):
                 continue
@@ -111,18 +125,6 @@ class TestAlgorithm:
 
             # дальше текущего времени не убегаем
             config.end_time = self.get_end_time(test_date, config.end_time)
-
-            # прогоняем по дню (время в UTC)
-            date_from = datetime.strptime(test_date + ' ' + config.start_time, "%Y-%m-%d %H:%M").replace(
-                tzinfo=timezone.utc)
-            date_to = datetime.strptime(test_date + ' ' + config.end_time, "%Y-%m-%d %H:%M").replace(
-                tzinfo=timezone.utc)
-
-            # задаем параметры дня
-            self.time_helper.set_current_time(date_from)
-
-            # сбрасываем все заказы и заявки
-            self.accounting_helper.reset()
 
             normal_trade_day = self.client_helper.set_candles_list_by_date(test_date)
             if not normal_trade_day:
