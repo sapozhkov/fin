@@ -8,6 +8,7 @@ from tinkoff.invest import OrderDirection
 from app import AppConfig
 from bot import TradingBot, TestHelper
 from app.cache import LocalCache
+from bot.dto import TestBotTradeDayDto
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
 from bot.helper import OrderHelper
 from app.config import RunConfig
@@ -45,6 +46,8 @@ class TestAlgorithm:
         self.balance = 100000
         self.start_balance = self.balance
 
+        self.day_trade: Optional[TestBotTradeDayDto] = None
+
     def test(
             self,
             last_test_date,
@@ -71,9 +74,9 @@ class TestAlgorithm:
         #     process_this_day = self.update_config(test_date, try_find_best_config)
         #
         #     if not process_this_day:
-        # ✅        continue
+        #         continue
         #
-        #     if not self.get_from_cache(test_date):
+        # ✅  if not self.get_from_cache(test_date):
         #         self.create_bot()
         #         time_list = self.time_helper.get_hour_minute_pairs(date_from, date_to)
         #         for dt in time_list:
@@ -126,27 +129,13 @@ class TestAlgorithm:
             date_from, date_to = self.set_day(test_date)
             process_this_day = self.update_config(test_date, try_find_best_config)
 
+            # todo вот это унести в execute_bot, чтобы внутри учитывалось
             if not process_this_day:
                 continue
 
-            cache_name = f"b_{test_date}-{self.config}-{self.accounting_helper.get_num()}"
-            cached_val = LocalCache.get(cache_name) if self.use_cache else None
+            cache_name = self.get_cache_key(test_date)
 
-            # Ищем в кэше обходов, если нашли, берем значения оттуда
-            # if False and cached_val:
-            if cached_val:
-                LocalCache.inc_counter('cache_find')
-
-                operations = cached_val['operations']
-                end_price = cached_val['end_price']
-                end_cnt = cached_val['end_cnt']
-                start_price = cached_val['start_price']
-                start_cnt = cached_val['start_cnt']
-                day_sum = cached_val['day_sum']
-
-                self.accounting_helper.set_num(end_cnt)
-
-            else:
+            if not self.apply_from_cache(cache_name):
 
                 # todo и вот это в установку по идее надо
 
@@ -164,8 +153,8 @@ class TestAlgorithm:
                     continue
 
                 started = False
-                start_price = 0
-                start_cnt = 0
+
+                self.day_trade = TestBotTradeDayDto()
 
                 # todo вот до сюда
 
@@ -193,10 +182,10 @@ class TestAlgorithm:
                     # при первом запуске
                     if not started:
                         started = True
-                        start_price = self.client_helper.get_current_price()
-                        start_cnt = self.accounting_helper.get_num()
+                        self.day_trade.start_price = self.client_helper.get_current_price()
+                        self.day_trade.start_cnt = self.accounting_helper.get_num()
                         self.config.step_lots = math.floor(
-                            self.balance / (self.maj_k * start_price * self.config.step_max_cnt))
+                            self.balance / (self.maj_k * self.day_trade.start_price * self.config.step_max_cnt))
 
                     for order_id, order in self.client_helper.orders.items():
                         if order_id in self.client_helper.executed_orders_ids:
@@ -226,34 +215,21 @@ class TestAlgorithm:
                 bot.stop()
 
                 # todo расчет результатов можно утащить в метод
-                operations = self.accounting_helper.get_executed_order_cnt()
-                end_price = self.client_helper.get_current_price()
-                end_cnt = self.accounting_helper.get_instrument_count()
-                day_sum = self.accounting_helper.get_sum()
+                self.day_trade.operations = self.accounting_helper.get_executed_order_cnt()
+                self.day_trade.end_price = self.client_helper.get_current_price()
+                self.day_trade.end_cnt = self.accounting_helper.get_instrument_count()
+                self.day_trade.day_sum = self.accounting_helper.get_sum()
 
-                to_cache = {
-                    'operations': operations,
-                    'end_price': end_price,
-                    'end_cnt': end_cnt,
-                    'start_price': start_price,
-                    'start_cnt': start_cnt,
-                    'day_sum': day_sum,
-                }
-
-                if self.use_cache:
-                    LocalCache.set(cache_name, to_cache)
-                    LocalCache.inc_counter('cache_miss')
-
-                # конец не кэшированной части
+                self.save_to_cache(cache_name)
 
             # todo расчет дневных результатов - в метод
-            self.operations_cnt += operations
-            self.operations_cnt_list.append(operations)
+            self.operations_cnt += self.day_trade.operations
+            self.operations_cnt_list.append(self.day_trade.operations)
 
             balance_change = (
-                    - start_price * start_cnt
-                    + day_sum
-                    + end_price * end_cnt
+                    - self.day_trade.start_price * self.day_trade.start_cnt
+                    + self.day_trade.day_sum
+                    + self.day_trade.end_price * self.day_trade.end_cnt
                     + self.maj_commission
             )
 
@@ -541,3 +517,28 @@ class TestAlgorithm:
             )
 
         return max_steps
+
+    def get_cache_key(self, test_date: str) -> str:
+        return f"b_{test_date}-{self.config}-{self.accounting_helper.get_num()}"
+
+    def apply_from_cache(self, cache_name) -> bool:
+        if not self.use_cache:
+            return False
+
+        cached_val = LocalCache.get(cache_name)
+
+        LocalCache.inc_counter('cache_find' if cached_val else 'cache_miss')
+
+        if cached_val:
+            self.day_trade = cached_val
+            self.accounting_helper.set_num(self.day_trade.end_cnt)
+            return True
+
+        return False
+
+    def save_to_cache(self, cache_name):
+        if not self.use_cache:
+            return False
+
+        LocalCache.set(cache_name, self.day_trade)
+        return True
