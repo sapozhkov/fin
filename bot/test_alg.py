@@ -76,8 +76,8 @@ class TestAlgorithm:
         #     if not process_this_day:
         #         continue
         #
-        # ✅  if not self.get_from_cache(test_date):
-        #         self.create_bot()
+        #     if not self.get_from_cache(test_date):
+        # ✅      self.create_bot()
         #         time_list = self.time_helper.get_hour_minute_pairs(date_from, date_to)
         #         for dt in time_list:
         #             self.time_helper.set_time(dt)
@@ -137,32 +137,13 @@ class TestAlgorithm:
 
             if not self.apply_from_cache(cache_name):
 
-                # todo и вот это в установку по идее надо
-
-                # создаем бота с настройками
-                bot = TradingBot(
-                    config=self.config,
-                    time_helper=self.time_helper,
-                    logger_helper=self.logger_helper,
-                    client_helper=self.client_helper,
-                    accounting_helper=self.accounting_helper,
-                )
-
-                if bot.state == bot.STATE_FINISHED:
-                    # print(f"{test_date} - skip, finished status on start")
-                    continue
-
-                started = False
-
-                self.day_trade = TestBotTradeDayDto()
-
-                # todo вот до сюда
+                self.create_bot()
 
                 # todo расчет времени утащить в метод (есть как раз отдельный)
 
                 # Использование итератора для вывода каждой пары час-минута
                 for dt in self.time_helper.get_hour_minute_pairs(date_from, date_to):
-                    if not bot.continue_trading():
+                    if not self.bot.continue_trading():
                         break
 
                     # задаем время
@@ -180,8 +161,8 @@ class TestAlgorithm:
                     self.client_helper.set_current_candle(candle)
 
                     # при первом запуске
-                    if not started:
-                        started = True
+                    if not self.bot_started:
+                        self.bot_started = True
                         self.day_trade.start_price = self.client_helper.get_current_price()
                         self.day_trade.start_cnt = self.accounting_helper.get_num()
                         self.config.step_lots = math.floor(
@@ -207,12 +188,12 @@ class TestAlgorithm:
                     if self.time_helper.is_time_to_awake():
                         # print(dt.strftime("%H:%M"))
                         # запускаем итерацию торгового алгоритма
-                        bot.run_iteration()
+                        self.bot.run_iteration()
 
                     # todo вот до сюда запуск минуты
 
                 # todo вот это можно оставить отдельным запуском
-                bot.stop()
+                self.bot.stop()
 
                 # todo расчет результатов можно утащить в метод
                 self.day_trade.operations = self.accounting_helper.get_executed_order_cnt()
@@ -542,3 +523,24 @@ class TestAlgorithm:
 
         LocalCache.set(cache_name, self.day_trade)
         return True
+
+    def create_bot(self):
+        # создаем бота с настройками
+        self.bot = TradingBot(
+            config=self.config,
+            time_helper=self.time_helper,
+            logger_helper=self.logger_helper,
+            client_helper=self.client_helper,
+            accounting_helper=self.accounting_helper,
+        )
+
+        # todo вот это надо в запуска для положить, чтобы не захламлять код
+        if self.bot.state == self.bot.STATE_FINISHED:
+            return False
+
+        self.bot_started = False
+
+        self.day_trade = TestBotTradeDayDto()
+
+        return True
+
