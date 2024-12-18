@@ -46,7 +46,9 @@ class TestAlgorithm:
         self.balance = 100000
         self.start_balance = self.balance
 
+        self.bot: Optional[TradingBot] = None
         self.day_trade: Optional[TestBotTradeDayDto] = None
+        self.bot_started: bool = False
 
     def test(
             self,
@@ -77,15 +79,15 @@ class TestAlgorithm:
         #         continue
         #
         #     if not self.get_from_cache(test_date):
-        # ✅      self.create_bot()
+        #         self.create_bot()
         #         time_list = self.time_helper.get_hour_minute_pairs(date_from, date_to)
         #         for dt in time_list:
         #             self.time_helper.set_time(dt)
         #             self.execute_bot()
-        #         self.stop_bot()
+        # ✅      self.stop_bot()
         #
         #         self.calculate_day_results()
-        #         self.save_to_cahe()
+        #         self.save_to_cache()
         #
         # self.calculate_total_results()
         # return self.get_results()
@@ -137,63 +139,14 @@ class TestAlgorithm:
 
             if not self.apply_from_cache(cache_name):
 
-                self.create_bot()
-
-                # todo расчет времени утащить в метод (есть как раз отдельный)
+                self.bot_create()
 
                 # Использование итератора для вывода каждой пары час-минута
-                for dt in self.time_helper.get_hour_minute_pairs(date_from, date_to):
-                    if not self.bot.continue_trading():
+                for dt in self.get_time_list(date_from, date_to):
+                    if not self.bot_run_iteration(dt):
                         break
 
-                    # задаем время
-                    # todo вот это оставляем в итераторе
-                    self.time_helper.set_time(dt)
-
-                    # todo  дальше всё едет в запуск минуты
-
-                    candle = self.client_helper.get_candle(dt)
-                    if candle is None:
-                        self.logger_helper.error(f"No candle for {dt}")
-                        continue
-
-                    # задаем текущее значение свечи
-                    self.client_helper.set_current_candle(candle)
-
-                    # при первом запуске
-                    if not self.bot_started:
-                        self.bot_started = True
-                        self.day_trade.start_price = self.client_helper.get_current_price()
-                        self.day_trade.start_cnt = self.accounting_helper.get_num()
-                        self.config.step_lots = math.floor(
-                            self.balance / (self.maj_k * self.day_trade.start_price * self.config.step_max_cnt))
-
-                    for order_id, order in self.client_helper.orders.items():
-                        if order_id in self.client_helper.executed_orders_ids:
-                            continue
-                        avg_price = self.client_helper.round(OrderHelper.get_avg_price(order))
-                        if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
-                            low_buy_price = self.client_helper.q2f(candle.low)
-                            order_executed = avg_price >= low_buy_price
-                            # order_executed_on_border = price == low_buy_price
-                        else:
-                            high_sell_price = self.client_helper.q2f(candle.high)
-                            order_executed = avg_price <= high_sell_price
-                            # order_executed_on_border = price == high_sell_price
-
-                        if order_executed:
-                            self.client_helper.executed_orders_ids.append(order_id)
-
-                    # если пора просыпаться
-                    if self.time_helper.is_time_to_awake():
-                        # print(dt.strftime("%H:%M"))
-                        # запускаем итерацию торгового алгоритма
-                        self.bot.run_iteration()
-
-                    # todo вот до сюда запуск минуты
-
-                # todo вот это можно оставить отдельным запуском
-                self.bot.stop()
+                self.bot_stop()
 
                 # todo расчет результатов можно утащить в метод
                 self.day_trade.operations = self.accounting_helper.get_executed_order_cnt()
@@ -260,6 +213,9 @@ class TestAlgorithm:
     @classmethod
     def get_days_list(cls, last_test_date, test_days_num):
         return TestHelper.get_trade_days_only(last_test_date, test_days_num)
+
+    def get_time_list(self, date_from, date_to):
+        return self.time_helper.get_hour_minute_pairs(date_from, date_to)
 
     def set_day(self, test_date: str) -> Tuple[datetime, datetime]:
         if self.accounting_helper.get_num() < 0:
@@ -524,7 +480,7 @@ class TestAlgorithm:
         LocalCache.set(cache_name, self.day_trade)
         return True
 
-    def create_bot(self):
+    def bot_create(self):
         # создаем бота с настройками
         self.bot = TradingBot(
             config=self.config,
@@ -544,3 +500,55 @@ class TestAlgorithm:
 
         return True
 
+    def bot_run_iteration(self, dt: datetime) -> bool:
+        """
+        Запуск минутной итерации для бота
+        :return: bool False если работу можно прерывать и бот закончил, True - продолжаем на след минуте
+        """
+        if not self.bot.continue_trading():
+            return False
+
+        self.time_helper.set_time(dt)
+
+        candle = self.client_helper.get_candle(dt)
+        if candle is None:
+            self.logger_helper.error(f"No candle for {dt}")
+            return True
+
+        # задаем текущее значение свечи
+        self.client_helper.set_current_candle(candle)
+
+        # при первом запуске
+        if not self.bot_started:
+            self.bot_started = True
+            self.day_trade.start_price = self.client_helper.get_current_price()
+            self.day_trade.start_cnt = self.accounting_helper.get_num()
+            self.config.step_lots = math.floor(
+                self.balance / (self.maj_k * self.day_trade.start_price * self.config.step_max_cnt))
+
+        for order_id, order in self.client_helper.orders.items():
+            if order_id in self.client_helper.executed_orders_ids:
+                continue
+            avg_price = self.client_helper.round(OrderHelper.get_avg_price(order))
+            if order.direction == OrderDirection.ORDER_DIRECTION_BUY:
+                low_buy_price = self.client_helper.q2f(candle.low)
+                order_executed = avg_price >= low_buy_price
+                # order_executed_on_border = price == low_buy_price
+            else:
+                high_sell_price = self.client_helper.q2f(candle.high)
+                order_executed = avg_price <= high_sell_price
+                # order_executed_on_border = price == high_sell_price
+
+            if order_executed:
+                self.client_helper.executed_orders_ids.append(order_id)
+
+        # если пора просыпаться
+        if self.time_helper.is_time_to_awake():
+            # print(dt.strftime("%H:%M"))
+            # запускаем итерацию торгового алгоритма
+            self.bot.run_iteration()
+
+        return True
+
+    def bot_stop(self):
+        self.bot.stop()
