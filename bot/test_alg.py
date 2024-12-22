@@ -67,32 +67,7 @@ class TestAlgorithm:
         :return:
         """
 
-        # # целевой код метода
-        # days_list = TestHelper.get_trade_days_only(last_test_date, test_days_num)
-        # self.accounting_helper.set_num(shares_count)
-        #
-        # for test_date in days_list:
-        #     date_from, date_to = self.set_day(test_date)
-        #     process_this_day = self.update_config(test_date, try_find_best_config)
-        #
-        #     if not process_this_day:
-        #         continue
-        #
-        #     if not self.get_from_cache(test_date):
-        #         self.create_bot()
-        #         time_list = self.time_helper.get_hour_minute_pairs(date_from, date_to)
-        #         for dt in time_list:
-        #             self.time_helper.set_time(dt)
-        #             self.execute_bot()
-        # ✅      self.stop_bot()
-        #
-        #         self.calculate_day_results()
-        #         self.save_to_cache()
-        #
-        # self.calculate_total_results()
-        # return self.get_results()
-        #
-        # # а вот так целевой код для аккаунта с ботами
+        # # вот так целевой код для аккаунта с ботами
         #
         # bot_list: List[TestAlgorithm] = []
         #
@@ -124,91 +99,34 @@ class TestAlgorithm:
         # ---------------
 
         days_list = self.get_days_list(last_test_date, test_days_num)
-        self.accounting_helper.set_num(shares_count)
+        self.bot_init_state(shares_count)
 
         # закручиваем цикл по датам
         for test_date in days_list:
             date_from, date_to = self.set_day(test_date)
             process_this_day = self.update_config(test_date, try_find_best_config)
 
-            # todo вот это унести в execute_bot, чтобы внутри учитывалось
             if not process_this_day:
                 continue
 
             cache_name = self.get_cache_key(test_date)
 
             if not self.apply_from_cache(cache_name):
-
                 self.bot_create()
 
-                # Использование итератора для вывода каждой пары час-минута
                 for dt in self.get_time_list(date_from, date_to):
                     if not self.bot_run_iteration(dt):
                         break
 
                 self.bot_stop()
 
-                # todo расчет результатов можно утащить в метод
-                self.day_trade.operations = self.accounting_helper.get_executed_order_cnt()
-                self.day_trade.end_price = self.client_helper.get_current_price()
-                self.day_trade.end_cnt = self.accounting_helper.get_instrument_count()
-                self.day_trade.day_sum = self.accounting_helper.get_sum()
-
+                self.bot_upd_day_trade()
                 self.save_to_cache(cache_name)
 
-            # todo расчет дневных результатов - в метод
-            self.operations_cnt += self.day_trade.operations
-            self.operations_cnt_list.append(self.day_trade.operations)
+            self.calculate_day_results()
 
-            balance_change = (
-                    - self.day_trade.start_price * self.day_trade.start_cnt
-                    + self.day_trade.day_sum
-                    + self.day_trade.end_price * self.day_trade.end_cnt
-                    + self.maj_commission
-            )
-
-            self.total_maj_commission += self.maj_commission
-            self.maj_commission = 0
-
-            # end_price_t = end_price
-
-            self.balance = round(self.balance + balance_change, 2)
-
-            if balance_change > 0:
-                self.success_days += 1
-
-            self.balance_change_list.append(balance_change)
-
-            # if auto_conf_prev_days:
-            #     print(f"{test_date}\t{config}\t{balance_change:.2f}\t{balance}")
-
-        # todo финальные подсчеты могут остаться тут
-
-        # последние несколько дней могут быть не рабочими, учитываем накопленную комиссию
-        self.total_maj_commission += self.maj_commission
-        self.balance += self.maj_commission
-
-        profit = round(self.balance - self.start_balance)
-        profit_p = round(100 * profit / self.start_balance, 2)
-
-        return {
-            'exp': f"{self.original_config.ticker} {self.original_config.pretest_type} {self.original_config.mods}",
-            'profit': profit,
-            'profit_p': profit_p,  # не удалять
-            'profit_p_avg': round(profit_p / test_days_num, 2) if test_days_num > 0 else 0,  # не удалять
-            'config': self.original_config,  # не удалять
-            'last_conf': self.config,
-
-            # 'profit_avg': round(sum(self.balance_change_list) / test_days_num, 2),
-            #
-            # 'pot_profit': potential_profit,
-            #
-            # 'days': test_days_num,
-            # 'self.success_days': self.success_days,
-            # 'success_p': round(self.success_days / test_days_num, 2),
-            #
-            'op': self.operations_cnt,
-        }
+        self.calculate_total_results()
+        return self.get_results(test_days_num)
 
     @classmethod
     def get_days_list(cls, last_test_date, test_days_num):
@@ -480,6 +398,9 @@ class TestAlgorithm:
         LocalCache.set(cache_name, self.day_trade)
         return True
 
+    def bot_init_state(self, shares_count):
+        self.accounting_helper.set_num(shares_count)
+
     def bot_create(self):
         # создаем бота с настройками
         self.bot = TradingBot(
@@ -552,3 +473,63 @@ class TestAlgorithm:
 
     def bot_stop(self):
         self.bot.stop()
+
+    def bot_upd_day_trade(self):
+        self.day_trade.operations = self.accounting_helper.get_executed_order_cnt()
+        self.day_trade.end_price = self.client_helper.get_current_price()
+        self.day_trade.end_cnt = self.accounting_helper.get_instrument_count()
+        self.day_trade.day_sum = self.accounting_helper.get_sum()
+
+    def calculate_day_results(self):
+        self.operations_cnt += self.day_trade.operations
+        self.operations_cnt_list.append(self.day_trade.operations)
+
+        balance_change = (
+                - self.day_trade.start_price * self.day_trade.start_cnt
+                + self.day_trade.day_sum
+                + self.day_trade.end_price * self.day_trade.end_cnt
+                + self.maj_commission
+        )
+
+        self.total_maj_commission += self.maj_commission
+        self.maj_commission = 0
+
+        # end_price_t = end_price
+
+        self.balance = round(self.balance + balance_change, 2)
+
+        if balance_change > 0:
+            self.success_days += 1
+
+        self.balance_change_list.append(balance_change)
+
+        # if auto_conf_prev_days:
+        #     print(f"{test_date}\t{config}\t{balance_change:.2f}\t{balance}")
+
+    def calculate_total_results(self):
+        # последние несколько дней могут быть не рабочими, учитываем накопленную комиссию
+        self.total_maj_commission += self.maj_commission
+        self.balance += self.maj_commission
+
+    def get_results(self, test_days_num: int):
+        profit = round(self.balance - self.start_balance)
+        profit_p = round(100 * profit / self.start_balance, 2)
+
+        return {
+            'exp': f"{self.original_config.ticker} {self.original_config.pretest_type} {self.original_config.mods}",
+            'profit': profit,
+            'profit_p': profit_p,  # не удалять
+            'profit_p_avg': round(profit_p / test_days_num, 2) if test_days_num > 0 else 0,  # не удалять
+            'config': self.original_config,  # не удалять
+            'last_conf': self.config,
+
+            # 'profit_avg': round(sum(self.balance_change_list) / test_days_num, 2),
+            #
+            # 'pot_profit': potential_profit,
+            #
+            # 'days': test_days_num,
+            # 'self.success_days': self.success_days,
+            # 'success_p': round(self.success_days / test_days_num, 2),
+            #
+            'op': self.operations_cnt,
+        }
