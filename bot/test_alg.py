@@ -16,6 +16,9 @@ from app.helper import TimeHelper
 
 
 class TestAlgorithm:
+    START_TIME = '04:00'
+    END_TIME = '20:48'
+
     def __init__(
             self,
             config: RunConfig,
@@ -49,6 +52,7 @@ class TestAlgorithm:
         self.bot: Optional[TradingBot] = None
         self.day_trade: Optional[TestBotTradeDayDto] = None
         self.bot_started: bool = False
+        self.process_this_day = False
 
     def test(
             self,
@@ -73,9 +77,9 @@ class TestAlgorithm:
         # закручиваем цикл по датам
         for test_date in days_list:
             date_from, date_to = self.set_day(test_date)
-            process_this_day = self.update_config(test_date, try_find_best_config)
+            self.update_config(test_date, try_find_best_config)
 
-            if not process_this_day:
+            if not self.process_this_day:
                 continue
 
             cache_name = self.get_cache_key(test_date)
@@ -101,17 +105,18 @@ class TestAlgorithm:
     def get_days_list(cls, last_test_date, test_days_num):
         return TestHelper.get_trade_days_only(last_test_date, test_days_num)
 
-    def get_time_list(self, date_from, date_to):
-        return self.time_helper.get_hour_minute_pairs(date_from, date_to)
+    @classmethod
+    def get_time_list(cls, date_from, date_to):
+        return TimeTestEnvHelper.get_hour_minute_pairs(date_from, date_to)
 
     def set_day(self, test_date: str) -> Tuple[datetime, datetime]:
         if self.accounting_helper.get_num() < 0:
             self.maj_commission += self.client_helper.get_current_price() * self.accounting_helper.get_num() * 0.0012
 
         # прогоняем по дню (время в UTC)
-        date_from_ = datetime.strptime(test_date + ' ' + self.original_config.start_time,
+        date_from_ = datetime.strptime(test_date + ' ' + self.START_TIME,
                                        "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-        date_to_ = datetime.strptime(test_date + ' ' + self.original_config.end_time,
+        date_to_ = datetime.strptime(test_date + ' ' + self.END_TIME,
                                      "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
 
         # задаем параметры дня
@@ -122,9 +127,10 @@ class TestAlgorithm:
 
         return date_from_, date_to_
 
-    def update_config(self, test_date, try_find_best_config) -> bool:
+    def update_config(self, test_date, try_find_best_config):
+        self.process_this_day = False
         if not TimeHelper.is_trading_day(TimeHelper.to_datetime(test_date)):
-            return False
+            return
 
         if try_find_best_config and self.config is not None:
             self.config, expected_profit = self.make_best_config_with_profit(
@@ -137,7 +143,7 @@ class TestAlgorithm:
             is_low_profit = expected_profit < AppConfig.INSTRUMENT_ON_THRESHOLD
 
             if is_low_profit and not mod_do_not_disable:
-                return False
+                return
 
         else:
             self.config = copy.copy(self.original_config)
@@ -148,9 +154,9 @@ class TestAlgorithm:
         normal_trade_day = self.client_helper.set_candles_list_by_date(test_date)
         if not normal_trade_day:
             # print(f"{test_date} - skip, no candles")
-            return False
+            return
 
-        return True
+        self.process_this_day = True
 
     @staticmethod
     def get_end_time(test_date, end_time):
