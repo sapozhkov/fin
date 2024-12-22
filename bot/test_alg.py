@@ -67,37 +67,6 @@ class TestAlgorithm:
         :return:
         """
 
-        # # вот так целевой код для аккаунта с ботами
-        #
-        # bot_list: List[TestAlgorithm] = []
-        #
-        # days_list = TestHelper.get_trade_days_only(last_test_date, test_days_num) # для полного промежутка без конфига
-        # # self.accounting_helper.set_num(shares_count) - это при инициализации должно быть
-        #
-        # for test_date in days_list:
-        #     date_from, date_to = self.set_day(test_date)
-        #
-        #     # обновление конфигов и возможность точечного отключения на день ботов
-        #     self.bots_upd_config()
-        #
-        #     self.bots_create()
-        #
-        #     time_list = self.time_helper.get_hour_minute_pairs(date_from, date_to)
-        #     for dt in time_list:
-        #         self.time_helper.set_time(dt)
-        #         self.bots_execute()
-        #         self.acc_execute()
-        #
-        #     self.bots_stop()
-        #     self.acc_stop()
-        #
-        #     self.calculate_day_results()
-        #
-        # self.calculate_total_results()
-        # return self.get_results()
-
-        # ---------------
-
         days_list = self.get_days_list(last_test_date, test_days_num)
         self.bot_init_state(shares_count)
 
