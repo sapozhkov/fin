@@ -1,15 +1,15 @@
 from datetime import timedelta
+from typing import Optional
 
 from app import db
 from app.command import CommandManager
 from app.command.constants import CommandType
 from app.config import AccConfig, RunConfig
-from app.lib import TinkoffApi
 from bot import AbstractBot
 from app.constants import RunStatus
 from app.models import AccRun, Account, AccRunBalance, Run, Instrument
-from bot.env.prod import LoggerHelper, TimeProdEnvHelper
-from bot.env import AbstractLoggerHelper, AbstractTimeHelper
+from bot.env.prod import LoggerHelper, TimeProdEnvHelper, TinkoffAccClient
+from bot.env import AbstractLoggerHelper, AbstractTimeHelper, AbstractAccProxyClient
 
 
 class TradingAccountBot(AbstractBot):
@@ -19,19 +19,23 @@ class TradingAccountBot(AbstractBot):
     def __init__(
             self,
             config: AccConfig,
-            time_helper: AbstractTimeHelper | None = None,
-            logger_helper: AbstractLoggerHelper | None = None,
+            time_helper: Optional[AbstractTimeHelper] = None,
+            logger_helper: Optional[AbstractLoggerHelper] = None,
+            acc_client: Optional[AbstractAccProxyClient] = None
     ):
-        account_id = config.account_id
-        self.account = Account.get_by_id(account_id)
-        if not self.account:
-            raise ValueError(f"Не найден account c account_id='{account_id}'")
+        # todo расхождение типов. config.account_id - str,  self.account_id и Account.id - int (#181)
+        self.account_id: str = config.account_id
+        account: Optional[Account] = Account.get_by_id(self.account_id) if self.account_id else None
+        if not account and self.account_id:
+            raise ValueError(f"Не найден account c account_id='{self.account_id}'")
 
         super().__init__(
             config,
             time_helper or TimeProdEnvHelper(),
-            logger_helper or LoggerHelper(__name__, self.account.name)
+            logger_helper or LoggerHelper(__name__, account.name if account is not None else self.account_id)
         )
+
+        self.acc_client = acc_client or TinkoffAccClient()
 
         if not self.is_trading_day():
             self.log("Не торговый день. Завершаем работу.")
@@ -54,11 +58,11 @@ class TradingAccountBot(AbstractBot):
         '''Счетчик срабатываний для выхода по нижней планке'''
 
         self.run_state: AccRun | None = None
-        if self.account:
-            self.account.balance = self.open_balance
+        if account:
+            account.balance = self.open_balance
 
             self.run_state = AccRun(
-                account=self.account.id,
+                account=int(self.account_id),
                 date=self.time.now().date(),
                 created_at=self.time.now(),
                 updated_at=self.time.now(),
@@ -80,7 +84,7 @@ class TradingAccountBot(AbstractBot):
 
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"
-                 f"     account - {self.account}\n"
+                 f"     account - {account}\n"
                  f"     run_instance - {self.run_state}"
                  )
 
@@ -96,11 +100,11 @@ class TradingAccountBot(AbstractBot):
         return out
 
     def get_current_balance(self) -> float | None:
-        return TinkoffApi.get_account_balance_rub(self.account.id)
+        return self.acc_client.get_account_balance_rub(self.account_id)
 
     def sell_unused_instruments(self):
         # Запросить все инструменты на аккаунте
-        instruments = Instrument.query.filter_by(account=self.account.id).all()
+        instruments = Instrument.query.filter_by(account=int(self.account_id)).all()
 
         # Выбрать сегодняшние запуски
         today = self.time.now().date()
@@ -116,21 +120,21 @@ class TradingAccountBot(AbstractBot):
 
         self.log(f"Используемые инструменты {used_tickers}")
 
-        bought_instruments = TinkoffApi.get_shares_on_account(self.account.id)
+        bought_instruments = self.acc_client.get_shares_on_account(self.account_id)
 
         self.log(f"Купленные инструменты {bought_instruments}")
 
         for instrument in bought_instruments:
             if instrument['ticker'] not in used_tickers:
                 self.log(f"Продажа инструмента: {instrument['ticker']}, {instrument['quantity']} шт")
-                TinkoffApi.sell(self.account.id, instrument['figi'], instrument['quantity'])
+                self.acc_client.sell(self.account_id, instrument['figi'], instrument['quantity'])
 
     def sell_all_instruments(self):
-        bought_instruments = TinkoffApi.get_shares_on_account(self.account.id)
+        bought_instruments = self.acc_client.get_shares_on_account(self.account_id)
 
         for instrument in bought_instruments:
             self.log(f"Продажа инструмента: {instrument['ticker']}, {instrument['quantity']} шт")
-            TinkoffApi.sell(self.account.id, instrument['figi'], instrument['quantity'])
+            self.acc_client.sell(self.account_id, instrument['figi'], instrument['quantity'])
 
     def start(self):
         """Начало работы скрипта. первый старт"""
@@ -167,7 +171,7 @@ class TradingAccountBot(AbstractBot):
 
         if not self.exiting and self.check_need_stop():
             # выбираем все не завершенные
-            runs = Run.get_active_runs_on_account(self.account.id)
+            runs = Run.get_active_runs_on_account(int(self.account_id))
 
             # добавляем каждому команду выхода
             for run in runs:
@@ -236,7 +240,7 @@ class TradingAccountBot(AbstractBot):
             self.run_state.exit_code = exit_code
             self.run_state.status = RunStatus.FINISHED if not exit_code else RunStatus.FAILED
 
-            account = Account.get_by_id(self.config.account_id)
+            account = Account.get_by_id(int(self.account_id)) if self.account_id else None
             if account:
                 account.balance = self.cur_balance
 
@@ -276,6 +280,9 @@ class TradingAccountBot(AbstractBot):
         return round(val, 2)
 
     def save_balance_to_log(self):
+        if self.run_state is None:
+            return
+
         row = AccRunBalance(
             acc_run=self.run_state.id,
             balance=self.cur_balance,

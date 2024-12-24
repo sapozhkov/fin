@@ -26,8 +26,8 @@ class Account(db.Model):
         return f"<Account {self.name} ({self.id}) /{self.config}/ {'On' if self.status else 'Off'}>"
 
     @classmethod
-    def get_by_id(cls, acc_id) -> Optional['Account']:
-        return cls.query.get(acc_id)
+    def get_by_id(cls, acc_id: int | str) -> Optional['Account']:
+        return cls.query.get(int(acc_id))
 
     @classmethod
     def get_for_filter(cls) -> List['Account']:

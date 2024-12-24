@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from app.config import AccConfig
-from bot import TestAlgorithm
+from bot import TestAlgorithm, TradingAccountBot
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper
 
 
@@ -23,6 +23,9 @@ class TestAccAlgorithm:
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
         self.use_cache = use_cache  # todo del?
 
+        self.acc_bot: Optional[TradingAccountBot] = None
+        self.bot_started = False
+
     def test(
             self,
             last_test_date,
@@ -35,21 +38,21 @@ class TestAccAlgorithm:
             date_from, date_to = self.set_day(test_date)
 
             self.bots_create(test_date)
-            # self.acc_create()
+            self.acc_create()
 
             for dt in TestAlgorithm.get_time_list(date_from, date_to):
-                self.bots_execute(dt)
-                # self.acc_execute(dt)
+                self.bots_run_iteration(dt)
+                self.acc_run_iteration(dt)
 
             self.bots_stop()
-            # self.acc_stop()
+            self.acc_stop()
 
             self.bots_upd_day_trade()
             self.bots_calculate_day_results()
-            # self.acc_calculate_day_results()
+            self.acc_calculate_day_results()
 
         self.bots_calculate_total_results()
-        # self.acc_calculate_total_results()
+        self.acc_calculate_total_results()
         return self.get_results(test_days_num)
 
     def bots_create(self, test_date):
@@ -61,7 +64,7 @@ class TestAccAlgorithm:
                 continue
             bot_alg.bot_create()
 
-    def bots_execute(self, dt):
+    def bots_run_iteration(self, dt):
         for bot_alg in self.bot_alg_list:
             if not bot_alg.process_this_day:
                 continue
@@ -106,10 +109,26 @@ class TestAccAlgorithm:
         return date_from_, date_to_
 
     def acc_create(self):
-        # todo implement
-        pass
+        # создаем бота с настройками
+        self.acc_bot = TradingAccountBot(
+            config=self.config,
+            time_helper=self.time_helper,
+            logger_helper=self.logger_helper,
+        )
 
-    def acc_execute(self, dt):
+        if self.acc_bot.state == self.acc_bot.STATE_FINISHED:
+            return False
+
+        self.bot_started = False
+
+        return True
+
+    def acc_run_iteration(self, dt):
+        """
+        Запуск минутной итерации для бота
+        :return: bool False если работу можно прерывать и бот закончил, True - продолжаем на след минуте
+        """
+
         self.time_helper.set_time(dt)
         # todo implement
 
