@@ -3,3 +3,4 @@ from .abs_logger_helper import AbstractLoggerHelper
 from .abs_proxy_client import AbstractProxyClient
 from .abs_accounting_helper import AbstractAccountingHelper
 from .abs_acc_proxy_client import AbstractAccProxyClient
+from .abs_db_proxy import AbstractDbProxy

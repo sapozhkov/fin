@@ -2,13 +2,13 @@ from datetime import timedelta
 from typing import Optional
 
 from app import db
-from app.command import CommandManager
 from app.command.constants import CommandType
 from app.config import AccConfig, RunConfig
 from bot import AbstractBot
 from app.constants import RunStatus
-from app.models import AccRun, Account, AccRunBalance, Run, Instrument
-from bot.env.prod import LoggerHelper, TimeProdEnvHelper, TinkoffAccClient
+from app.models import AccRun, Account, AccRunBalance
+from bot.env.abs_db_proxy import AbstractDbProxy
+from bot.env.prod import LoggerHelper, TimeProdEnvHelper, TinkoffAccClient, DbProxy
 from bot.env import AbstractLoggerHelper, AbstractTimeHelper, AbstractAccProxyClient
 
 
@@ -21,7 +21,8 @@ class TradingAccountBot(AbstractBot):
             config: AccConfig,
             time_helper: Optional[AbstractTimeHelper] = None,
             logger_helper: Optional[AbstractLoggerHelper] = None,
-            acc_client: Optional[AbstractAccProxyClient] = None
+            acc_client: Optional[AbstractAccProxyClient] = None,
+            db_: Optional[AbstractDbProxy] = None,
     ):
         # todo расхождение типов. config.account_id - str,  self.account_id и Account.id - int (#181)
         self.account_id: str = config.account_id
@@ -35,7 +36,8 @@ class TradingAccountBot(AbstractBot):
             logger_helper or LoggerHelper(__name__, account.name if account is not None else self.account_id)
         )
 
-        self.acc_client = acc_client or TinkoffAccClient()
+        self.acc_client: AbstractAccProxyClient = acc_client or TinkoffAccClient()
+        self.db: AbstractDbProxy = db_ or DbProxy()
 
         if not self.is_trading_day():
             self.log("Не торговый день. Завершаем работу.")
@@ -104,14 +106,11 @@ class TradingAccountBot(AbstractBot):
 
     def sell_unused_instruments(self):
         # Запросить все инструменты на аккаунте
-        instruments = Instrument.query.filter_by(account=int(self.account_id)).all()
+        instruments = self.db.get_instruments_by_acc_id(self.account_id)
 
         # Выбрать сегодняшние запуски
         today = self.time.now().date()
-        active_instruments = Run.query.filter(
-            Run.date == today,
-            Run.instrument.in_([instrument.id for instrument in instruments])
-        ).with_entities(Run.instrument).distinct().all()
+        active_instruments = self.db.get_today_runs_by_instrument_list(instruments, today)
 
         active_instrument_ids = {ai[0] for ai in active_instruments}
 
@@ -171,11 +170,11 @@ class TradingAccountBot(AbstractBot):
 
         if not self.exiting and self.check_need_stop():
             # выбираем все не завершенные
-            runs = Run.get_active_runs_on_account(int(self.account_id))
+            runs = self.db.get_active_runs_on_account(self.account_id)
 
             # добавляем каждому команду выхода
             for run in runs:
-                CommandManager.create_command(CommandType.STOP_ON_ZERO, run.id)
+                self.db.create_command(CommandType.STOP_ON_ZERO, run.id)
                 self.log(f"Команда на остановку для запуска {run}")
 
             # в конфиге делаем сдвиг на 5 мин от текущего времени и выходим

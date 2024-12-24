@@ -102,12 +102,12 @@ class Run(db.Model):
         return result
 
     @staticmethod
-    def get_active_runs_on_account(account_id: int) -> List['Run']:
+    def get_active_runs_on_account(account_id: int | str) -> List['Run']:
         closed_statuses = RunStatus.closed_list()
         return Run.query\
             .join(Instrument)\
             .filter(
-                Instrument.account == account_id,
+                Instrument.account == int(account_id),
                 not_(Run.status.in_(closed_statuses))
             )\
             .all()
