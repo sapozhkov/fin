@@ -111,8 +111,8 @@ class RunConfig:
             if self.step_max_cnt < self.MIN_NON_MAJ_MAX_CNT:
                 self.step_max_cnt = self.MIN_NON_MAJ_MAX_CNT
 
-        if self.step_size <= 0:
-            self.step_size = 0.2
+        if self.step_size <= 0.4:
+            self.step_size = 0.4
 
         if self.pretest_type not in [self.PRETEST_NONE, self.PRETEST_RSI, self.PRETEST_PRE, self.PRETEST_FAN]:
             self.pretest_type = self.PRETEST_NONE
