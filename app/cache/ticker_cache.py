@@ -1,3 +1,4 @@
+import math
 import sqlite3
 from datetime import datetime, timedelta, timezone
 
@@ -232,29 +233,61 @@ class TickerCache:
                 with Client(self.token) as client:
                     api_candles = client.market_data.get_candles(
                         figi=self.get_instrument().figi,
-                        from_=date_needed.replace(hour=0, minute=0, second=0),
-                        to=date_needed.replace(hour=23, minute=59, second=59),
-                        interval=CandleInterval.CANDLE_INTERVAL_DAY
+                        from_=date_needed.replace(tzinfo=timezone.utc, hour=0, minute=0, second=0),
+                        to=date_needed.replace(tzinfo=timezone.utc, hour=23, minute=59, second=59),
+                        interval=CandleInterval.CANDLE_INTERVAL_HOUR
                     )
-                    if api_candles.candles:
-                        for candle in api_candles.candles:
-                            candles.append(candle)
-                            # сегодняшний день в базу не заносим - меняется до конца дня
-                            if not is_today:
-                                cursor.execute(
-                                    'INSERT OR IGNORE INTO candles_day (date, open, high, low, close, volume) '
-                                    'VALUES (?, ?, ?, ?, ?, ?)',
-                                    (
-                                        candle.time.date(),
-                                        q2f(candle.open, self.instrument.round_signs),
-                                        q2f(candle.high, self.instrument.round_signs),
-                                        q2f(candle.low, self.instrument.round_signs),
-                                        q2f(candle.close, self.instrument.round_signs),
-                                        candle.volume
-                                    ))
-                                conn.commit()
 
-                    if not is_today:
+                    if api_candles.candles:
+                        date_ = date_needed.date()
+                        open_ = None
+                        close_ = None
+                        high_ = -math.inf
+                        low_ = math.inf
+                        volume_ = 0
+
+                        for candle in api_candles.candles:
+                            o_ = q2f(candle.open, self.instrument.round_signs)
+                            h_ = q2f(candle.high, self.instrument.round_signs)
+                            l_ = q2f(candle.low, self.instrument.round_signs)
+                            c_ = q2f(candle.close, self.instrument.round_signs)
+
+                            if open_ is None:
+                                open_ = o_
+                            if h_ > high_:
+                                high_ = h_
+                            if l_ < low_:
+                                low_ = l_
+                            close_ = c_
+                            volume_ += candle.volume
+
+                        candle = HistoricCandle(
+                            time=date_,
+                            open=f2q(open_),
+                            high=f2q(high_),
+                            low=f2q(low_),
+                            close=f2q(close_),
+                            volume=volume_,
+                            is_complete=True
+                        )
+
+                        candles.append(candle)
+                        # сегодняшний день в базу не заносим - меняется до конца дня
+                        if not is_today:
+                            cursor.execute(
+                                'INSERT OR IGNORE INTO candles_day (date, open, high, low, close, volume) '
+                                'VALUES (?, ?, ?, ?, ?, ?)',
+                                (
+                                    date_,
+                                    open_,
+                                    high_,
+                                    low_,
+                                    close_,
+                                    volume_
+                                ))
+                            conn.commit()
+
+                    elif not is_today:
                         # хак. если в эту дату нет данных, то возвращается предыдущая и в нужную не пишется ничего
                         cursor.execute('''
                         INSERT OR IGNORE INTO candles_day (date, open, high, low, close, volume)

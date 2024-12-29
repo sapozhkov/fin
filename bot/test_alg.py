@@ -326,6 +326,8 @@ class TestAlgorithm:
             conf_list += conf_list2
 
         unique_conf_list = list(set(conf_list))
+        print(conf_list)
+        print(unique_conf_list)
         results = []
 
         # запускаем получение результатов работы всех вариантов конфигурации
@@ -359,7 +361,7 @@ class TestAlgorithm:
 
     @staticmethod
     def get_step_by_price(price: float | None) -> float:
-        if price is None:
+        if price is None or price == 0:
             return 0.2
 
         if price < 1:
@@ -408,7 +410,7 @@ class TestAlgorithm:
             # for step_size in [config.step_size]
             # for step_set_orders_cnt in [config.step_set_orders_cnt]
             for step_size in [
-                round(config.step_size - step_diff, step_round_digits),
+                max(round(config.step_size - step_diff, step_round_digits), 0.4),
                 round(config.step_size, step_round_digits),
                 round(config.step_size + step_diff, step_round_digits),
             ]
