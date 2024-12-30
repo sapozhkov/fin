@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from app.command import CommandManager
-from app.models import Instrument, Run
+from app.models import Instrument, Run, Account
 from bot.env import AbstractAccDbHelper
 
 
@@ -34,3 +34,6 @@ class AccDbHelper(AbstractAccDbHelper):
 
     def create_command(self, command_type: int, run_id: int):
         CommandManager.create_command(command_type, run_id)
+
+    def get_acc_by_id(self, account_id: str) -> Optional[Account]:
+        return Account.get_by_id(account_id) if account_id else None

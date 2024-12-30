@@ -1,7 +1,7 @@
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
-from app.models import Run, Instrument
+from app.models import Run, Instrument, Account
 from bot.env import AbstractAccDbHelper
 
 
@@ -26,3 +26,6 @@ class AccDbTestEnvHelper(AbstractAccDbHelper):
     def create_command(self, command_type: int, run_id: int):
         # todo implement
         pass
+
+    def get_acc_by_id(self, account_id: str) -> Optional[Account]:
+        return None

@@ -26,19 +26,19 @@ class TradingAccountBot(AbstractBot):
     ):
         # todo расхождение типов. config.account_id - str,  self.account_id и Account.id - int (#181)
         self.account_id: str = config.account_id if config.account_id != '0' else ''
-        # todo и вот это утащить в проксю классовую и ниже такой же вызов есть
-        account: Optional[Account] = Account.get_by_id(self.account_id) if self.account_id else None
+
+        self.acc_client: AbstractAccClient = acc_client or TinkoffAccClient()
+        self.db: AbstractAccDbHelper = db_ or AccDbHelper()
+
+        account: Optional[Account] = self.db.get_acc_by_id(self.account_id)
         if not account and self.account_id:
             raise ValueError(f"Не найден account c account_id='{self.account_id}'")
 
         super().__init__(
             config,
             time_helper or TimeProdEnvHelper(),
-            logger_helper or LoggerHelper(__name__, account.name if account is not None else self.account_id)
+            logger_helper or LoggerHelper(__name__, account.name if account else self.account_id)
         )
-
-        self.acc_client: AbstractAccClient = acc_client or TinkoffAccClient()
-        self.db: AbstractAccDbHelper = db_ or AccDbHelper()
 
         if not self.is_trading_day():
             self.log("Не торговый день. Завершаем работу.")
@@ -240,7 +240,7 @@ class TradingAccountBot(AbstractBot):
             self.run_state.exit_code = exit_code
             self.run_state.status = RunStatus.FINISHED if not exit_code else RunStatus.FAILED
 
-            account = Account.get_by_id(int(self.account_id)) if self.account_id else None
+            account = self.db.get_acc_by_id(self.account_id)
             if account:
                 account.balance = self.cur_balance
 

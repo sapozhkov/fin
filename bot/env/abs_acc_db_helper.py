@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
-from app.models import Instrument, Run
+from app.models import Instrument, Run, Account
 
 
 class AbstractAccDbHelper(ABC):
@@ -20,4 +20,8 @@ class AbstractAccDbHelper(ABC):
 
     @abstractmethod
     def create_command(self, command_type: int, run_id: int):
+        pass
+
+    @abstractmethod
+    def get_acc_by_id(self, account_id: str) -> Optional[Account]:
         pass
