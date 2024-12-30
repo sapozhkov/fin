@@ -2,5 +2,5 @@ from .abs_time_helper import AbstractTimeHelper
 from .abs_logger_helper import AbstractLoggerHelper
 from .abs_proxy_client import AbstractProxyClient
 from .abs_accounting_helper import AbstractAccountingHelper
-from .abs_acc_proxy_client import AbstractAccProxyClient
-from .abs_db_proxy import AbstractDbProxy
+from .abs_acc_client import AbstractAccClient
+from .abs_acc_db_helper import AbstractAccDbHelper

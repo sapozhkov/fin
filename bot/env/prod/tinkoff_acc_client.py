@@ -1,8 +1,8 @@
 from app.lib import TinkoffApi
-from bot.env import AbstractAccProxyClient
+from bot.env import AbstractAccClient
 
 
-class TinkoffAccClient(AbstractAccProxyClient):
+class TinkoffAccClient(AbstractAccClient):
     @staticmethod
     def sell(account_id: str, figi: str, quantity: int):
         return TinkoffApi.sell(account_id, figi, quantity)

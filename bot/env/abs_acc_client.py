@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class AbstractAccProxyClient(ABC):
+class AbstractAccClient(ABC):
     @staticmethod
     @abstractmethod
     def get_account_balance_rub(account_id: str) -> float:

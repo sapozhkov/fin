@@ -5,7 +5,7 @@ from typing import List
 from app.models import Instrument, Run
 
 
-class AbstractDbProxy(ABC):
+class AbstractAccDbHelper(ABC):
     @abstractmethod
     def get_instruments_by_acc_id(self, account_id: str | int) -> List[Instrument]:
         pass

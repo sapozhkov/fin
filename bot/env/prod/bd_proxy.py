@@ -3,10 +3,10 @@ from typing import List
 
 from app.command import CommandManager
 from app.models import Instrument, Run
-from bot.env import AbstractDbProxy
+from bot.env import AbstractAccDbHelper
 
 
-class DbProxy(AbstractDbProxy):
+class AccDbHelper(AbstractAccDbHelper):
     def get_instruments_by_acc_id(self, account_id: str | int) -> List[Instrument]:
         return Instrument.query.filter_by(account=int(account_id)).all()
 

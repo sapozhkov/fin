@@ -7,9 +7,9 @@ from app.config import AccConfig, RunConfig
 from bot import AbstractBot
 from app.constants import RunStatus
 from app.models import AccRun, Account, AccRunBalance
-from bot.env.abs_db_proxy import AbstractDbProxy
-from bot.env.prod import LoggerHelper, TimeProdEnvHelper, TinkoffAccClient, DbProxy
-from bot.env import AbstractLoggerHelper, AbstractTimeHelper, AbstractAccProxyClient
+from bot.env.abs_acc_db_helper import AbstractAccDbHelper
+from bot.env.prod import LoggerHelper, TimeProdEnvHelper, TinkoffAccClient, AccDbHelper
+from bot.env import AbstractLoggerHelper, AbstractTimeHelper, AbstractAccClient
 
 
 class TradingAccountBot(AbstractBot):
@@ -21,11 +21,12 @@ class TradingAccountBot(AbstractBot):
             config: AccConfig,
             time_helper: Optional[AbstractTimeHelper] = None,
             logger_helper: Optional[AbstractLoggerHelper] = None,
-            acc_client: Optional[AbstractAccProxyClient] = None,
-            db_: Optional[AbstractDbProxy] = None,
+            acc_client: Optional[AbstractAccClient] = None,
+            db_: Optional[AbstractAccDbHelper] = None,
     ):
         # todo расхождение типов. config.account_id - str,  self.account_id и Account.id - int (#181)
-        self.account_id: str = config.account_id
+        self.account_id: str = config.account_id if config.account_id != '0' else ''
+        # todo и вот это утащить в проксю классовую и ниже такой же вызов есть
         account: Optional[Account] = Account.get_by_id(self.account_id) if self.account_id else None
         if not account and self.account_id:
             raise ValueError(f"Не найден account c account_id='{self.account_id}'")
@@ -36,8 +37,8 @@ class TradingAccountBot(AbstractBot):
             logger_helper or LoggerHelper(__name__, account.name if account is not None else self.account_id)
         )
 
-        self.acc_client: AbstractAccProxyClient = acc_client or TinkoffAccClient()
-        self.db: AbstractDbProxy = db_ or DbProxy()
+        self.acc_client: AbstractAccClient = acc_client or TinkoffAccClient()
+        self.db: AbstractAccDbHelper = db_ or AccDbHelper()
 
         if not self.is_trading_day():
             self.log("Не торговый день. Завершаем работу.")
