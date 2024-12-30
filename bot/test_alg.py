@@ -326,8 +326,6 @@ class TestAlgorithm:
             conf_list += conf_list2
 
         unique_conf_list = list(set(conf_list))
-        print(conf_list)
-        print(unique_conf_list)
         results = []
 
         # запускаем получение результатов работы всех вариантов конфигурации
