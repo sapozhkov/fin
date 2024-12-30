@@ -1,0 +1,74 @@
+from datetime import datetime
+from typing import List, Optional
+
+from app.models import Run, Instrument, Account
+from bot import TestAlgorithm
+from bot.env import AbstractAccDbHelper
+
+
+class AccDbTestEnvHelper(AbstractAccDbHelper):
+    def __init__(self, bot_alg_list: List[TestAlgorithm]):
+        self.bot_alg_list = bot_alg_list
+
+    def get_instruments_by_acc_id(self, account_id: str | int) -> List[Instrument]:
+        # return Instrument.query.filter_by(account=int(account_id)).all()
+        # todo проверить в боевом тесте
+        out = []
+        for bot_id, bot_alg in enumerate(self.bot_alg_list):
+            instrument = Instrument(
+                id=bot_id,
+                config=bot_alg.config,
+                name=bot_alg.config.name,
+            )
+            out.append(instrument)
+        return out
+
+    def get_today_runs_by_instrument_list(self, instruments: List[Instrument], today: datetime.date) \
+            -> list[tuple[int]]:
+        # return Run.query.filter(
+        #     Run.date == today,
+        #     Run.instrument.in_([instrument.id for instrument in instruments])
+        # ).with_entities(Run.instrument).distinct().all()
+        # -> [(3,), (4,)]
+        # todo проверить в боевом тесте
+        out = []
+        for bot_id, bot_alg in enumerate(self.bot_alg_list):
+            # todo проверить, что тут есть запуски и есть отказы
+            if not bot_alg.process_this_day:
+                continue
+
+            out.append((bot_id, ))
+
+        return out
+
+    def get_active_runs_on_account(self, account_id) -> List[Run]:
+        # closed_statuses = RunStatus.closed_list()
+        # return Run.query\
+        #     .join(Instrument)\
+        #     .filter(
+        #         Instrument.account == int(account_id),
+        #         not_(Run.status.in_(closed_statuses))
+        #     )\
+        #     .all()
+
+        # todo проверить в боевом тесте
+        out = []
+        for bot_id, bot_alg in enumerate(self.bot_alg_list):
+            if not bot_alg.bot.continue_trading():
+                continue
+
+            run = Run(
+                id=bot_id,
+                config=bot_alg.config,
+            )
+            out.append(run)
+        return out
+
+    def create_command(self, command_type: int, run_id: int):
+        # todo implement
+        # тут нужен объект для хранения команд. он же будет в запусках использоваться
+        # CommandManager.create_command(command_type, run_id)
+        pass
+
+    def get_acc_by_id(self, account_id: str) -> Optional[Account]:
+        return None

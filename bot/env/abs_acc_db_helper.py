@@ -11,7 +11,8 @@ class AbstractAccDbHelper(ABC):
         pass
 
     @abstractmethod
-    def get_today_runs_by_instrument_list(self, instruments: List[Instrument], today: datetime.date) -> List[Run]:
+    def get_today_runs_by_instrument_list(self, instruments: List[Instrument], today: datetime.date) \
+            -> list[tuple[int]]:
         pass
 
     @abstractmethod

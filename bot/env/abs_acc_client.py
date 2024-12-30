@@ -1,18 +1,18 @@
 from abc import ABC, abstractmethod
+from typing import List
+
+from bot.dto import BoughtInstrumentDto
 
 
 class AbstractAccClient(ABC):
-    @staticmethod
     @abstractmethod
-    def get_account_balance_rub(account_id: str) -> float:
+    def get_account_balance_rub(self, account_id: str) -> float:
         pass
 
-    @staticmethod
     @abstractmethod
-    def get_shares_on_account(account_id):
+    def get_shares_on_account(self, account_id) -> List[BoughtInstrumentDto]:
         pass
 
-    @staticmethod
     @abstractmethod
-    def sell(account_id: str, figi: str, quantity: int):
+    def sell(self, account_id: str, figi: str, quantity: int):
         pass

@@ -125,16 +125,16 @@ class TradingAccountBot(AbstractBot):
         self.log(f"Купленные инструменты {bought_instruments}")
 
         for instrument in bought_instruments:
-            if instrument['ticker'] not in used_tickers:
-                self.log(f"Продажа инструмента: {instrument['ticker']}, {instrument['quantity']} шт")
-                self.acc_client.sell(self.account_id, instrument['figi'], instrument['quantity'])
+            if instrument.ticker not in used_tickers:
+                self.log(f"Продажа инструмента: {instrument.ticker}, {instrument.quantity} шт")
+                self.acc_client.sell(self.account_id, instrument.figi, instrument.quantity)
 
     def sell_all_instruments(self):
         bought_instruments = self.acc_client.get_shares_on_account(self.account_id)
 
         for instrument in bought_instruments:
-            self.log(f"Продажа инструмента: {instrument['ticker']}, {instrument['quantity']} шт")
-            self.acc_client.sell(self.account_id, instrument['figi'], instrument['quantity'])
+            self.log(f"Продажа инструмента: {instrument.ticker}, {instrument.quantity} шт")
+            self.acc_client.sell(self.account_id, instrument.figi, instrument.quantity)
 
     def start(self):
         """Начало работы скрипта. первый старт"""

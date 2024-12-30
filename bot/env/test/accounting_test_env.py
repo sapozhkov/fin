@@ -1,8 +1,5 @@
-from tinkoff.invest import PostOrderResponse, OrderType, OrderDirection
-
 from app.models import Order
 from bot.env import AbstractAccountingHelper
-from bot.helper import OrderHelper
 from app.constants import HistoryOrderType
 from bot.env.test import ClientTestEnvHelper, TimeTestEnvHelper
 

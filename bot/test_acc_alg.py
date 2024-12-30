@@ -3,8 +3,8 @@ from typing import List, Tuple, Optional
 
 from app.config import AccConfig
 from bot import TestAlgorithm, TradingAccountBot
-from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, AccDbTestEnvHelper
-from bot.env.test.acc_client_test_env import TestAccClientEnvHelper
+from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper
+from bot.env.test.acc import TestAccClientEnvHelper, AccDbTestEnvHelper
 
 
 class TestAccAlgorithm:
@@ -22,8 +22,8 @@ class TestAccAlgorithm:
 
         self.time_helper = TimeTestEnvHelper()
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
-        self.acc_client = TestAccClientEnvHelper()
-        self.acc_db = AccDbTestEnvHelper()
+        self.acc_client = TestAccClientEnvHelper(self.bot_alg_list)
+        self.acc_db = AccDbTestEnvHelper(self.bot_alg_list)
         self.use_cache = use_cache  # todo del?
 
         self.acc_bot: Optional[TradingAccountBot] = None

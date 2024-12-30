@@ -10,7 +10,8 @@ class AccDbHelper(AbstractAccDbHelper):
     def get_instruments_by_acc_id(self, account_id: str | int) -> List[Instrument]:
         return Instrument.query.filter_by(account=int(account_id)).all()
 
-    def get_today_runs_by_instrument_list(self, instruments: List[Instrument], today: datetime.date) -> List[Run]:
+    def get_today_runs_by_instrument_list(self, instruments: List[Instrument], today: datetime.date)\
+            -> list[tuple[int]]:
         """
         Выдает все запуски, что запущены за сегодня
         :param instruments:
@@ -25,7 +26,7 @@ class AccDbHelper(AbstractAccDbHelper):
     def get_active_runs_on_account(self, account_id) -> List[Run]:
         """
         Отдает все запущенные в текущий момент Run записи (исключает закрытые статусы)
-        todo можно объеденить с предыдущим методом, так как ночью закрываются все незакрытые с ошибкой
+        todo можно объединить с предыдущим методом, так как ночью закрываются все незакрытые с ошибкой
             и останется только отфильтровать по статусу
         :param account_id:
         :return:

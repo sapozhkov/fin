@@ -277,11 +277,11 @@ class TradingBot(AbstractBot):
 
         # если надо вернуться в 0 - продать откупленные инструменты
         if to_zero and current_count > 0:
-            self.trade_strategy.sell(current_count)
+            self.sell(current_count)
 
         # при мажоритарной откупить перепроданные, если есть
         if self.config.majority_trade and current_count < 0:
-            self.trade_strategy.buy(-current_count)
+            self.buy(-current_count)
 
         current_price = self.trade_strategy.update_cached_price()
         if not current_price:
@@ -311,6 +311,12 @@ class TradingBot(AbstractBot):
                         f"     profit_n - {self.run_state.profit_n}")
 
         self.log(results)
+
+    def buy(self, count):
+        self.trade_strategy.buy(count)
+
+    def sell(self, count):
+        self.trade_strategy.sell(count)
 
     def get_status_str(self) -> str:
         out = f"cur {self.trade_strategy.cached_current_price} | " \

@@ -1,0 +1,41 @@
+from typing import List
+
+from bot import TestAlgorithm
+from bot.dto import BoughtInstrumentDto
+from bot.env import AbstractAccClient
+
+
+class TestAccClientEnvHelper(AbstractAccClient):
+    def __init__(self, bot_alg_list: List[TestAlgorithm]):
+        self.bot_alg_list = bot_alg_list
+
+    def get_account_balance_rub(self, account_id: str) -> float:
+        # todo проверить в боевом тесте
+        sum_balance = 0
+        for bot_alg in self.bot_alg_list:
+            sum_balance += bot_alg.get_cur_balance()
+        return sum_balance
+
+    def get_shares_on_account(self, account_id) -> List[BoughtInstrumentDto]:
+        # todo проверить в боевом тесте
+        out = []
+        for bot_alg in self.bot_alg_list:
+            if bot_alg.accounting_helper.get_num() == 0:
+                continue
+            out.append(BoughtInstrumentDto(
+                figi=bot_alg.config.ticker,
+                ticker=bot_alg.config.ticker,
+                quantity=bot_alg.accounting_helper.get_num()
+            ))
+        return out
+
+    def sell(self, account_id: str, figi: str, quantity: int):
+        # todo проверить в боевом тесте
+        # при тестах должно работать с figi = ticker для упрощения логики
+        # выполнить команду продажи по текущей цене
+
+        for bot_alg in self.bot_alg_list:
+            if bot_alg.config.ticker != figi:
+                continue
+            if quantity > 0:
+                bot_alg.bot.sell(quantity)

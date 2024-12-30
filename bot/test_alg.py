@@ -455,6 +455,25 @@ class TestAlgorithm:
         self.day_trade.end_cnt = self.accounting_helper.get_instrument_count()
         self.day_trade.day_sum = self.accounting_helper.get_sum()
 
+    def get_cur_balance(self) -> float:
+        """
+        Выводит промежуточный баланс за день.
+        Используется при подсчетах в тесте акк бота.
+        :return:
+        """
+        if not self.bot_started:
+            return self.balance
+
+        day_sum = self.accounting_helper.get_sum()
+        cur_price = self.client_helper.get_current_price()
+        curt_cnt = self.accounting_helper.get_instrument_count()
+        balance_change = (
+                - self.day_trade.start_price * self.day_trade.start_cnt
+                + day_sum
+                + cur_price * curt_cnt
+        )
+        return self.balance + balance_change
+
     def calculate_day_results(self):
         self.operations_cnt += self.day_trade.operations
         self.operations_cnt_list.append(self.day_trade.operations)

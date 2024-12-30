@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
+from typing import List
 
 from tinkoff.invest import Client, InvestError, InstrumentIdType, OrderType, OrderDirection
 
 from app.helper import q2f
 from app.config import AppConfig
+from bot.dto import BoughtInstrumentDto
 
 
 class TinkoffApi:
@@ -100,7 +102,7 @@ class TinkoffApi:
         return None
 
     @staticmethod
-    def get_shares_on_account(account_id):
+    def get_shares_on_account(account_id) -> List[BoughtInstrumentDto]:
         instruments = []
         with Client(AppConfig.TOKEN) as client:
             try:
@@ -108,11 +110,11 @@ class TinkoffApi:
                 for position in response.positions:
                     if position.instrument_type != 'share':
                         continue
-                    instruments.append({
-                        "figi": position.figi,
-                        "ticker": TinkoffApi.get_ticker_by_figi(position.figi),
-                        "quantity": position.quantity.units
-                    })
+                    instruments.append(BoughtInstrumentDto(
+                        figi=position.figi,
+                        ticker=TinkoffApi.get_ticker_by_figi(position.figi),
+                        quantity=position.quantity.units,
+                    ))
             except InvestError as e:
                 print(f"Ошибка при получении инструментов на аккаунте: {e}")
         return instruments
