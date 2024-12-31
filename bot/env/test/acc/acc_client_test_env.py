@@ -10,11 +10,10 @@ class TestAccClientEnvHelper(AbstractAccClient):
         self.bot_alg_list = bot_alg_list
 
     def get_account_balance_rub(self, account_id: str) -> float:
-        # todo проверить в боевом тесте
         sum_balance = 0
         for bot_alg in self.bot_alg_list:
             sum_balance += bot_alg.get_cur_balance()
-        return sum_balance
+        return round(sum_balance, 2)
 
     def get_shares_on_account(self, account_id) -> List[BoughtInstrumentDto]:
         # todo проверить в боевом тесте

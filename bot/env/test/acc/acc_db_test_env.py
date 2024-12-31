@@ -1,14 +1,16 @@
 from datetime import datetime
 from typing import List, Optional
 
+from app.config import AccConfig
 from app.models import Run, Instrument, Account
 from bot import TestAlgorithm
 from bot.env import AbstractAccDbHelper
 
 
 class AccDbTestEnvHelper(AbstractAccDbHelper):
-    def __init__(self, bot_alg_list: List[TestAlgorithm]):
+    def __init__(self, bot_alg_list: List[TestAlgorithm], config: AccConfig):
         self.bot_alg_list = bot_alg_list
+        self.config = config
 
     def get_instruments_by_acc_id(self, account_id: str | int) -> List[Instrument]:
         # return Instrument.query.filter_by(account=int(account_id)).all()
@@ -16,8 +18,8 @@ class AccDbTestEnvHelper(AbstractAccDbHelper):
         out = []
         for bot_id, bot_alg in enumerate(self.bot_alg_list):
             instrument = Instrument(
-                id=bot_id,
-                config=bot_alg.config,
+                id=bot_id + 1,
+                config=str(bot_alg.config),
                 name=bot_alg.config.name,
             )
             out.append(instrument)
@@ -37,7 +39,7 @@ class AccDbTestEnvHelper(AbstractAccDbHelper):
             if not bot_alg.process_this_day:
                 continue
 
-            out.append((bot_id, ))
+            out.append((bot_id + 1, ))
 
         return out
 
@@ -58,8 +60,8 @@ class AccDbTestEnvHelper(AbstractAccDbHelper):
                 continue
 
             run = Run(
-                id=bot_id,
-                config=bot_alg.config,
+                id=bot_id + 1,
+                config=str(bot_alg.config),
             )
             out.append(run)
         return out
@@ -70,5 +72,16 @@ class AccDbTestEnvHelper(AbstractAccDbHelper):
         # CommandManager.create_command(command_type, run_id)
         pass
 
-    def get_acc_by_id(self, account_id: str) -> Optional[Account]:
-        return None
+    def get_acc_by_id(self, account_id: str) -> Account:
+        return Account(
+            id=account_id,
+            name=account_id,
+            config=str(self.config),
+            balance=0,
+        )
+
+    def commit_changes(self, state):
+        pass
+
+    def add_balance_row(self, run_state, cur_balance, param):
+        pass

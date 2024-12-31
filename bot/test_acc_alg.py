@@ -8,6 +8,7 @@ from bot.env.test.acc import TestAccClientEnvHelper, AccDbTestEnvHelper
 
 
 class TestAccAlgorithm:
+    # todo перевезти всё в поддиректорию test
     def __init__(
             self,
             config: AccConfig,
@@ -23,7 +24,7 @@ class TestAccAlgorithm:
         self.time_helper = TimeTestEnvHelper()
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
         self.acc_client = TestAccClientEnvHelper(self.bot_alg_list)
-        self.acc_db = AccDbTestEnvHelper(self.bot_alg_list)
+        self.acc_db = AccDbTestEnvHelper(self.bot_alg_list, self.config)
         self.use_cache = use_cache  # todo del?
 
         self.acc_bot: Optional[TradingAccountBot] = None
@@ -133,17 +134,17 @@ class TestAccAlgorithm:
         Запуск минутной итерации для бота
         :return: bool False если работу можно прерывать и бот закончил, True - продолжаем на след минуте
         """
-
         self.time_helper.set_time(dt)
-        # todo implement
+        self.acc_bot.run_iteration()
 
     def acc_stop(self):
-        # todo implement
-        pass
+        self.acc_bot.stop()
 
-    def get_results(self, test_days_num):
-        # todo implement
-        return [x.get_results(test_days_num) for x in self.bot_alg_list]
+    def get_acc_results(self, test_days_num):
+        return {
+            'config': self.config,
+            'profit': round(100 * (self.acc_bot.run_state.profit_n - 1), 2),
+        }
 
     def acc_calculate_day_results(self):
         # todo implement
@@ -152,3 +153,9 @@ class TestAccAlgorithm:
     def acc_calculate_total_results(self):
         # todo implement
         pass
+
+    def get_results(self, test_days_num):
+        return {
+            'acc': self.get_acc_results(test_days_num),
+            'bots': [x.get_results(test_days_num) for x in self.bot_alg_list],
+        }

@@ -1,12 +1,11 @@
 from datetime import timedelta
 from typing import Optional
 
-from app import db
 from app.command.constants import CommandType
 from app.config import AccConfig, RunConfig
 from bot import AbstractBot
 from app.constants import RunStatus
-from app.models import AccRun, Account, AccRunBalance
+from app.models import AccRun, Account
 from bot.env.abs_acc_db_helper import AbstractAccDbHelper
 from bot.env.prod import LoggerHelper, TimeProdEnvHelper, TinkoffAccClient, AccDbHelper
 from bot.env import AbstractLoggerHelper, AbstractTimeHelper, AbstractAccClient
@@ -25,19 +24,17 @@ class TradingAccountBot(AbstractBot):
             db_: Optional[AbstractAccDbHelper] = None,
     ):
         # todo расхождение типов. config.account_id - str,  self.account_id и Account.id - int (#181)
-        self.account_id: str = config.account_id if config.account_id != '0' else ''
+        self.account_id: str = config.account_id
 
         self.acc_client: AbstractAccClient = acc_client or TinkoffAccClient()
         self.db: AbstractAccDbHelper = db_ or AccDbHelper()
 
-        account: Optional[Account] = self.db.get_acc_by_id(self.account_id)
-        if not account and self.account_id:
-            raise ValueError(f"Не найден account c account_id='{self.account_id}'")
+        self.account: Account = self.db.get_acc_by_id(self.account_id)
 
         super().__init__(
             config,
             time_helper or TimeProdEnvHelper(),
-            logger_helper or LoggerHelper(__name__, account.name if account else self.account_id)
+            logger_helper or LoggerHelper(__name__, self.account.name or self.account_id)
         )
 
         if not self.is_trading_day():
@@ -60,34 +57,30 @@ class TradingAccountBot(AbstractBot):
         self.need_stop_down_cnt = 0
         '''Счетчик срабатываний для выхода по нижней планке'''
 
-        self.run_state: AccRun | None = None
-        if account:
-            account.balance = self.open_balance
+        self.account.balance = self.open_balance
 
-            self.run_state = AccRun(
-                account=int(self.account_id),
-                date=self.time.now().date(),
-                created_at=self.time.now(),
-                updated_at=self.time.now(),
-                status=RunStatus.NEW,
-                exit_code=0,
-                last_error='',
-                open=self.open_balance,
-                close=self.open_balance,
-                high=self.open_balance,
-                low=self.open_balance,
-                profit=0,
-                profit_n=1,
-                data='',
-                error_cnt=0,
-            )
-            self.update_run_state()
-
-            # self.save_balance_to_log()
+        self.run_state: AccRun = AccRun(
+            account=int(self.account_id),
+            date=self.time.now().date(),
+            created_at=self.time.now(),
+            updated_at=self.time.now(),
+            status=RunStatus.NEW,
+            exit_code=0,
+            last_error='',
+            open=self.open_balance,
+            close=self.open_balance,
+            high=self.open_balance,
+            low=self.open_balance,
+            profit=0,
+            profit_n=1,
+            data='',
+            error_cnt=0,
+        )
+        self.update_run_state()
 
         self.log(f"INIT \n"
                  f"     config - {self.config}\n"
-                 f"     account - {account}\n"
+                 f"     account - {self.account}\n"
                  f"     run_instance - {self.run_state}"
                  )
 
@@ -240,9 +233,7 @@ class TradingAccountBot(AbstractBot):
             self.run_state.exit_code = exit_code
             self.run_state.status = RunStatus.FINISHED if not exit_code else RunStatus.FAILED
 
-            account = self.db.get_acc_by_id(self.account_id)
-            if account:
-                account.balance = self.cur_balance
+            self.account.balance = self.cur_balance
 
             self.update_run_state()
 
@@ -251,9 +242,6 @@ class TradingAccountBot(AbstractBot):
 
         if state is None:
             return
-
-        if not state.id:
-            db.session.add(state)
 
         state.updated_at = self.time.now()
         if self.cur_balance:
@@ -273,20 +261,11 @@ class TradingAccountBot(AbstractBot):
             if self.logger.last_error else ''
         state.error_cnt = self.logger.error_cnt
 
-        db.session.commit()
+        self.db.commit_changes(state)
 
     @staticmethod
     def round(val):
         return round(val, 2)
 
     def save_balance_to_log(self):
-        if self.run_state is None:
-            return
-
-        row = AccRunBalance(
-            acc_run=self.run_state.id,
-            balance=self.cur_balance,
-            datetime=self.time.now()
-        )
-        db.session.add(row)
-        db.session.commit()
+        self.db.add_balance_row(self.run_state, self.cur_balance, self.time.now())

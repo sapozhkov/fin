@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import List, Optional
 
+from app import db
 from app.command import CommandManager
-from app.models import Instrument, Run, Account
+from app.models import Instrument, Run, Account, AccRun, AccRunBalance
 from bot.env import AbstractAccDbHelper
 
 
@@ -36,5 +37,33 @@ class AccDbHelper(AbstractAccDbHelper):
     def create_command(self, command_type: int, run_id: int):
         CommandManager.create_command(command_type, run_id)
 
-    def get_acc_by_id(self, account_id: str) -> Optional[Account]:
-        return Account.get_by_id(account_id) if account_id else None
+    def get_acc_by_id(self, account_id: str) -> Account:
+        account = Account.get_by_id(account_id)
+        if account is None:
+            raise ValueError(f"Не найден account c account_id='{account_id}'")
+        return account
+
+    def commit_changes(self, state: AccRun):
+        """
+        Сохранение в базу изменений. Также в этом методе происходит сохранение измененной записи Account,
+        помимо указанной напрямую state
+        :param state:
+        :return:
+        """
+        if not state.id:
+            db.session.add(state)
+
+        db.session.commit()
+
+    def add_balance_row(self, acc_run: AccRun | None, cur_balance: float, timestamp: datetime):
+        if acc_run is None:
+            return
+
+        row = AccRunBalance(
+            acc_run=acc_run.id,
+            balance=cur_balance,
+            datetime=timestamp
+        )
+        db.session.add(row)
+        db.session.commit()
+

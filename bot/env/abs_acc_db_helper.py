@@ -24,5 +24,13 @@ class AbstractAccDbHelper(ABC):
         pass
 
     @abstractmethod
-    def get_acc_by_id(self, account_id: str) -> Optional[Account]:
+    def get_acc_by_id(self, account_id: str) -> Account:
+        pass
+
+    @abstractmethod
+    def commit_changes(self, state):
+        pass
+
+    @abstractmethod
+    def add_balance_row(self, run_state, cur_balance, param):
         pass
