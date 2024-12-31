@@ -1,7 +1,7 @@
 from typing import List
 
 from bot import TestAlgorithm
-from bot.dto import BoughtInstrumentDto
+from app.dto import BoughtInstrumentDto
 from bot.env import AbstractAccClient
 
 

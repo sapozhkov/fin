@@ -1,7 +1,7 @@
 from typing import List
 
 from app.lib import TinkoffApi
-from bot.dto import BoughtInstrumentDto
+from app.dto import BoughtInstrumentDto
 from bot.env import AbstractAccClient
 
 

@@ -3,9 +3,9 @@ from typing import List
 
 from tinkoff.invest import Client, InvestError, InstrumentIdType, OrderType, OrderDirection
 
+from app.dto import BoughtInstrumentDto
 from app.helper import q2f
 from app.config import AppConfig
-from bot.dto import BoughtInstrumentDto
 
 
 class TinkoffApi:

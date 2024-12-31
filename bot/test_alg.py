@@ -8,7 +8,7 @@ from tinkoff.invest import OrderDirection
 from app import AppConfig
 from bot import TradingBot, TestHelper
 from app.cache import LocalCache
-from bot.dto import TestBotTradeDayDto
+from app.dto import TestBotTradeDayDto
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
 from bot.helper import OrderHelper
 from app.config import RunConfig

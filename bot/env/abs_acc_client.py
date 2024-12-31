@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 
-from bot.dto import BoughtInstrumentDto
+from app.dto import BoughtInstrumentDto
 
 
 class AbstractAccClient(ABC):
