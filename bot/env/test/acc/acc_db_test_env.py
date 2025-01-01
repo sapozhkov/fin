@@ -1,6 +1,7 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 
+from app.command.constants import CommandType
 from app.config import AccConfig
 from app.models import Run, Instrument, Account
 from bot import TestAlgorithm
@@ -67,10 +68,23 @@ class AccDbTestEnvHelper(AbstractAccDbHelper):
         return out
 
     def create_command(self, command_type: int, run_id: int):
-        # todo implement
+        """
+        Пока реализовано прямыми вызовами команд
+        Чуть отличается от прод логики, но этим можно пренебречь
+        Как доберемся до более сложных механик команд можно будет реализовать проброс
+        :param command_type:
+        :param run_id:
+        :return:
+        """
+        for bot_id, bot_alg in enumerate(self.bot_alg_list):
+            if run_id == bot_id + 1:
+                if command_type == CommandType.STOP:
+                    bot_alg.bot.stop()
+                elif command_type == CommandType.STOP_ON_ZERO:
+                    bot_alg.bot.stop(True)
+
         # тут нужен объект для хранения команд. он же будет в запусках использоваться
         # CommandManager.create_command(command_type, run_id)
-        pass
 
     def get_acc_by_id(self, account_id: str) -> Account:
         return Account(
