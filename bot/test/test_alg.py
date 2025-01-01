@@ -94,7 +94,6 @@ class TestAlgorithm:
 
                 self.bot_stop()
 
-                self.bot_upd_day_trade()
                 self.save_to_cache(cache_name)
 
             self.calculate_day_results()
@@ -387,10 +386,6 @@ class TestAlgorithm:
             accounting_helper=self.accounting_helper,
         )
 
-        # todo вот это надо в запуска для положить, чтобы не захламлять код
-        if self.bot.state == self.bot.STATE_FINISHED:
-            return False
-
         self.bot_started = False
 
         self.day_trade = TestBotTradeDayDto()
@@ -450,7 +445,6 @@ class TestAlgorithm:
     def bot_stop(self):
         self.bot.stop()
 
-    def bot_upd_day_trade(self):
         self.day_trade.operations = self.accounting_helper.get_executed_order_cnt()
         self.day_trade.end_price = self.client_helper.get_current_price()
         self.day_trade.end_cnt = self.accounting_helper.get_instrument_count()

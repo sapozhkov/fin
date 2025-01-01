@@ -9,13 +9,11 @@ from bot.test import TestAlgorithm
 
 
 class TestAccAlgorithm:
-    # todo перевезти всё в поддиректорию test
     def __init__(
             self,
             config: AccConfig,
             bot_alg_list: List[TestAlgorithm],
             do_printing=False,
-            use_cache=True,
     ):
         # текущий конфиг прогона
         self.config: AccConfig = config
@@ -26,7 +24,6 @@ class TestAccAlgorithm:
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
         self.acc_client = TestAccClientEnvHelper(self.bot_alg_list)
         self.acc_db = AccDbTestEnvHelper(self.bot_alg_list, self.config)
-        self.use_cache = use_cache  # todo del?
 
         self.acc_bot: Optional[TradingAccountBot] = None
         self.bot_started = False
@@ -54,7 +51,6 @@ class TestAccAlgorithm:
             self.bots_stop()
             self.acc_stop()
 
-            self.bots_upd_day_trade()
             self.bots_calculate_day_results()
             self.acc_calculate_day_results()
 
@@ -82,13 +78,6 @@ class TestAccAlgorithm:
             if not bot_alg.process_this_day:
                 continue
             bot_alg.bot_stop()
-
-    # todo вот это надо для кэширования, если не будет, то можно склеить со следующим методом
-    def bots_upd_day_trade(self):
-        for bot_alg in self.bot_alg_list:
-            if not bot_alg.process_this_day:
-                continue
-            bot_alg.bot_upd_day_trade()
 
     def bots_calculate_day_results(self):
         for bot_alg in self.bot_alg_list:
@@ -155,7 +144,6 @@ class TestAccAlgorithm:
         self.profit *= self.acc_bot.run_state.profit_n
 
     def acc_calculate_total_results(self):
-        # todo implement
         pass
 
     def get_results(self, test_days_num):
