@@ -16,7 +16,6 @@ class TestAccClientEnvHelper(AbstractAccClient):
         return round(sum_balance, 2)
 
     def get_shares_on_account(self, account_id) -> List[BoughtInstrumentDto]:
-        # todo проверить в боевом тесте
         out = []
         for bot_alg in self.bot_alg_list:
             if bot_alg.accounting_helper.get_num() == 0:
@@ -29,12 +28,10 @@ class TestAccClientEnvHelper(AbstractAccClient):
         return out
 
     def sell(self, account_id: str, figi: str, quantity: int):
-        # todo проверить в боевом тесте
         # при тестах должно работать с figi = ticker для упрощения логики
-        # выполнить команду продажи по текущей цене
-
         for bot_alg in self.bot_alg_list:
             if bot_alg.config.ticker != figi:
                 continue
             if quantity > 0:
+                # выполнить команду продажи по текущей цене
                 bot_alg.bot.sell(quantity)

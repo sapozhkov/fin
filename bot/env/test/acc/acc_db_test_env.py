@@ -15,7 +15,6 @@ class AccDbTestEnvHelper(AbstractAccDbHelper):
 
     def get_instruments_by_acc_id(self, account_id: str | int) -> List[Instrument]:
         # return Instrument.query.filter_by(account=int(account_id)).all()
-        # todo проверить в боевом тесте
         out = []
         for bot_id, bot_alg in enumerate(self.bot_alg_list):
             instrument = Instrument(
@@ -33,10 +32,8 @@ class AccDbTestEnvHelper(AbstractAccDbHelper):
         #     Run.instrument.in_([instrument.id for instrument in instruments])
         # ).with_entities(Run.instrument).distinct().all()
         # -> [(3,), (4,)]
-        # todo проверить в боевом тесте
         out = []
         for bot_id, bot_alg in enumerate(self.bot_alg_list):
-            # todo проверить, что тут есть запуски и есть отказы
             if not bot_alg.process_this_day:
                 continue
 
@@ -54,7 +51,6 @@ class AccDbTestEnvHelper(AbstractAccDbHelper):
         #     )\
         #     .all()
 
-        # todo проверить в боевом тесте
         out = []
         for bot_id, bot_alg in enumerate(self.bot_alg_list):
             if not bot_alg.bot.continue_trading():
