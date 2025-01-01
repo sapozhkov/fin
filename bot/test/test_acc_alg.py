@@ -2,9 +2,10 @@ from datetime import datetime, timezone
 from typing import List, Tuple, Optional
 
 from app.config import AccConfig
-from bot import TestAlgorithm, TradingAccountBot
+from bot import TradingAccountBot
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper
 from bot.env.test.acc import TestAccClientEnvHelper, AccDbTestEnvHelper
+from bot.test import TestAlgorithm
 
 
 class TestAccAlgorithm:

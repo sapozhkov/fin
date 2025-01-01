@@ -4,7 +4,6 @@ from app.helper import TimeHelper
 
 
 class TestHelper:
-    # todo унести в папку Helper?
     @staticmethod
     def get_trade_days_only(end_date: None | str, days_num: int):
         """

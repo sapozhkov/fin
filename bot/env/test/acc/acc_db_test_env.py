@@ -4,8 +4,8 @@ from typing import List
 from app.command.constants import CommandType
 from app.config import AccConfig
 from app.models import Run, Instrument, Account
-from bot import TestAlgorithm
 from bot.env import AbstractAccDbHelper
+from bot.test import TestAlgorithm
 
 
 class AccDbTestEnvHelper(AbstractAccDbHelper):

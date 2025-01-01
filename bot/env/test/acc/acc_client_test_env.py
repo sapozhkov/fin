@@ -1,8 +1,8 @@
 from typing import List
 
-from bot import TestAlgorithm
 from app.dto import BoughtInstrumentDto
 from bot.env import AbstractAccClient
+from bot.test import TestAlgorithm
 
 
 class TestAccClientEnvHelper(AbstractAccClient):

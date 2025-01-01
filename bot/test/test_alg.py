@@ -6,13 +6,14 @@ from typing import Tuple, Optional
 from tinkoff.invest import OrderDirection
 
 from app import AppConfig
-from bot import TradingBot, TestHelper
+from bot import TradingBot
 from app.cache import LocalCache
 from app.dto import TestBotTradeDayDto
 from bot.env.test import TimeTestEnvHelper, LoggerTestEnvHelper, ClientTestEnvHelper, AccountingTestEnvHelper
 from bot.helper import OrderHelper
 from app.config import RunConfig
 from app.helper import TimeHelper
+from bot.test import TestHelper
 
 
 class TestAlgorithm:
