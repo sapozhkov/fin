@@ -30,6 +30,8 @@ class TestAccAlgorithm:
         self.acc_bot: Optional[TradingAccountBot] = None
         self.bot_started = False
 
+        self.profit = 1
+
     def test(
             self,
             last_test_date,
@@ -141,14 +143,15 @@ class TestAccAlgorithm:
         self.acc_bot.stop()
 
     def get_acc_results(self, test_days_num):
+        profit_p = 100 * (self.profit - 1)
         return {
+            'profit': round(profit_p, 2),
+            'p_avg': round(profit_p / test_days_num, 2) if test_days_num > 0 else 0,
             'config': self.config,
-            'profit': round(100 * (self.acc_bot.run_state.profit_n - 1), 2),
         }
 
     def acc_calculate_day_results(self):
-        # todo implement
-        pass
+        self.profit *= self.acc_bot.run_state.profit_n
 
     def acc_calculate_total_results(self):
         # todo implement
