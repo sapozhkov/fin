@@ -53,7 +53,7 @@ class AccDbTestEnvHelper(AbstractAccDbHelper):
 
         out = []
         for bot_id, bot_alg in enumerate(self.bot_alg_list):
-            if not bot_alg.bot.continue_trading():
+            if not bot_alg.bot or not bot_alg.bot.continue_trading():
                 continue
 
             run = Run(

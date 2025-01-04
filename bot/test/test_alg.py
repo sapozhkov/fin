@@ -137,7 +137,8 @@ class TestAlgorithm:
                 test_date=test_date,
                 prev_days=self.original_config.pretest_period,
                 original_config=self.original_config,
-                last_config=self.config)
+                last_config=self.config,
+            )
 
             mod_do_not_disable = self.config.mod_do_not_change_instrument_activity
             is_low_profit = expected_profit < AppConfig.INSTRUMENT_ON_THRESHOLD
@@ -181,13 +182,15 @@ class TestAlgorithm:
             test_date: str,
             prev_days: int,
             original_config: RunConfig,
-            last_config: RunConfig | None = None
+            last_config: RunConfig | None = None,
+            use_big_make_alg: bool = False,
     ) -> RunConfig:
         config, _ = self.make_best_config_with_profit(
             test_date,
             prev_days,
             original_config,
-            last_config
+            last_config,
+            use_big_make_alg,
         )
         return config
 
@@ -196,13 +199,20 @@ class TestAlgorithm:
             test_date: str,
             prev_days: int,
             original_config: RunConfig,
-            last_config: Optional[RunConfig] = None
+            last_config: Optional[RunConfig] = None,
+            use_big_make_alg: bool = False,
     ) -> Tuple[RunConfig, float]:
         prev_test_date = TimeHelper.get_previous_date(TimeHelper.to_datetime(test_date))
-        conf_list = self.make_config_variants(original_config, prev_test_date)
+        if use_big_make_alg:
+            conf_list = self.make_config_variants_big(original_config, prev_test_date)
+        else:
+            conf_list = self.make_config_variants(original_config, prev_test_date)
 
         if last_config is not None:
-            conf_list2 = self.make_config_variants(last_config, prev_test_date)
+            if use_big_make_alg:
+                conf_list2 = self.make_config_variants_big(last_config, prev_test_date)
+            else:
+                conf_list2 = self.make_config_variants(last_config, prev_test_date)
             conf_list += conf_list2
 
         unique_conf_list = list(set(conf_list))
@@ -313,6 +323,71 @@ class TestAlgorithm:
                     -step_max_cnt if config.is_maj_trade() else step_max_cnt // 2
                 ]
             )
+        ]
+
+    def make_config_variants_big(self, config: RunConfig, prev_test_date: str) -> list[RunConfig]:
+        step_step = 1 if config.is_maj_trade() else 2
+        step_diff = self.get_step_by_price(self.client_helper.get_current_price())
+        step_round_digits = self.client_helper.instrument.round_signs
+        return [
+            (RunConfig(
+                name=config.name,
+                ticker=config.ticker,
+
+                start_time=config.start_time,
+                end_time=config.end_time,
+
+                stop_up_p=stop_up_p,
+                stop_down_p=config.stop_down_p,
+
+                sleep_trading=config.sleep_trading,
+
+                pretest_period=pretest_period,
+                pretest_type=config.pretest_type,
+
+                majority_trade=config.majority_trade,
+
+                threshold_buy_steps=config.threshold_buy_steps,
+                threshold_sell_steps=config.threshold_sell_steps,
+
+                step_max_cnt=step_max_cnt,
+                step_base_cnt=step_base_cnt,
+                step_size=step_size,
+                step_set_orders_cnt=config.step_set_orders_cnt,
+                step_lots=config.step_lots,
+                step_size_shift=step_size_shift,
+
+                mods=config.mods
+            ))
+            for step_size in [
+                max(round(config.step_size - step_diff, step_round_digits), 0.4),
+                round(config.step_size, step_round_digits),
+                round(config.step_size + step_diff, step_round_digits),
+            ]
+            for step_max_cnt in (
+                [
+                    self.get_max_steps_by_step_size(config, step_size, prev_test_date)
+                ] if config.is_fan_layout() and prev_test_date else [
+                    max(
+                        config.step_max_cnt - step_step,
+                        RunConfig.MIN_MAJ_MAX_CNT if config.is_maj_trade() else RunConfig.MIN_NON_MAJ_MAX_CNT
+                    ),
+                    config.step_max_cnt,
+                    config.step_max_cnt + step_step,
+                ]
+            )
+            for step_base_cnt in (
+                [
+                    0 if config.is_maj_trade() else step_max_cnt // 2
+                ] if config.is_fan_layout() else [
+                    0,
+                    step_max_cnt,
+                    -step_max_cnt if config.is_maj_trade() else step_max_cnt // 2
+                ]
+            )
+            for stop_up_p in [0, 0.01]
+            for pretest_period in range(3, 8)
+            for step_size_shift in [0, .1, .2, .3, .4]
         ]
 
     def get_max_steps_by_step_size(
