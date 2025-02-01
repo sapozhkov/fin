@@ -188,7 +188,7 @@ class RunConfig:
 
     @modifier('P')
     def mod_change_price_on_order_executed(self) -> bool:
-        """Менять значение цены, если была исполнена заявка на связанную. Для PRE алгоритмов"""
+        """Менять значение цены, если была исполнена заявка на связанную. Для FAN алгоритмов"""
         return self._get_mod_value()
 
     def is_maj_trade(self):
