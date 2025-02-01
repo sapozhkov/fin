@@ -30,6 +30,8 @@ class TestAlgorithm:
         self.config: RunConfig = config
         # первичный конфиг, с которым зашли в алгоритм
         self.original_config: RunConfig = copy.copy(self.config)
+        # базовый конфиг, который может эволюционировать в течение жизни алгоритма
+        self.upd_base_config: RunConfig = copy.copy(self.config)
 
         self.time_helper = TimeTestEnvHelper()
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
@@ -127,16 +129,39 @@ class TestAlgorithm:
 
         return date_from_, date_to_
 
+    @staticmethod
+    def is_need_big_best_conf(test_date: str) -> bool:
+        """
+        True если пора выполнять большой пересчет конфига
+        Сейчас выполняется раз в месяц первого числа
+        :param test_date:
+        :return:
+        """
+        today = TimeHelper.to_datetime(test_date)
+        return today.day == 1
+
     def update_config(self, test_date, try_find_best_config):
         self.process_this_day = False
         if not TimeHelper.is_trading_day(TimeHelper.to_datetime(test_date)):
             return
 
+        if self.config.mod_disable_weekend_trades and TimeHelper.is_weekend(TimeHelper.to_datetime(test_date)):
+            return
+
         if try_find_best_config and self.config is not None:
+            if self.original_config.mod_monthly_make_big_best_conf and TestAlgorithm.is_need_big_best_conf(test_date):
+                self.upd_base_config, _ = self.make_best_config_with_profit(
+                    test_date=test_date,
+                    prev_days=self.original_config.pretest_period,
+                    original_config=self.upd_base_config,
+                    last_config=self.config,
+                    use_big_make_alg=True
+                )
+
             self.config, expected_profit = self.make_best_config_with_profit(
                 test_date=test_date,
                 prev_days=self.original_config.pretest_period,
-                original_config=self.original_config,
+                original_config=self.upd_base_config,
                 last_config=self.config,
             )
 

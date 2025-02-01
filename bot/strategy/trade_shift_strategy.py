@@ -64,12 +64,11 @@ class TradeShiftStrategy(TradeAbstractStrategy):
             cur_set_order_price = min(cur_order_prices)
         else:
             current_price = self.cached_current_price
-            if self.bought_price:
+            if self.bought_price and not self.config.mod_change_price_on_order_executed:
                 current_price = self.round(self.bought_price / self.config.step_size) * self.config.step_size
             if not current_price:
                 self.logger.error("Не могу выставить заявки на покупку, нулевая цена")
                 return
-            # cur_set_order_price = current_price + self.config.step_size / 2  # тут "+", чтобы разница в шаг как раз была
             cur_set_order_price = math.floor(current_price / self.config.step_size) * self.config.step_size
 
         # добавляем заявки со сдвигом учитывая сколько лотов будет в портфеле при покупке
@@ -105,12 +104,11 @@ class TradeShiftStrategy(TradeAbstractStrategy):
             cur_set_order_price = max(cur_order_prices)
         else:
             current_price = self.cached_current_price
-            if self.sold_price:
+            if self.sold_price and not self.config.mod_change_price_on_order_executed:
                 current_price = self.round(self.sold_price / self.config.step_size) * self.config.step_size
             if not current_price:
                 self.logger.error("Не могу выставить заявки на продажу, нулевая цена")
                 return
-            # cur_set_order_price = current_price - self.config.step_size / 2  # тут "-", чтобы разница в шаг как раз была
             cur_set_order_price = math.ceil(current_price / self.config.step_size) * self.config.step_size
 
         # добавляем заявки со сдвигом учитывая сколько лотов будет в портфеле при покупке

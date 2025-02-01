@@ -16,6 +16,14 @@ class RunConfig:
     PRETEST_PRE = 'pre'  # анализ и выбор лучшего варианта том же алгоритме за pretest_period дней с вариациями конфига
     PRETEST_FAN = 'fan'  # веерная раскладка, она же нелинейный шаг
 
+    # время для торговли полный день
+    TIME_START_FULL = '04:00'  # 7:00
+    TIME_END_FULL = '20:48'  # 23:48
+
+    # время для торговли только в активную фазу дня
+    TIME_START_DAY = '7:00'  # 10:00
+    TIME_END_DAY = '15:40'  # 18:40
+
     MIN_MAJ_MAX_CNT = 4
     MIN_NON_MAJ_MAX_CNT = 8
 
@@ -25,8 +33,8 @@ class RunConfig:
             ticker='',
             instrument_id=0,
 
-            start_time='04:00',  # 7:00
-            end_time='20:48',  # 23:48
+            start_time=TIME_START_FULL,
+            end_time=TIME_END_FULL,
 
             stop_up_p=0,
             stop_down_p=0,
@@ -104,6 +112,10 @@ class RunConfig:
             self.step_base_cnt = round(self.step_max_cnt / 2)
 
         # корректировки параметров
+        if self.mod_disable_morning_and_evening_trades:
+            self.start_time = self.TIME_START_DAY
+            self.end_time = self.TIME_END_DAY
+
         if self.is_maj_trade():
             if self.step_max_cnt < self.MIN_MAJ_MAX_CNT:
                 self.step_max_cnt = self.MIN_MAJ_MAX_CNT
@@ -157,6 +169,26 @@ class RunConfig:
     @modifier('F')
     def mod_do_not_change_instrument_activity(self) -> bool:
         """Включать/выключать инструмент при пересчете конфига и ожидаемого профита"""
+        return self._get_mod_value()
+
+    @modifier('M')
+    def mod_disable_morning_and_evening_trades(self) -> bool:
+        """Отключает торговлю утром и вечером"""
+        return self._get_mod_value()
+
+    @modifier('W')
+    def mod_disable_weekend_trades(self) -> bool:
+        """Отключает торговлю по выходным"""
+        return self._get_mod_value()
+
+    @modifier('B')
+    def mod_monthly_make_big_best_conf(self) -> bool:
+        """Отключает торговлю по выходным"""
+        return self._get_mod_value()
+
+    @modifier('P')
+    def mod_change_price_on_order_executed(self) -> bool:
+        """Менять значение цены, если была исполнена заявка на связанную. Для PRE алгоритмов"""
         return self._get_mod_value()
 
     def is_maj_trade(self):
