@@ -179,11 +179,29 @@ class TickerCache:
             return candles
 
     def get_day_candles(self, from_date, to_date) -> GetCandlesResponse:
-        conn = sqlite3.connect(self.db_file)
-        cursor = conn.cursor()
-
         dates_needed = [from_date + timedelta(days=x) for x in range((to_date - from_date).days + 1)]
         candles = []
+
+        all_found_in_cache = True
+        cached_candles = {}
+        for date_needed in dates_needed:
+            cache_key = f"candle_day_{self.ticker}_{date_needed}"
+            cache_val = LocalCache.get(cache_key)
+            if cache_val is not None:
+                cached_candles[cache_key] = cache_val
+            else:
+                all_found_in_cache = False
+
+        # посмотреть всё ли есть в кэше
+        if all_found_in_cache:
+            # да - собрать всё, что надо и отдать сразу
+            for date_needed in dates_needed:
+                cache_key = f"candle_day_{self.ticker}_{date_needed}"
+                candles.append(cached_candles[cache_key])
+            return GetCandlesResponse(candles=candles)
+
+        conn = sqlite3.connect(self.db_file)
+        cursor = conn.cursor()
 
         # запрашиваем из базы все, что есть по этим датам
         cursor.execute(
@@ -192,6 +210,7 @@ class TickerCache:
         data_dict = dict([(row[0], row) for row in cursor.fetchall()])
 
         for date_needed in dates_needed:
+            cache_key = f"candle_day_{self.ticker}_{date_needed}"
             _date = date_needed.strftime('%Y-%m-%d')
             is_today = TimeHelper.is_today(_date)
             if _date in data_dict:
@@ -206,6 +225,8 @@ class TickerCache:
                         volume=volume,
                         is_complete=True
                     )
+                    if cache_key not in cached_candles:
+                        LocalCache.set(cache_key, candle)
                     candles.append(candle)
             else:
                 # Если данных нет в базе, запросить из API и сохранить
@@ -250,6 +271,7 @@ class TickerCache:
                             is_complete=True
                         )
 
+                        LocalCache.set(cache_key, candle)
                         candles.append(candle)
                         # сегодняшний день в базу не заносим - меняется до конца дня
                         if not is_today:
