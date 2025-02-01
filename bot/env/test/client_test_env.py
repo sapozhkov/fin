@@ -520,8 +520,13 @@ class ClientTestEnvHelper(AbstractProxyClient):
                        or order.order_type == OrderType.ORDER_TYPE_MARKET
                        or order.order_type == OrderType.ORDER_TYPE_BESTPRICE)
         price_0 = f2q(0)
-        avg_init_price = self.float_to_money_value(
-            self.q2f(order.initial_order_price) / (order.lots_requested * self.instrument.lot))
+
+        if order.lots_requested == 0 or self.instrument.lot == 0:
+            avg_init_price = price_0
+        else:
+            avg_init_price = self.float_to_money_value(
+                self.q2f(order.initial_order_price) / (order.lots_requested * self.instrument.lot))
+
         return OrderState(
             order_id=order.order_id,
             order_type=order.order_type,
