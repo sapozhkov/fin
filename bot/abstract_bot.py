@@ -28,9 +28,6 @@ class AbstractBot(ABC):
         self.state = self.STATE_NEW
 
     def is_trading_day(self):
-        if self.config is RunConfig and self.config.mod_disable_weekend_trades:
-            if TimeHelper.is_weekend(self.time.now()):
-                return False
         return TimeHelper.is_trading_day(self.time.now())
 
     def log(self, message, repeat=False):

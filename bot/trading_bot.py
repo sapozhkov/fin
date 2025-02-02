@@ -5,6 +5,7 @@ import pandas as pd
 from app import db
 from app.command import CommandManager
 from app.command.constants import CommandType, CommandStatus
+from app.helper import TimeHelper
 from bot import AbstractBot
 from app.config import RunConfig
 from app.constants import RunStatus
@@ -92,6 +93,11 @@ class TradingBot(AbstractBot):
                  f"     instrument_id - {self.config.instrument_id}\n"
                  f"     run_instance - {self.run_state}"
                  )
+
+    def is_trading_day(self):
+        if self.config.mod_disable_weekend_trades and TimeHelper.is_weekend(self.time.now()):
+            return False
+        return super().is_trading_day()
 
     def validate_and_modify_config(self) -> bool:
         if self.config.majority_trade and not self.client.instrument.short_enabled_flag:
