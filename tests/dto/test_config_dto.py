@@ -10,7 +10,7 @@ class MyTestCase(unittest.TestCase):
         conf_many = RunConfig(mods='LEQ')  # вот этот потом может смоваться. выкинуть существующие ключи
 
         self.assertEqual(conf_l, conf_many)
-        self.assertNotEquals(conf_l, conf_no)
+        self.assertNotEqual(conf_l, conf_no)
 
     def test_string_transferring(self):
         config_list = [
@@ -41,7 +41,7 @@ class MyTestCase(unittest.TestCase):
                 step_max_cnt=21,
                 step_base_cnt=8,
 
-                pretest_type=RunConfig.PRETEST_RSI,
+                pretest_type=RunConfig.PRETEST_FAN,
                 pretest_period=22,
 
                 majority_trade=False,
@@ -183,11 +183,6 @@ class MyTestCase(unittest.TestCase):
             ),
 
             RunConfig(
-                pretest_type=RunConfig.PRETEST_RSI,
-                pretest_period=13,
-            ),
-
-            RunConfig(
                 pretest_type=RunConfig.PRETEST_PRE,
                 pretest_period=14,
             ),
@@ -206,7 +201,7 @@ class MyTestCase(unittest.TestCase):
 
                 step_max_cnt=21,
                 step_base_cnt=8,
-                pretest_type=RunConfig.PRETEST_RSI,
+                pretest_type=RunConfig.PRETEST_FAN,
                 pretest_period=22,
 
                 majority_trade=False,

@@ -1,7 +1,5 @@
 from typing import Tuple
 
-import pandas as pd
-
 from app import db
 from app.command import CommandManager
 from app.command.constants import CommandType, CommandStatus
@@ -115,55 +113,7 @@ class TradingBot(AbstractBot):
                 self.logger.error('Получена нулевая лотность')
                 return False
 
-        # вот тут проводим переустановку base
-        self.pretest_and_modify_config()
-
         return True
-
-    def pretest_and_modify_config(self):
-        if not self.config.pretest_period:
-            return
-
-        # пока работает только для RSI внутри бота. PRE запускается снаружи до
-        if self.config.pretest_type != RunConfig.PRETEST_RSI:
-            return
-
-        current_trend = self.get_rsi_trend_val(self.config.pretest_period)
-        if current_trend is None:
-            return
-
-        if current_trend >= .5:
-            self.config.step_base_cnt = self.config.step_max_cnt
-        else:
-            if self.config.majority_trade:
-                self.config.step_base_cnt = -self.config.step_max_cnt
-            else:
-                self.config.step_base_cnt = 0
-
-        self.log(f"Pretest. RSI = {round(current_trend, 2)}")
-        self.log(f"Change step_base_cnt to {self.config.step_base_cnt}")
-
-    def get_rsi_trend_val(self, period) -> float | None:
-        to_date = self.time.get_delta_days_date(days=1)
-        from_date = self.time.get_delta_days_date(days=period * 2, from_date=to_date)  # Удваиваем период для точности
-
-        candles = self.client.get_day_candles(from_date, to_date)
-
-        closing_prices = pd.Series([self.client.q2f(candle.close) for candle in candles.candles])
-
-        delta = closing_prices.diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
-
-        rs = gain / loss
-        rsi = 1 - (1 / (1 + rs))
-        try:
-            current_trend = rsi.iloc[-1]
-        except IndexError as err:
-            self.logger.error(f'Error while counting RSI: {err}')
-            return None
-
-        return current_trend
 
     def continue_trading(self):
         return self.state != self.STATE_FINISHED

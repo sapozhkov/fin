@@ -12,7 +12,6 @@ def modifier(letter):
 
 class RunConfig:
     PRETEST_NONE = ''
-    PRETEST_RSI = 'rsi'  # прогон по RSI
     PRETEST_PRE = 'pre'  # анализ и выбор лучшего варианта том же алгоритме за pretest_period дней с вариациями конфига
     PRETEST_FAN = 'fan'  # веерная раскладка, она же нелинейный шаг
 
@@ -126,7 +125,7 @@ class RunConfig:
         if self.step_size <= 0.4:
             self.step_size = 0.4
 
-        if self.pretest_type not in [self.PRETEST_NONE, self.PRETEST_RSI, self.PRETEST_PRE, self.PRETEST_FAN]:
+        if self.pretest_type not in [self.PRETEST_NONE, self.PRETEST_PRE, self.PRETEST_FAN]:
             self.pretest_type = self.PRETEST_NONE
 
         if self.step_base_cnt > self.step_max_cnt:
