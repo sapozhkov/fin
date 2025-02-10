@@ -101,13 +101,13 @@ async def main():
 
         # Перебираем все аккаунты (группы инструментов)
         for account_id, instruments in grouped_instruments.items():
-            account = instruments[0].account_rel
+            account = instruments[0].account_rel  # type: Account
             print(f"Account ID: {account_id}, {account.name}")
             print()
 
             # составляем набор инструментов для запуска
             stocks = []
-            for instrument in instruments:
+            for instrument in instruments:  # type: Instrument
                 print(f"Instrument ID: {instrument.id}, Name: {instrument.name}")
                 config = RunConfig.from_repr_string(instrument.config)
                 config.instrument_id = instrument.id
@@ -142,7 +142,7 @@ async def main():
             print(f"Баланс {balance}")
 
             # коррекция суммы
-            balance *= AppConfig.ACC_BALANCE_CORRECTION
+            balance *= account.balance_correction or AppConfig.ACC_BALANCE_CORRECTION
             print(f"Баланс с коррекцией {balance}")
 
             if balance <= 0:
