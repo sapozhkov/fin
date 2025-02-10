@@ -21,7 +21,7 @@ class RunConfig:
 
     # время для торговли только в активную фазу дня
     TIME_START_DAY = '7:00'  # 10:00
-    TIME_END_DAY = '15:40'  # 18:40
+    TIME_END_DAY = '15:38'  # 18:38 (-2 мин, чтобы не попасть в период с ограничениями)
 
     MIN_MAJ_MAX_CNT = 4
     MIN_NON_MAJ_MAX_CNT = 8
