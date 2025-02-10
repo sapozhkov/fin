@@ -14,6 +14,7 @@ class AccountView(ModelView):
         'status',
         'config',
         'balance',
+        'balance_correction',
         'description',
         'updated_at',
     ]
@@ -24,6 +25,7 @@ class AccountView(ModelView):
         'status',
         'config',
         'balance',
+        'balance_correction',
         'description',
         'updated_at',
         'profit_n_last_day',
