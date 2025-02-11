@@ -140,6 +140,14 @@ class TestAlgorithm:
         today = TimeHelper.to_datetime(test_date)
         return today.day == 1
 
+    def need_big_config_update(self, test_date: str) -> bool:
+        need_big = False
+
+        if self.original_config.mod_monthly_make_big_best_conf and TestAlgorithm.is_need_big_best_conf(test_date):
+            need_big = True
+
+        return need_big
+
     def update_config(self, test_date, try_find_best_config):
         self.process_this_day = False
         if not TimeHelper.is_trading_day(TimeHelper.to_datetime(test_date)):
@@ -149,7 +157,7 @@ class TestAlgorithm:
             return
 
         if try_find_best_config and self.config is not None:
-            if self.original_config.mod_monthly_make_big_best_conf and TestAlgorithm.is_need_big_best_conf(test_date):
+            if self.need_big_config_update(test_date):
                 self.upd_base_config, _ = self.make_best_config_with_profit(
                     test_date=test_date,
                     prev_days=self.original_config.pretest_period,

@@ -11,6 +11,7 @@ class Instrument(db.Model):
     name = db.Column(db.String(100), nullable=False)
     account = db.Column(db.BigInteger, db.ForeignKey('accounts.id', name='fk_instruments_account'), nullable=False)
     config = db.Column(db.String(256), nullable=False)
+    base_config = db.Column(db.String(256), nullable=False)
     status = db.Column(db.Integer, nullable=False)
     data = db.Column(db.Text, nullable=True)
     price = db.Column(db.Float)

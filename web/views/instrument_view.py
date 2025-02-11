@@ -21,6 +21,7 @@ class InstrumentView(ModelView):
         'name',
         'account_rel.name',
         'config',
+        'base_config',
         'expected_profit',
         'price',
         'data',
@@ -29,7 +30,7 @@ class InstrumentView(ModelView):
 
     )
     column_sortable_list = (
-        'id', 'name', 'account_rel.name', 'config', 'status',
+        'id', 'name', 'account_rel.name', 'config', 'base_config', 'status',
         'expected_profit', 'price', 'data', 'updated_at',
     )
     column_formatters = {
@@ -62,7 +63,7 @@ class InstrumentView(ModelView):
         'account_rel.name': 'Account',
     }
 
-    form_columns = ('name', 'account_rel', 'config', 'status', 'data', 'expected_profit', 'price')
+    form_columns = ('name', 'account_rel', 'config', 'base_config', 'status', 'data', 'expected_profit', 'price')
     form_choices = {
         'status': [
             (0, 'Off'),
@@ -74,6 +75,11 @@ class InstrumentView(ModelView):
     def on_model_change(self, form, model, is_created):
         try:
             RunConfig.from_repr_string(model.config)
+        except ValueError as e:
+            raise ValidationError(str(e))
+
+        try:
+            RunConfig.from_repr_string(model.base_config)
         except ValueError as e:
             raise ValidationError(str(e))
 
