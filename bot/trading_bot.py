@@ -331,6 +331,7 @@ class TradingBot(AbstractBot):
 
         commands = CommandManager.get_new_commands(self.run_state.id)
         for command in commands:
+            self.log(f'Получена команда "{CommandType.get_title(command.com_type)}"')
             if command.com_type == CommandType.STOP:
                 self.stop()
                 CommandManager.update_command_status(command, CommandStatus.FINISHED)
