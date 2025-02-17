@@ -138,13 +138,22 @@ class TestAlgorithm:
         :return:
         """
         today = TimeHelper.to_datetime(test_date)
+        # return today.weekday() == 0
         return today.day == 1
 
     def need_big_config_update(self, test_date: str) -> bool:
         need_big = False
 
-        if self.original_config.mod_monthly_make_big_best_conf and TestAlgorithm.is_need_big_best_conf(test_date):
-            need_big = True
+        if not (self.original_config.mod_monthly_make_big_best_conf
+                or self.original_config.mod_make_experiment
+                or self.original_config.mod_monthly_make_big_best_conf):
+            return False
+
+        if TestAlgorithm.is_need_big_best_conf(test_date):
+            return True
+
+        # if self.original_config.mod_monthly_make_big_best_conf and TestAlgorithm.is_need_big_best_conf(test_date):
+        #     need_big = True
 
         return need_big
 
@@ -158,20 +167,25 @@ class TestAlgorithm:
 
         if try_find_best_config and self.config is not None:
             if self.need_big_config_update(test_date):
-                self.upd_base_config, _ = self.make_best_config_with_profit(
+                for _ in range(2):
+                    self.upd_base_config, _ = self.make_best_config_with_profit(
+                        test_date=test_date,
+                        prev_days=self.original_config.pretest_period,
+                        original_config=self.upd_base_config,
+                        last_config=self.config,
+                        use_big_make_alg=True
+                    )
+
+            # для #295 Попробовать обновлять конфиг пока меняться не перестанет
+            upd_simple_repeat = 1
+            expected_profit = 0
+            for _ in range(upd_simple_repeat):
+                self.config, expected_profit = self.make_best_config_with_profit(
                     test_date=test_date,
                     prev_days=self.original_config.pretest_period,
                     original_config=self.upd_base_config,
                     last_config=self.config,
-                    use_big_make_alg=True
                 )
-
-            self.config, expected_profit = self.make_best_config_with_profit(
-                test_date=test_date,
-                prev_days=self.original_config.pretest_period,
-                original_config=self.upd_base_config,
-                last_config=self.config,
-            )
 
             mod_do_not_disable = self.config.mod_do_not_change_instrument_activity
             is_low_profit = expected_profit < AppConfig.INSTRUMENT_ON_THRESHOLD
