@@ -11,6 +11,8 @@ from app.models import Run, Instrument
 from bot.env.prod import TimeProdEnvHelper
 from bot.env import AbstractAccountingHelper, AbstractLoggerHelper, AbstractTimeHelper, AbstractProxyClient
 from bot.strategy import TradeNormalStrategy, TradeShiftStrategy
+from bot.strategy.trade_abstract_strategy import TradeAbstractStrategy
+from bot.strategy.trade_shift_v2_strategy import TradeShiftV2Strategy
 
 
 class TradingBot(AbstractBot):
@@ -34,9 +36,12 @@ class TradingBot(AbstractBot):
         self.accounting = accounting_helper
 
         if self.config.is_fan_layout():
-            self.trade_strategy = TradeShiftStrategy(self)
+            if self.config.mod_make_experiment:
+                self.trade_strategy: TradeAbstractStrategy = TradeShiftV2Strategy(self)
+            else:
+                self.trade_strategy: TradeAbstractStrategy = TradeShiftStrategy(self)
         else:
-            self.trade_strategy = TradeNormalStrategy(self)
+            self.trade_strategy: TradeAbstractStrategy = TradeNormalStrategy(self)
 
         if not self.is_trading_day():
             self.log("Не торговый день. Завершаем работу.")
@@ -172,7 +177,7 @@ class TradingBot(AbstractBot):
 
         self.start()
 
-        # Обновляем список активных заявок, тут же заявки на продажу при удачной покупке
+        # Обновляем статусы активных заявок
         self.trade_strategy.update_orders_status()
 
         if self.check_bot_commands():
