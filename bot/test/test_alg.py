@@ -100,6 +100,11 @@ class TestAlgorithm:
 
             self.calculate_day_results()
 
+            # # распечатка результатов по дням
+            # if try_find_best_config:
+            #     balance_change = self.balance_change_list[-1]
+            #     print(f"{test_date}\t{self.config}\t{balance_change:.2f}\t{self.balance}")
+
         self.calculate_total_results()
         return self.get_results(test_days_num)
 
@@ -142,20 +147,8 @@ class TestAlgorithm:
         return today.day == 1
 
     def need_big_config_update(self, test_date: str) -> bool:
-        need_big = False
-
-        if not (self.original_config.mod_monthly_make_big_best_conf
-                or self.original_config.mod_make_experiment
-                or self.original_config.mod_monthly_make_big_best_conf):
-            return False
-
-        if TestAlgorithm.is_need_big_best_conf(test_date):
-            return True
-
-        # if self.original_config.mod_monthly_make_big_best_conf and TestAlgorithm.is_need_big_best_conf(test_date):
-        #     need_big = True
-
-        return need_big
+        return (self.original_config.mod_monthly_make_big_best_conf
+                and TestAlgorithm.is_need_big_best_conf(test_date))
 
     def update_config(self, test_date, try_find_best_config):
         self.process_this_day = False
@@ -464,11 +457,56 @@ class TestAlgorithm:
             # берем максимальное отклонение от открытия
             max_steps = max(
                 max_steps,
-                math.ceil(abs((c_open - c_high) / step_size)) if step_size > 0 else max_steps,
-                math.ceil(abs((c_open - c_low) / step_size)) if step_size > 0 else max_steps,
+                self.calc_required_step_max_cnt(math.ceil(abs(c_open - c_high)), step_size, config.step_size_shift),
+                self.calc_required_step_max_cnt(math.ceil(abs(c_open - c_low)), step_size, config.step_size_shift),
             )
 
         return max_steps
+
+    @staticmethod
+    def calc_required_step_max_cnt(max_change, step_size, step_size_shift) -> int:
+        """
+        Вычисляет минимальное количество шагов (step_max_cnt), которое необходимо выставить,
+        чтобы накопительное смещение (от старта торгов) было не меньше max_change.
+
+        Накопительное смещение рассчитывается по формуле:
+          delta = step_size * ( n + (step_size_shift * n * (n + 1)) / 2 )
+        где n — количество шагов (step_max_cnt).
+
+        Аргументы:
+          max_change       - максимальное изменение цены в одну сторону (от старта торгов)
+          step_size        - базовый шаг смещения цены
+          step_size_shift  - коэффициент увеличения шага для каждого следующего шага
+
+        Возвращает:
+          Целое число — минимальное требуемое значение step_max_cnt.
+        """
+        if step_size <= 0:
+            raise ValueError("step_size должен быть > 0")
+
+        # Если коэффициент увеличения шага равен нулю, то каждый шаг одинаковый
+        if step_size_shift == 0:
+            return math.ceil(max_change / step_size)
+
+        # Обозначим m = max_change / step_size, тогда неравенство:
+        #    n + (step_size_shift * n * (n + 1)) / 2 >= m
+        m = max_change / step_size
+        a = step_size_shift / 2.0
+        b = 1 + (step_size_shift / 2.0)
+        c = -m
+
+        discriminant = b ** 2 - 4 * a * c
+        if discriminant < 0:
+            raise ValueError("Невозможно найти корректное количество шагов (дискриминант отрицательный).")
+
+        n_float = (-b + math.sqrt(discriminant)) / (2 * a)
+        n = math.ceil(n_float)
+
+        # Дополнительная проверка: если полученное значение не удовлетворяет неравенству, увеличиваем его
+        while step_size * (n + (step_size_shift * n * (n + 1)) / 2.0) < max_change:
+            n += 1
+
+        return n
 
     def get_cache_key(self, test_date: str) -> str:
         return f"b_{test_date}-{self.config}-{self.accounting_helper.get_num()}"
@@ -605,17 +643,12 @@ class TestAlgorithm:
         self.total_maj_commission += self.maj_commission
         self.maj_commission = 0
 
-        # end_price_t = end_price
-
         self.balance = round(self.balance + balance_change, 2)
 
         if balance_change > 0:
             self.success_days += 1
 
         self.balance_change_list.append(balance_change)
-
-        # if auto_conf_prev_days:
-        #     print(f"{test_date}\t{config}\t{balance_change:.2f}\t{balance}")
 
     def calculate_total_results(self):
         # последние несколько дней могут быть не рабочими, учитываем накопленную комиссию

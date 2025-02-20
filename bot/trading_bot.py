@@ -37,11 +37,11 @@ class TradingBot(AbstractBot):
 
         if self.config.is_fan_layout():
             if self.config.mod_make_experiment:
-                self.trade_strategy: TradeAbstractStrategy = TradeShiftV2Strategy(self)
+                self.trade_strategy = TradeShiftV2Strategy(self)  # type: TradeAbstractStrategy
             else:
-                self.trade_strategy: TradeAbstractStrategy = TradeShiftStrategy(self)
+                self.trade_strategy = TradeShiftStrategy(self)
         else:
-            self.trade_strategy: TradeAbstractStrategy = TradeNormalStrategy(self)
+            self.trade_strategy = TradeNormalStrategy(self)
 
         if not self.is_trading_day():
             self.log("Не торговый день. Завершаем работу.")

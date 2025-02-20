@@ -1,5 +1,3 @@
-import math
-
 from app import AppConfig
 from .trade_abstract_strategy import TradeAbstractStrategy
 
@@ -45,10 +43,9 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
         # Убираем возможные дубликаты и сортируем по возрастанию
         self.order_map = sorted(set(order_map))
 
-    def update_orders_status(self):
-        self.bought_price = 0
-        self.sold_price = 0
+        self.log(f"Определены уровни для fan v2 {self.order_map}")
 
+    def update_orders_status(self):
         active_orders = self.client.get_active_orders()
         if active_orders is None:
             return
@@ -61,6 +58,8 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
                 if is_executed and order_state:
                     self.apply_order_execution(order_state)
                     self.bought_price = self.get_order_avg_price(order_state)
+                    # обнуляем только в случае противоположного события
+                    self.sold_price = 0
                 self.remove_order_from_active_list(order)
 
         # Аналогично для заявок на продажу
@@ -70,10 +69,8 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
                 if is_executed and order_state:
                     self.apply_order_execution(order_state)
                     self.sold_price = self.get_order_avg_price(order_state)
+                    self.bought_price = 0
                 self.remove_order_from_active_list(order)
-
-        # if self.sold_price or self.bought_price:
-        #     self.cancel_active_orders()
 
     # todo вот эти можно и выше унести. используются пока только тут, но нужны во всех. особенно в PRE
     def lower_limit(self):
