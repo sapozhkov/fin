@@ -129,11 +129,9 @@ class TradingAccountBot(AbstractBot):
             self.log(f"Продажа инструмента: {instrument.ticker}, {instrument.quantity} шт")
             self.acc_client.sell(self.account_id, instrument.figi, instrument.quantity)
 
-    def start(self):
-        """Начало работы скрипта. первый старт"""
-
+    def start(self) -> bool:
         if self.state != self.STATE_NEW:
-            return
+            return True
 
         self.state = self.STATE_WORKING
         
@@ -144,6 +142,8 @@ class TradingAccountBot(AbstractBot):
         if self.run_state:
             self.run_state.status = RunStatus.WORKING
             self.update_run_state()
+
+        return True
 
     def run_iteration(self):
         can_trade, sleep_sec = self.can_trade()

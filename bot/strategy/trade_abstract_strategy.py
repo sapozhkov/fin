@@ -35,7 +35,7 @@ class TradeAbstractStrategy(ABC):
         self.logger.log(message, repeat)
 
     def update_start_price_and_counter(self):
-        self.start_price = self.get_current_price() or 0
+        self.start_price = self.update_cached_price() or 0
         self.start_count = self.get_current_count()
         if not self.start_price:
             self.logger.error("Ошибка первичного запроса цены. Статистика будет неверной в конце работы")
@@ -267,8 +267,11 @@ class TradeAbstractStrategy(ABC):
         self.cached_current_price = self.get_current_price()
         return self.cached_current_price
 
-    def on_day_start(self):
+    def on_day_start(self) -> bool:
         self.update_start_price_and_counter()
+
+        if self.cached_current_price is None:
+            return False
 
         # требуемое изменение портфеля
         need_operations = self.config.step_base_cnt * self.config.step_lots - self.get_current_count()
@@ -287,6 +290,8 @@ class TradeAbstractStrategy(ABC):
         # или продаем лишние. в минус без мажоритарной уйти не должны - учтено в конфиге
         if need_operations < 0:
             self.sell(-need_operations, self.RETRY_ON_START)
+
+        return True
 
     def to_zero_on_end(self) -> bool:
         """Возвращает True если нужно выходить в 0 при завершении работы бота"""

@@ -70,7 +70,12 @@ class AbstractBot(ABC):
         self.log('END')
 
     @abstractmethod
-    def start(self):
+    def start(self) -> bool:
+        """
+        Начало работы скрипта. первый старт
+        False - пускать работу дальше нельзя, надо ждать
+        :return:
+        """
         pass
 
     @abstractmethod

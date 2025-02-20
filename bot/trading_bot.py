@@ -145,20 +145,21 @@ class TradingBot(AbstractBot):
         return True, 0
 
     def start(self):
-        """Начало работы скрипта. первый старт"""
-
         if self.state != self.STATE_NEW:
-            return
+            return True
 
         self.state = self.STATE_WORKING
 
-        self.trade_strategy.on_day_start()
+        if not self.trade_strategy.on_day_start():
+            return False
 
         max_portfolio_size = self.trade_strategy.get_max_start_depo()
         if self.run_state:
             self.run_state.depo = max_portfolio_size
             self.run_state.status = RunStatus.WORKING
             self.update_run_state()
+
+        return True
 
     def run_iteration(self):
         self.client.update_cached_status()
@@ -175,7 +176,10 @@ class TradingBot(AbstractBot):
 
         self.trade_strategy.update_cached_price()
 
-        self.start()
+        if not self.start():
+            self.log('Ошибка старта алгоритма. Ждем и пробуем перезапустить')
+            self.time.sleep(self.config.sleep_trading)
+            return
 
         # Обновляем статусы активных заявок
         self.trade_strategy.update_orders_status()

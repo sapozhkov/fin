@@ -12,15 +12,14 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
         self.sold_price = 0
         self.order_map = []
 
-    def on_day_start(self):
-        super().__init__(self)
+    def on_day_start(self) -> bool:
+        if not super().__init__(self):
+            return False
 
         start_price = self.cached_current_price
         step_size = self.config.step_size
         step_size_shift = self.config.step_size_shift
         step_max_cnt = self.config.step_max_cnt
-
-        # todo теоретически может быть нулевой при старте, тогда надо алгоритм тормозить до момента пока не прогрузится
 
         sell_levels = []
         current_sell = start_price
@@ -44,6 +43,8 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
         self.order_map = sorted(set(order_map))
 
         self.log(f"Определены уровни для fan v2 {self.order_map}")
+
+        return True
 
     def update_orders_status(self):
         active_orders = self.client.get_active_orders()
