@@ -10,7 +10,7 @@ from app.constants import RunStatus
 from app.models import Run, Instrument
 from bot.env.prod import TimeProdEnvHelper
 from bot.env import AbstractAccountingHelper, AbstractLoggerHelper, AbstractTimeHelper, AbstractProxyClient
-from bot.strategy import TradeNormalStrategy, TradeShiftStrategy
+from bot.strategy import TradeNormalStrategy
 from bot.strategy.trade_abstract_strategy import TradeAbstractStrategy
 from bot.strategy.trade_shift_v2_strategy import TradeShiftV2Strategy
 
@@ -36,10 +36,9 @@ class TradingBot(AbstractBot):
         self.accounting = accounting_helper
 
         if self.config.is_fan_layout():
-            if self.config.mod_make_experiment:
-                self.trade_strategy = TradeShiftV2Strategy(self)  # type: TradeAbstractStrategy
-            else:
-                self.trade_strategy = TradeShiftStrategy(self)
+            self.trade_strategy = TradeShiftV2Strategy(self)  # type: TradeAbstractStrategy
+            # if self.config.mod_make_experiment:
+            #     self.trade_strategy = TradeShiftStrategy(self)
         else:
             self.trade_strategy = TradeNormalStrategy(self)
 
