@@ -457,8 +457,8 @@ class TestAlgorithm:
             # берем максимальное отклонение от открытия
             max_steps = max(
                 max_steps,
-                self.calc_required_step_max_cnt(math.ceil(abs(c_open - c_high)), step_size, config.step_size_shift),
-                self.calc_required_step_max_cnt(math.ceil(abs(c_open - c_low)), step_size, config.step_size_shift),
+                TestAlgorithm.calc_required_step_max_cnt(math.ceil(abs(c_open - c_high)), step_size, config.step_size_shift),
+                TestAlgorithm.calc_required_step_max_cnt(math.ceil(abs(c_open - c_low)), step_size, config.step_size_shift),
             )
 
         return max_steps
