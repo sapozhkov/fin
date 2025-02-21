@@ -13,7 +13,7 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
         self.order_map = []
 
     def on_day_start(self) -> bool:
-        if not super().__init__(self):
+        if not super().on_day_start():
             return False
 
         start_price = self.cached_current_price
