@@ -20,6 +20,9 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
         step_size_shift = self.config.step_size_shift
         step_max_cnt = self.config.step_max_cnt
 
+        self.bought_price = start_price
+        self.sold_price = start_price
+
         sell_levels = []
         current_sell = start_price
         for i in range(1, step_max_cnt + 1):
