@@ -4,6 +4,7 @@ from typing import Tuple
 from tinkoff.invest import HistoricCandle, PostOrderResponse, MoneyValue, OrderType, GetCandlesResponse, OrderState, \
     OrderDirection, OrderExecutionReportStatus, SecurityTradingStatus
 
+from app import AppConfig
 from bot.env import AbstractProxyClient
 from bot.env.test import TimeTestEnvHelper
 from app.helper import TimeHelper, f2q
@@ -177,6 +178,11 @@ class ClientTestEnvHelper(AbstractProxyClient):
         elif order_type == OrderType.ORDER_TYPE_LIMIT:
             if price is None:
                 raise f"None price for order_type == OrderType.ORDER_TYPE_LIMIT"
+
+            if ((direction == OrderDirection.ORDER_DIRECTION_BUY and price < self.lower_limit())
+                    or (direction == OrderDirection.ORDER_DIRECTION_SELL and price > self.upper_limit())):
+                return None
+
             order = self.get_post_order_response_limit(direction, lots, price)
             self.orders[order.order_id] = order
             return order
@@ -340,6 +346,12 @@ class ClientTestEnvHelper(AbstractProxyClient):
 
     def get_active_orders(self):
         return [order for order_id, order in self.orders.items() if order_id not in self.executed_orders_ids]
+
+    def lower_limit(self):
+        return self.round(self.current_price * (1 - AppConfig.ALLOWED_ORDER_RANGE))
+
+    def upper_limit(self):
+        return self.round(self.current_price * (1 + AppConfig.ALLOWED_ORDER_RANGE))
 
     def get_post_order_response_market(self, direction, lots, ):
         # Реальный ответ от официального клиента на

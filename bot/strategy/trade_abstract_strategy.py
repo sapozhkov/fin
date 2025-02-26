@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from tinkoff.invest import PostOrderResponse, OrderType, OrderDirection, OrderState, Quotation, MoneyValue
 
+from app import AppConfig
 from bot.env import AbstractProxyClient, AbstractAccountingHelper
 from bot.helper import OrderHelper
 
@@ -296,3 +297,9 @@ class TradeAbstractStrategy(ABC):
     def to_zero_on_end(self) -> bool:
         """Возвращает True если нужно выходить в 0 при завершении работы бота"""
         return False
+
+    def lower_limit(self):
+        return self.round(self.cached_current_price * (1 - AppConfig.ALLOWED_ORDER_RANGE))
+
+    def upper_limit(self):
+        return self.round(self.cached_current_price * (1 + AppConfig.ALLOWED_ORDER_RANGE))

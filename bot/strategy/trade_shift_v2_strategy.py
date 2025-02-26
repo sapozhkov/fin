@@ -1,4 +1,3 @@
-from app import AppConfig
 from .trade_abstract_strategy import TradeAbstractStrategy
 
 
@@ -72,13 +71,6 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
                     self.sold_price = self.get_order_avg_price(order_state)
                     self.bought_price = 0
                 self.remove_order_from_active_list(order)
-
-    # todo вот эти можно и выше унести. используются пока только тут, но нужны во всех. особенно в PRE
-    def lower_limit(self):
-        return self.round(self.cached_current_price * (1 - AppConfig.ALLOWED_ORDER_RANGE))
-
-    def upper_limit(self):
-        return self.round(self.cached_current_price * (1 + AppConfig.ALLOWED_ORDER_RANGE))
 
     def get_required_buy_levels(self):
         low_bound = self.lower_limit()
