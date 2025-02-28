@@ -248,8 +248,6 @@ class TestAlgorithm:
             last_config: Optional[RunConfig] = None,
             use_big_make_alg: bool = False,
     ) -> Tuple[RunConfig, float]:
-        # todo #309 проверить дату в 165 скрипте. 21 числа считало от 20 при запуске дебагом
-        #   и 27 фев после глобального скачка он не был учтен в расчете max_steps
         prev_test_date = TimeHelper.get_previous_date(TimeHelper.to_datetime(test_date))
         if use_big_make_alg:
             conf_list = self.make_config_variants_big(original_config, prev_test_date)
