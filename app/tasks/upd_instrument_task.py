@@ -60,9 +60,9 @@ class UpdInstrumentTask(AbstractTask):
             print(f"Исходный (base): {instrument.base_config}")
             print(f"Новый (base):    {new_base_config}, profit {test_alg.base_expected_profit}")
 
-            instrument.base_config = str(new_base_config)
+            add_text = f"{instrument.base_config} -> {new_base_config}, expected profit {test_alg.base_expected_profit}"
 
-            add_text = f"{instrument.base_config}, expected profit {test_alg.base_expected_profit}"
+            instrument.base_config = str(new_base_config)
 
         new_config = test_alg.config
         new_profit = test_alg.expected_profit
