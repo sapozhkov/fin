@@ -12,29 +12,31 @@ if __name__ == '__main__':
     app = create_app()
     with app.app_context():
         if len(sys.argv) == 1:
-            config_dto = RunConfig(
-                ticker='RNFT',
-
-                step_max_cnt=4,
-                step_base_cnt=0,
-                step_set_orders_cnt=3,
-                step_size=0.2,
-                step_lots=2,
-
-                pretest_period=0,
-                pretest_type=RunConfig.PRETEST_FAN,
-
-                threshold_sell_steps=0,
-                threshold_buy_steps=0,
-
-                step_size_shift=0.2,
-                majority_trade=True,
-
-                stop_up_p=.01,
-                stop_down_p=.01,
-
-                instrument_id=4,
-            )
+            config_dto = RunConfig.from_repr_string('MVID+ 9/fan4:0/2 x l1 x 1(+x0.2)¤ |u0.01 d0.0| E')
+            config_dto.instrument_id = 4
+            # config_dto = RunConfig(
+            #     ticker='RNFT',
+            #
+            #     step_max_cnt=4,
+            #     step_base_cnt=0,
+            #     step_set_orders_cnt=3,
+            #     step_size=0.2,
+            #     step_lots=2,
+            #
+            #     pretest_period=0,
+            #     pretest_type=RunConfig.PRETEST_FAN,
+            #
+            #     threshold_sell_steps=0,
+            #     threshold_buy_steps=0,
+            #
+            #     step_size_shift=0.2,
+            #     majority_trade=True,
+            #
+            #     stop_up_p=.01,
+            #     stop_down_p=.01,
+            #
+            #     instrument_id=4,
+            # )
         else:
             config_dto = RunConfig.from_string(sys.argv[1])
 
