@@ -33,6 +33,10 @@ class TestAlgorithm:
         # базовый конфиг, который может эволюционировать в течение жизни алгоритма
         self.upd_base_config: RunConfig = copy.copy(self.config)
 
+        # ожидаемый профит при обновлении конфигов
+        self.expected_profit: float = 0
+        self.base_expected_profit: float | None = None
+
         self.time_helper = TimeTestEnvHelper()
         self.logger_helper = LoggerTestEnvHelper(self.time_helper, do_printing)
         self.client_helper = ClientTestEnvHelper(config.ticker, self.logger_helper, self.time_helper)
@@ -158,10 +162,13 @@ class TestAlgorithm:
         if self.config.mod_disable_weekend_trades and TimeHelper.is_weekend(TimeHelper.to_datetime(test_date)):
             return
 
+        self.expected_profit = 0
+        self.base_expected_profit = None
+
         if try_find_best_config and self.config is not None:
             if self.need_big_config_update(test_date):
                 for _ in range(2):
-                    self.upd_base_config, _ = self.make_best_config_with_profit(
+                    self.upd_base_config, self.base_expected_profit = self.make_best_config_with_profit(
                         test_date=test_date,
                         prev_days=self.original_config.pretest_period,
                         original_config=self.upd_base_config,
@@ -171,9 +178,8 @@ class TestAlgorithm:
 
             # для #295 Попробовать обновлять конфиг пока меняться не перестанет
             upd_simple_repeat = 1
-            expected_profit = 0
             for _ in range(upd_simple_repeat):
-                self.config, expected_profit = self.make_best_config_with_profit(
+                self.config, self.expected_profit = self.make_best_config_with_profit(
                     test_date=test_date,
                     prev_days=self.original_config.pretest_period,
                     original_config=self.upd_base_config,
@@ -181,7 +187,7 @@ class TestAlgorithm:
                 )
 
             mod_do_not_disable = self.config.mod_do_not_change_instrument_activity
-            is_low_profit = expected_profit < AppConfig.INSTRUMENT_ON_THRESHOLD
+            is_low_profit = self.expected_profit < AppConfig.INSTRUMENT_ON_THRESHOLD
 
             if is_low_profit and not mod_do_not_disable:
                 return
@@ -242,6 +248,8 @@ class TestAlgorithm:
             last_config: Optional[RunConfig] = None,
             use_big_make_alg: bool = False,
     ) -> Tuple[RunConfig, float]:
+        # todo #309 проверить дату в 165 скрипте. 21 числа считало от 20 при запуске дебагом
+        #   и 27 фев после глобального скачка он не был учтен в расчете max_steps
         prev_test_date = TimeHelper.get_previous_date(TimeHelper.to_datetime(test_date))
         if use_big_make_alg:
             conf_list = self.make_config_variants_big(original_config, prev_test_date)

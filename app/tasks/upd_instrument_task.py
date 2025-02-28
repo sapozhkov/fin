@@ -37,7 +37,6 @@ class UpdInstrumentTask(AbstractTask):
 
         # его конфиг
         t_config = RunConfig.from_repr_string(instrument.config)
-        t_base_config = RunConfig.from_repr_string(instrument.base_config)
 
         # выбираем дату. после торгов - текущая, иначе предыдущий день (он полный)
         if TimeHelper.trades_are_finished():
@@ -51,28 +50,22 @@ class UpdInstrumentTask(AbstractTask):
         # выбираем лучший конфиг
         test_alg = TestAlgorithm(do_printing=False, config=t_config)
 
-        if test_alg.need_big_config_update(test_date):
-            new_base_config, new_base_profit = test_alg.make_best_config_with_profit(
-                test_date=test_date,
-                prev_days=t_config.pretest_period,
-                original_config=t_base_config,
-                last_config=t_config,
-                use_big_make_alg=True
-            )
+        test_alg.update_config(test_date, True)
+
+        add_text = ''
+        if test_alg.base_expected_profit is not None:
+            new_base_config = test_alg.upd_base_config
             new_base_config.step_lots = 1
 
             print(f"Исходный (base): {instrument.base_config}")
-            print(f"Новый (base):    {new_base_config}, profit {new_base_profit}")
+            print(f"Новый (base):    {new_base_config}, profit {test_alg.base_expected_profit}")
 
             instrument.base_config = str(new_base_config)
-            t_base_config = new_base_config
 
-        new_config, new_profit = test_alg.make_best_config_with_profit(
-            test_date=test_date,
-            prev_days=t_config.pretest_period,
-            original_config=t_base_config,
-            last_config=t_config
-        )
+            add_text = f"{instrument.base_config}, expected profit {test_alg.base_expected_profit}"
+
+        new_config = test_alg.config
+        new_profit = test_alg.expected_profit
 
         # приводим лотность к единице, при запуске будет перерасчитана нужная
         new_config.step_lots = 1
@@ -116,6 +109,6 @@ class UpdInstrumentTask(AbstractTask):
         instrument.save()
 
         # и кладем в лог новое значение
-        InstrumentLog.add_by_instrument(instrument)
+        InstrumentLog.add_by_instrument(instrument, add_text)
 
         return True

@@ -17,12 +17,12 @@ class InstrumentLog(db.Model):
     )
 
     @classmethod
-    def add_by_instrument(cls, instrument: Instrument):
+    def add_by_instrument(cls, instrument: Instrument, data=''):
         log = cls(
             instrument_id=instrument.id,
             updated_at=instrument.updated_at,
             config=instrument.config,
-            data='',
+            data=data,
             expected_profit=instrument.expected_profit,
         )
 
