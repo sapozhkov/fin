@@ -32,9 +32,6 @@ class AppConfig:
     INSTRUMENT_ON_THRESHOLD = float(os.environ.get('INSTRUMENT_ON_THRESHOLD', 0.1))
     """% профита, на котором инструмент активируется после ежедневного теста (средний дневной уровень)"""
 
-    INSTRUMENT_TEST_DAYS = 10
-    """Количество дней для тестирования"""
-
     ACC_BALANCE_CORRECTION = float(os.environ.get('ACC_BALANCE_CORRECTION', 0.95))
     """
     какую часть баланса аккаунта использовать в торговле. 1 ничего не меняем, 0.9 - -10%, 2 - х2 для мажоритарной,
