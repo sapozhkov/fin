@@ -53,6 +53,7 @@ class UpdInstrumentTask(AbstractTask):
         test_alg.update_config(test_date, True)
 
         add_text = ''
+        add_task_text = ''
         if test_alg.base_expected_profit is not None:
             new_base_config = test_alg.upd_base_config
             new_base_config.step_lots = 1
@@ -61,6 +62,7 @@ class UpdInstrumentTask(AbstractTask):
             print(f"Новый (base):    {new_base_config}, profit {test_alg.base_expected_profit}")
 
             add_text = f"{instrument.base_config} -> {new_base_config}, expected profit {test_alg.base_expected_profit}"
+            add_task_text = f"\nBase: {new_base_config}"
 
             instrument.base_config = str(new_base_config)
 
@@ -104,7 +106,7 @@ class UpdInstrumentTask(AbstractTask):
         instrument.price = TinkoffApi.get_last_price(figi)
 
         task.error = (f"{instrument.id} {instrument.account_rel.name} {'On' if instrument.status == 1 else 'Off'} "
-                      f"p{instrument.expected_profit}, \n{new_config}")
+                      f"p{instrument.expected_profit}, \n{new_config}{add_task_text}")
 
         instrument.save()
 
