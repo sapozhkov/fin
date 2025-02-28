@@ -38,11 +38,11 @@ class UpdInstrumentTask(AbstractTask):
         # его конфиг
         t_config = RunConfig.from_repr_string(instrument.config)
 
-        # выбираем дату. после торгов - текущая, иначе предыдущий день (он полный)
+        # выбираем дату. после торгов - следующая, иначе текущий день (в тесте берется от предыдущией даты)
         if TimeHelper.trades_are_finished():
-            test_date = TimeHelper.get_current_date()
+            test_date = TimeHelper.get_next_date()
         else:
-            test_date = TimeHelper.get_previous_date()
+            test_date = TimeHelper.get_current_date()
 
         print(f"Инструмент: {instrument}")
         print(f"Расчет на дату {test_date}, глубина дней: {t_config.pretest_period}")
