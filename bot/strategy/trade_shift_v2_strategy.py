@@ -20,6 +20,8 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
         step_size_shift = self.config.step_size_shift
         step_max_cnt = self.config.step_max_cnt
 
+        self.accounting.register_order_mark(start_price)
+
         self.bought_price = start_price
         self.sold_price = start_price
 
@@ -107,10 +109,19 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
             return
 
         # выставляем заявки, которых нет
+        not_set = []
+        was_set = False
         required_buy = self.get_required_buy_levels()
         for price in required_buy:
             if price not in cur_order_prices:
                 self.buy_limit(price, self.config.step_lots)
+                was_set = True
+            else:
+                not_set.append(price)
+
+        if was_set:
+            for price in not_set:
+                self.accounting.register_order_mark(price)
 
         # закрываем лишние заявки, которых не должно быть по плану
         for _, order in self.active_buy_orders.copy().items():
@@ -127,10 +138,19 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
             return
 
         # выставляем заявки, которых нет
+        not_set = []
+        was_set = False
         required_sell = self.get_required_sell_levels()
         for price in required_sell:
             if price not in cur_order_prices:
                 self.sell_limit(price, self.config.step_lots)
+                was_set = True
+            else:
+                not_set.append(price)
+
+        if was_set:
+            for price in not_set:
+                self.accounting.register_order_mark(price)
 
         # закрываем лишние заявки, которых не должно быть по плану
         for _, order in self.active_sell_orders.copy().items():

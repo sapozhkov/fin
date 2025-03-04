@@ -58,6 +58,23 @@ class AbstractAccountingHelper(ABC):
             count=lots
         ))
 
+    def register_order_mark(self, avg_price: float, type_: int = HistoryOrderType.MARK):
+        """
+        Добавление метки на график
+        :param type_:
+        :param avg_price:
+        :return:
+        """
+        self.register_order(Order(
+            run=self.run_id,
+            type=type_,
+            datetime=self.client.time.now(),
+            price=avg_price,
+            commission=0,
+            total=0,
+            count=0
+        ))
+
     def add_order(self, order: PostOrderResponse):
         lots = OrderHelper.get_lots(order)
         avg_price = self.client.round(OrderHelper.get_avg_price(order))
