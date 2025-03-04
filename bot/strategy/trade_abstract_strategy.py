@@ -30,7 +30,7 @@ class TradeAbstractStrategy(ABC):
         self.start_price: float = 0
         self.start_count: int = 0
         self.update_start_price_and_counter()
-        self.cached_current_price: float = self.start_price
+        self.cached_current_price: float | None = self.start_price
 
     def log(self, message, repeat=False):
         self.logger.log(message, repeat)
@@ -264,7 +264,7 @@ class TradeAbstractStrategy(ABC):
             return 0
         return self.get_current_count() % self.config.step_lots
 
-    def update_cached_price(self):
+    def update_cached_price(self) -> float | None:
         self.cached_current_price = self.get_current_price()
         return self.cached_current_price
 
@@ -298,8 +298,12 @@ class TradeAbstractStrategy(ABC):
         """Возвращает True если нужно выходить в 0 при завершении работы бота"""
         return False
 
-    def lower_limit(self):
+    def lower_limit(self) -> float | None:
+        if self.cached_current_price is None:
+            return None
         return self.round(self.cached_current_price * (1 - AppConfig.ALLOWED_ORDER_RANGE))
 
-    def upper_limit(self):
+    def upper_limit(self) -> float | None:
+        if self.cached_current_price is None:
+            return None
         return self.round(self.cached_current_price * (1 + AppConfig.ALLOWED_ORDER_RANGE))

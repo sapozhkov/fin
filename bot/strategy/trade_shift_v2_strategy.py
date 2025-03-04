@@ -79,24 +79,33 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
 
     def get_required_buy_levels(self):
         low_bound = self.lower_limit()
+        if low_bound is None:
+            return []
+
         max_price = min(
             self.cached_current_price,
             self.bought_price if self.bought_price else float("inf"),
             self.sold_price if self.sold_price else float("inf"),
         )
+
         levels_to_buy = [price for price in self.order_map if price < max_price]
         required_buy = levels_to_buy[-self.config.step_set_orders_cnt:] \
             if len(levels_to_buy) >= self.config.step_set_orders_cnt else levels_to_buy
         required_buy = [price for price in required_buy if price >= low_bound]
+
         return required_buy
 
     def get_required_sell_levels(self):
         up_bound = self.upper_limit()
+        if up_bound is None:
+            return []
+
         min_price = max(self.cached_current_price, self.sold_price, self.bought_price)
         levels_to_sell = [price for price in self.order_map if price > min_price]
         required_sell = levels_to_sell[:self.config.step_set_orders_cnt] \
             if len(levels_to_sell) >= self.config.step_set_orders_cnt else levels_to_sell
         required_sell = [price for price in required_sell if price <= up_bound]
+
         return required_sell
 
     def place_buy_orders(self):
