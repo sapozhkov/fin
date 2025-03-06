@@ -1,0 +1,10 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+    <h1>{{ title }}</h1>
+    <p><strong>File name:</strong> {{ file_name }}</p>
+
+    <pre style="font-family: monospace; white-space: pre-wrap;">{{ text }}</pre>
+
+    <br />
+{% endblock %}

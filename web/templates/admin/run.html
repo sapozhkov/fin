@@ -40,6 +40,9 @@
                     >, <a href="{{ url_for("run.index_view", flt1_0=run.instrument_rel.id) }}" class="ms-2">
                         <i class="bi bi-bar-chart">runs</i
                         ></a
+                    >, <a href="{{ url_for("chartsview.run_log", run_id=run.id) }}" class="ms-2">
+                        <i class="bi bi-bar-chart">log</i
+                        ></a
                     >)
                 </td>
                 <td class="{{ run.status|status_class }}">

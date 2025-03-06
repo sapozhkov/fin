@@ -1,7 +1,12 @@
+import os
+from pathlib import Path
+
 from flask_admin import expose, BaseView
-from flask import redirect, url_for, render_template, request
+from flask import redirect, url_for, render_template, request, abort
 from sqlalchemy.orm import joinedload
 
+from app import AppConfig
+from app.config import RunConfig
 from app.models import AccRun, Account, Run
 
 
@@ -57,4 +62,45 @@ class ChartsView(BaseView):
             'admin/run.html',
             chart_url=chart_url,
             run=run,
+        )
+
+    # Страница для вывода логов
+    @expose('/run_log/<int:run_id>/')
+    def run_log(self, run_id):
+        run = Run.query.get_or_404(run_id)
+
+        config_dto = RunConfig.from_repr_string(run.config)
+        instrument = run.get_instrument()
+
+        title = f"{run}"
+
+        log_name = config_dto.name or config_dto.ticker
+        if instrument:
+            log_name = f"{instrument.account_rel.name}_{log_name}"
+
+        log_date = run.date.strftime('%Y.%m.%d')
+        if AppConfig.DEBUG_MODE:
+            log_root_dir = AppConfig.BASE_DIR
+        else:
+            log_root_dir = os.path.dirname(AppConfig.BASE_DIR)
+        log_root_dir += '/log'
+        log_root_dir = Path(log_root_dir).resolve()  # Приводим базовый путь к абсолютному
+
+        log_file_name = f"{log_date}/{log_name}.log"
+
+        file_path = (log_root_dir / log_file_name).resolve()  # Формируем путь к файлу и приводим его к абсолютному
+
+        # Проверяем, что файл действительно внутри base_dir
+        if not file_path.is_file() or log_root_dir not in file_path.parents:
+            abort(404)
+
+        log_file_path = Path(file_path)  # Преобразуем строку в объект Path
+
+        text = log_file_path.read_text(encoding='utf-8')  # Читаем весь файл в переменную
+
+        return self.render(
+            'admin/log.html',
+            title=title,
+            file_name=log_file_name,
+            text=text,
         )
