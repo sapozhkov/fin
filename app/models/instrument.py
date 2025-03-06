@@ -20,10 +20,10 @@ class Instrument(db.Model):
 
     account_rel = db.relationship('Account', back_populates='instruments')
 
-    profit_n_last_day_cache = None
-    profit_n_last_week_cache = None
-    profit_n_last_month_cache = None
-    profit_n_all_time_cache = None
+    _profit_n_last_day = None
+    _profit_n_last_week = None
+    _profit_n_last_month = None
+    _profit_n_all_time = None
 
     def save(self):
         self.updated_at = datetime.now(timezone.utc)
@@ -48,6 +48,13 @@ class Instrument(db.Model):
         return cls.query.join(Account).filter(
             Account.status == 1  # Аккаунт активен
         ).order_by(cls.updated_at).all()
+
+    @classmethod
+    def get_instruments_cnt_by_acc_id(cls, account_id, only_active=False) -> int:
+        return cls.query.filter(
+            Instrument.account == account_id,
+            Instrument.status == 1
+        ).count() if only_active else cls.query.filter(Instrument.account == account_id).count()
 
     @classmethod
     def get_for_filter(cls) -> List['Instrument']:
@@ -75,39 +82,39 @@ class Instrument(db.Model):
 
     @property
     def profit_n_last_day(self):
-        if self.profit_n_last_day_cache is not None:
-            return self.profit_n_last_day_cache
+        if self._profit_n_last_day is not None:
+            return self._profit_n_last_day
 
         one_day_ago = datetime.now(timezone.utc) - timedelta(days=1)
-        self.profit_n_last_day_cache = self._calculate_profit_n(one_day_ago)
+        self._profit_n_last_day = self._calculate_profit_n(one_day_ago)
 
-        return self.profit_n_last_day_cache
+        return self._profit_n_last_day
 
     @property
     def profit_n_last_week(self):
-        if self.profit_n_last_week_cache is not None:
-            return self.profit_n_last_week_cache
+        if self._profit_n_last_week is not None:
+            return self._profit_n_last_week
 
         one_week_ago = datetime.now(timezone.utc) - timedelta(weeks=1)
-        self.profit_n_last_week_cache = self._calculate_profit_n(one_week_ago)
+        self._profit_n_last_week = self._calculate_profit_n(one_week_ago)
 
-        return self.profit_n_last_week_cache
+        return self._profit_n_last_week
 
     @property
     def profit_n_last_month(self):
-        if self.profit_n_last_month_cache is not None:
-            return self.profit_n_last_month_cache
+        if self._profit_n_last_month is not None:
+            return self._profit_n_last_month
 
         one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
-        self.profit_n_last_month_cache = self._calculate_profit_n(one_month_ago)
+        self._profit_n_last_month = self._calculate_profit_n(one_month_ago)
 
-        return self.profit_n_last_month_cache
+        return self._profit_n_last_month
 
     @property
     def profit_n_all_time(self):
-        if self.profit_n_all_time_cache is not None:
-            return self.profit_n_all_time_cache
+        if self._profit_n_all_time is not None:
+            return self._profit_n_all_time
 
-        self.profit_n_all_time_cache = self._calculate_profit_n(datetime.min)
+        self._profit_n_all_time = self._calculate_profit_n(datetime.min)
 
-        return self.profit_n_all_time_cache
+        return self._profit_n_all_time

@@ -1,4 +1,6 @@
+from flask import url_for
 from flask_admin.contrib.sqla import ModelView
+from markupsafe import Markup
 from wtforms import ValidationError
 
 from app.config import AccConfig
@@ -23,6 +25,7 @@ class AccountView(ModelView):
         'id',
         'name',
         'status',
+        'instruments',
         'config',
         'balance',
         'balance_correction',
@@ -41,6 +44,13 @@ class AccountView(ModelView):
         'profit_n_last_week': view_format_percent,
         'profit_n_last_month': view_format_percent,
         'profit_n_all_time': view_format_percent,
+        'instruments': lambda view, context, model, name: Markup(
+            f'<a href="{url_for("instrument.index_view", flt0_0=model.id, flt2_1=1)}" >'
+            f'{getattr(model, "active_instruments_cnt")}</a>'
+            ' / '
+            f'<a href="{url_for("instrument.index_view", flt0_0=model.id)}" >'
+            f'{getattr(model, "total_instruments_cnt")}</a>'
+        ),
     }
 
     column_editable_list = ['status']

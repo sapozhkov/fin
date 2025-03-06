@@ -18,10 +18,12 @@ class Account(db.Model):
 
     instruments = db.relationship('Instrument', back_populates='account_rel')
 
-    profit_n_last_day_cache = None
-    profit_n_last_week_cache = None
-    profit_n_last_month_cache = None
-    profit_n_all_time_cache = None
+    _profit_n_last_day = None
+    _profit_n_last_week = None
+    _profit_n_last_month = None
+    _profit_n_all_time = None
+    _total_instruments_cnt = None
+    _active_instruments_cnt = None
 
     def __repr__(self):
         return f"<Account {self.name} ({self.id}) /{self.config}/ {'On' if self.status else 'Off'}>"
@@ -53,39 +55,64 @@ class Account(db.Model):
 
     @property
     def profit_n_last_day(self):
-        if self.profit_n_last_day_cache is not None:
-            return self.profit_n_last_day_cache
+        if self._profit_n_last_day is not None:
+            return self._profit_n_last_day
 
         one_day_ago = datetime.now(timezone.utc) - timedelta(days=1)
-        self.profit_n_last_day_cache = self._calculate_profit_n(one_day_ago)
+        self._profit_n_last_day = self._calculate_profit_n(one_day_ago)
 
-        return self.profit_n_last_day_cache
+        return self._profit_n_last_day
 
     @property
     def profit_n_last_week(self):
-        if self.profit_n_last_week_cache is not None:
-            return self.profit_n_last_week_cache
+        if self._profit_n_last_week is not None:
+            return self._profit_n_last_week
 
         one_week_ago = datetime.now(timezone.utc) - timedelta(weeks=1)
-        self.profit_n_last_week_cache = self._calculate_profit_n(one_week_ago)
+        self._profit_n_last_week = self._calculate_profit_n(one_week_ago)
 
-        return self.profit_n_last_week_cache
+        return self._profit_n_last_week
 
     @property
     def profit_n_last_month(self):
-        if self.profit_n_last_month_cache is not None:
-            return self.profit_n_last_month_cache
+        if self._profit_n_last_month is not None:
+            return self._profit_n_last_month
 
         one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
-        self.profit_n_last_month_cache = self._calculate_profit_n(one_month_ago)
+        self._profit_n_last_month = self._calculate_profit_n(one_month_ago)
 
-        return self.profit_n_last_month_cache
+        return self._profit_n_last_month
 
     @property
     def profit_n_all_time(self):
-        if self.profit_n_all_time_cache is not None:
-            return self.profit_n_all_time_cache
+        if self._profit_n_all_time is not None:
+            return self._profit_n_all_time
 
-        self.profit_n_all_time_cache = self._calculate_profit_n(datetime.min)
+        self._profit_n_all_time = self._calculate_profit_n(datetime.min)
 
-        return self.profit_n_all_time_cache
+        return self._profit_n_all_time
+
+    @property
+    def total_instruments_cnt(self):
+        if self._total_instruments_cnt is not None:
+            return self._total_instruments_cnt
+
+        self._total_instruments_cnt = self.get_instruments_cnt_by_acc_id()
+
+        return self._total_instruments_cnt
+
+    @property
+    def active_instruments_cnt(self):
+        if self._active_instruments_cnt is not None:
+            return self._active_instruments_cnt
+
+        self._active_instruments_cnt = self.get_instruments_cnt_by_acc_id(True)
+
+        return self._active_instruments_cnt
+
+    def get_instruments_cnt_by_acc_id(self, only_active=False) -> int:
+        """
+        Возвращает все инструменты, у которых аккаунт активен (status=1).
+        """
+        from app.models import Instrument  # Импорт модели Account
+        return Instrument.get_instruments_cnt_by_acc_id(self.id, only_active)
