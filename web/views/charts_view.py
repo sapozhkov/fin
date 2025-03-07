@@ -1,8 +1,9 @@
 import os
+from datetime import datetime
 from pathlib import Path
 
 from flask_admin import expose, BaseView
-from flask import redirect, url_for, render_template, request, abort
+from flask import redirect, url_for, abort
 from sqlalchemy.orm import joinedload
 
 from app import AppConfig
@@ -72,13 +73,24 @@ class ChartsView(BaseView):
         config_dto = RunConfig.from_repr_string(run.config)
         instrument = run.get_instrument()
 
-        title = f"{run}"
-
         log_name = config_dto.name or config_dto.ticker
         if instrument:
             log_name = f"{instrument.account_rel.name}_{log_name}"
 
-        log_date = run.date.strftime('%Y.%m.%d')
+        return self.render_log(run.date, log_name, f"{run}")
+
+    # Страница для вывода логов
+    @expose('/acc_log/<int:acc_run_id>/')
+    def acc_log(self, acc_run_id):
+        acc_run = AccRun.query.get_or_404(acc_run_id)
+        acc = acc_run.account_rel
+
+        return self.render_log(acc_run.date, acc.name or acc.id, f"{acc_run}")
+
+    def render_log(self, date: datetime, log_name: str, title):
+
+        log_date = date.strftime('%Y.%m.%d')
+
         if AppConfig.DEBUG_MODE:
             log_root_dir = AppConfig.BASE_DIR
         else:
