@@ -21,8 +21,8 @@ class AbstractAccountingHelper(ABC):
     def register_order(self, order: Order):
         pass
 
-    def add_deal_by_order(self, order: PostOrderResponse | OrderState):
-        lots = OrderHelper.get_lots(order)
+    def add_deal_by_order(self, order: PostOrderResponse | OrderState, use_executed_lots=False):
+        lots = OrderHelper.get_lots(order, use_executed_lots)
         avg_price = self.client.round(OrderHelper.get_avg_price(order))
         commission = OrderHelper.get_commission(order)
 

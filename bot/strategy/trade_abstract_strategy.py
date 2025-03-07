@@ -165,7 +165,7 @@ class TradeAbstractStrategy(ABC):
                 else:
                     self.logger.error(f"!!!!!!!!!--------- сработала не полная продажа {order}, {order_state}")
                     # зарегистрировать частичное исполнение
-                    self.accounting.add_deal_by_order(order_state)
+                    self.accounting.add_deal_by_order(order_state, True)
                     # и откатить его
                     if order_state.direction == OrderDirection.ORDER_DIRECTION_BUY:
                         self.sell(lots_executed)

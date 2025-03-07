@@ -26,14 +26,17 @@ class OrderHelper:
         return q2f(order.initial_security_price)
 
     @staticmethod
-    def get_lots(order: PostOrderResponse | OrderState) -> int:
+    def get_lots(order: PostOrderResponse | OrderState, use_executed_lots=False) -> int:
         """
         Отдает количество лотов в заказе.
         Отдает округленное частное от общей суммы и цены за 1 -
         это для расчета реального количества с учетом лотностей инструмента и алгоритма
+        :param use_executed_lots: брать исполненное количество лотов, если есть возможность
         :param order:
         :return:
         """
+        if use_executed_lots and isinstance(order, OrderState):
+            return order.lots_executed
         price = OrderHelper.get_avg_price(order)
         if price == 0:
             # print(f"fail zero {order.initial_order_price} {price}")
