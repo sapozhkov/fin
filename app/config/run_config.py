@@ -181,8 +181,8 @@ class RunConfig:
         return self._get_mod_value()
 
     @modifier('B')
-    def mod_monthly_make_big_best_conf(self) -> bool:
-        """Отключает торговлю по выходным"""
+    def mod_disable_big_best_conf(self) -> bool:
+        """Отключает механику пересчета базового конфига. По умолчанию она работает для всех алгоритмов"""
         return self._get_mod_value()
 
     @modifier('P')

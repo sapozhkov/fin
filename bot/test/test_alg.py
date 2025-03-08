@@ -151,9 +151,7 @@ class TestAlgorithm:
         return today.day == 1
 
     def need_big_config_update(self, test_date: str) -> bool:
-        # todo revert ???
-        return True and TestAlgorithm.is_need_big_best_conf(test_date)
-        return (self.original_config.mod_monthly_make_big_best_conf
+        return (not self.original_config.mod_disable_big_best_conf
                 and TestAlgorithm.is_need_big_best_conf(test_date))
 
     def update_config(self, test_date, try_find_best_config):
@@ -169,14 +167,13 @@ class TestAlgorithm:
 
         if try_find_best_config and self.config is not None:
             if self.need_big_config_update(test_date):
-                for _ in range(2):
-                    self.upd_base_config, self.base_expected_profit = self.make_best_config_with_profit(
-                        test_date=test_date,
-                        prev_days=self.original_config.pretest_period,
-                        original_config=self.upd_base_config,
-                        last_config=self.config,
-                        use_big_make_alg=True
-                    )
+                self.upd_base_config, self.base_expected_profit = self.make_best_config_with_profit(
+                    test_date=test_date,
+                    prev_days=self.original_config.pretest_period,
+                    original_config=self.upd_base_config,
+                    last_config=self.config,
+                    use_big_make_alg=True
+                )
 
             self.config, self.expected_profit = self.make_best_config_with_profit(
                 test_date=test_date,
