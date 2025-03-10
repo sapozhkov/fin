@@ -62,8 +62,10 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
                 is_executed, order_state = self.client.order_is_executed(order)
                 if is_executed and order_state:
                     self.apply_order_execution(order_state)
-                    self.bought_price = self.get_order_avg_price(order_state)
-                    # обнуляем только в случае противоположного события
+                    self.bought_price = min(
+                        self.get_order_avg_price(order_state),
+                        self.bought_price if self.bought_price else float("inf")
+                    )
                     self.sold_price = 0
                 self.remove_order_from_active_list(order)
 
@@ -73,7 +75,10 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
                 is_executed, order_state = self.client.order_is_executed(order)
                 if is_executed and order_state:
                     self.apply_order_execution(order_state)
-                    self.sold_price = self.get_order_avg_price(order_state)
+                    self.sold_price = max(
+                        self.get_order_avg_price(order_state),
+                        self.sold_price
+                    )
                     self.bought_price = 0
                 self.remove_order_from_active_list(order)
 
