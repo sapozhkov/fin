@@ -163,7 +163,8 @@ class TradeAbstractStrategy(ABC):
                     self.apply_order_execution(order_state)
                     self.remove_order_from_active_list(order)
                 else:
-                    self.logger.error(f"!!!!!!!!!--------- сработала не полная продажа {order}, {order_state}")
+                    self.log(f"Сработало частичное исполнение лимитной заявки {order_state.lots_executed} / "
+                             f"{order_state.lots_requested}")
                     # зарегистрировать частичное исполнение
                     self.accounting.add_deal_by_order(order_state, True)
                     # и откатить его
