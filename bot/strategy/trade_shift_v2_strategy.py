@@ -15,7 +15,7 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
         if not super().on_day_start():
             return False
 
-        start_price = self.cached_current_price
+        start_price = self.round(self.cached_current_price)
         step_size = self.config.step_size
         step_size_shift = self.config.step_size_shift
         step_max_cnt = self.config.step_max_cnt
