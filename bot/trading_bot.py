@@ -40,7 +40,7 @@ class TradingBot(AbstractBot):
             # if self.config.mod_make_experiment:
             #     self.trade_strategy = TradeShiftStrategy(self)
         else:
-            self.trade_strategy = TradeNormalStrategy(self)
+            self.trade_strategy = TradeNormalStrategy(self)  # type: TradeAbstractStrategy
 
         if not self.is_trading_day():
             self.log("Не торговый день. Завершаем работу.")
