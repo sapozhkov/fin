@@ -12,6 +12,7 @@ class HistoryOrderType:
     SELL_BESTPRICE = 10
     ORDER_FAIL = 11
     MARK = 12
+    MARK_STAR = 13
 
     EXECUTED_TYPES = {
         BUY_MARKET,
@@ -36,6 +37,7 @@ class HistoryOrderType:
         EXECUTED_SELL_LIMIT: ('Limit sell', 'orange', 'v'),
         ORDER_FAIL: ('Order set Fail', 'red', '*'),
         MARK: ('Mark', 'gray', 'o'),
+        MARK_STAR: ('Mark Star', 'red', '*'),
     }
 
     @classmethod

@@ -75,6 +75,14 @@ class AbstractAccountingHelper(ABC):
             count=0
         ))
 
+    def register_order_mark_star(self, avg_price: float):
+        """
+        Добавление яркой метки на график
+        :param avg_price:
+        :return:
+        """
+        self.register_order_mark(avg_price, HistoryOrderType.MARK_STAR)
+
     def add_order(self, order: PostOrderResponse):
         lots = OrderHelper.get_lots(order)
         avg_price = self.client.round(OrderHelper.get_avg_price(order))
