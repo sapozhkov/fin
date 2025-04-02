@@ -96,10 +96,6 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
         existing_order_prices = self.get_existing_buy_order_prices()
 
         def is_active_order(o_price) -> bool:
-            # todo del 3 rows #323
-            if o_price == self.cached_current_price and o_price in existing_order_prices:
-                self.log(f'!!!!! is_active_order buy {o_price}')
-                self.accounting.register_order_mark_star(o_price)
             return o_price == self.cached_current_price and o_price in existing_order_prices
 
         levels_to_buy = [price for price in self.order_map if price < max_price or is_active_order(price)]
@@ -119,10 +115,6 @@ class TradeShiftV2Strategy(TradeAbstractStrategy):
         existing_order_prices = self.get_existing_sell_order_prices()
 
         def is_active_order(o_price) -> bool:
-            # todo del 3 rows #323
-            if o_price == self.cached_current_price and o_price in existing_order_prices:
-                self.log(f'!!!!! is_active_order sell {o_price}')
-                self.accounting.register_order_mark_star(o_price)
             return o_price == self.cached_current_price and o_price in existing_order_prices
 
         levels_to_sell = [price for price in self.order_map if price > min_price or is_active_order(price)]
