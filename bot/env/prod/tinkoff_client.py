@@ -20,10 +20,18 @@ class TinkoffProxyClient(AbstractProxyClient):
         Получает текущую цену инструмента
         :return: Текущая цена инструмента или None, если цена не может быть получена.
         """
-        price = TinkoffApi.get_last_price(self.get_figi())
-        if price is None:
+        # первично - пытаемся достать из свечей
+        price_candle = TinkoffApi.get_current_price_from_last_candle(self.get_figi())
+        if price_candle is not None:
+            return price_candle
+
+        # вторично - напрямую из специального метода
+        price_api = TinkoffApi.get_last_price(self.get_figi())
+
+        if price_api is None:
             self.logger.error(f"Ошибка при запросе текущей цены для FIGI {self.get_figi()}")
-        return price
+
+        return price_api
 
     def _get_trade_status(self) -> GetTradingStatusResponse | None:
         try:

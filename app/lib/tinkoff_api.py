@@ -1,7 +1,8 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import List
 
-from tinkoff.invest import Client, InvestError, InstrumentIdType, OrderType, OrderDirection
+import pytz
+from tinkoff.invest import Client, InvestError, InstrumentIdType, OrderType, OrderDirection, CandleInterval
 
 from app.dto import BoughtInstrumentDto
 from app.helper import q2f
@@ -30,6 +31,38 @@ class TinkoffApi:
                 return out
 
     @staticmethod
+    def get_current_price_from_last_candle(figi: str) -> float | None:
+        """
+        Получает текущую цену для заданного FIGI, используя данные последней свечи с интервалом 1 минута.
+
+        :param figi: Идентификатор инструмента (FIGI).
+        :return: Текущая цена (float) на основе цены закрытия последней свечи.
+        """
+        # Используем pytz для работы с часовыми поясами, например UTC
+        now = datetime.now(pytz.UTC)
+        # Запрашиваем свечи за последние 5 минут, чтобы гарантировать наличие свежих данных
+        start_time = now - timedelta(minutes=5)
+
+        with Client(AppConfig.TOKEN) as client:
+            try:
+                candles_response = client.market_data.get_candles(
+                    figi=figi,
+                    from_=start_time,
+                    to=now,
+                    interval=CandleInterval.CANDLE_INTERVAL_1_MIN
+                )
+            except InvestError as e:
+                print(f"Ошибка при получении последних свечей: {e}")
+                return None
+
+            # Проверяем, что свечи получены
+            if candles_response.candles:
+                last_candle = candles_response.candles[-1]
+                return q2f(last_candle.close)
+            else:
+                return None
+
+    @staticmethod
     def get_last_price(figi: str) -> float | None:
         """
         Отдает последнюю цену для указанного инструмента (по figi)
@@ -39,20 +72,20 @@ class TinkoffApi:
         prices = TinkoffApi.get_last_prices([figi])
         return prices.get(figi, None)
 
-    @staticmethod
-    def get_first_account_id() -> str:
-        """
-        Получает идентификатор первого аккаунта пользователя
-        :return: идентификатор первого аккаунта
-        """
-        with Client(AppConfig.TOKEN) as client:
-            accounts = client.users.get_accounts().accounts
-            if accounts:
-                first_account_id = accounts[0].id
-                return first_account_id
-            else:
-                raise Exception("No accounts found")
-
+    # @staticmethod
+    # def get_first_account_id() -> str:
+    #     """
+    #     Получает идентификатор первого аккаунта пользователя
+    #     :return: идентификатор первого аккаунта
+    #     """
+    #     with Client(AppConfig.TOKEN) as client:
+    #         accounts = client.users.get_accounts().accounts
+    #         if accounts:
+    #             first_account_id = accounts[0].id
+    #             return first_account_id
+    #         else:
+    #             raise Exception("No accounts found")
+    #
     # @staticmethod
     # def get_account_balance() -> dict[dict] | None:
     #     """
