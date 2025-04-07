@@ -7,3 +7,4 @@ db/
 log/
 archive/
 daily_run/
+__pycache__/
