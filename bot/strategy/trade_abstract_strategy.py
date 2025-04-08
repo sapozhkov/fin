@@ -75,6 +75,10 @@ class TradeAbstractStrategy(ABC):
 
         if order_type == OrderType.ORDER_TYPE_MARKET:
             self.accounting.add_deal_by_order(order)
+
+            # todo del #332
+            self.log(f"!!! ORDER_TYPE_MARKET operation {order}")
+
             if direction == OrderDirection.ORDER_DIRECTION_BUY:
                 prefix = "BUY MARKET executed"
                 avg_price = -avg_price
@@ -82,6 +86,10 @@ class TradeAbstractStrategy(ABC):
                 prefix = "SELL MARKET executed"
 
         elif order_type == OrderType.ORDER_TYPE_BESTPRICE:
+
+            # todo del #332
+            self.log(f"!!! ORDER_TYPE_MARKET operation {order}")
+
             self.accounting.add_deal_by_order(order)
             if direction == OrderDirection.ORDER_DIRECTION_BUY:
                 prefix = "BUY BESTPRICE executed"
