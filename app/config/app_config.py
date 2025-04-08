@@ -24,6 +24,9 @@ class AppConfig:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'you-will-never-guess'
     """ключ для генерации cookies админки """
 
+    SESSION_TYPE = 'filesystem'
+    """это для того, чтобы авторизация на мобилке не отваливалась"""
+
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(basedir, 'db', 'db.sqlite'))
     """реквизиты доступа к базе данных"""
 
