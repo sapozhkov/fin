@@ -8,3 +8,5 @@ log/
 archive/
 daily_run/
 __pycache__/
+.DS_Store
+web/.DS_Store
