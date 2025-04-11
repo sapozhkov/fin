@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import io
-from flask import Response
+from flask import Response, request
 from matplotlib.ticker import MaxNLocator
 import matplotlib.dates as mdates
 from app import AppConfig
@@ -11,7 +11,13 @@ from datetime import timedelta, datetime
 
 class PlotBalance:
     @staticmethod
-    def _get_plot(acc_run_id: int) -> plt:
+    def _get_plot(acc_run_id: int, theme: str = 'light') -> plt:
+        # Устанавливаем темную тему, если запрошено
+        if theme == 'dark':
+            plt.style.use('dark_background')
+        else:
+            plt.style.use('default')
+        
         # Получаем данные для указанного acc_run
         balances = AccRunBalance.query.filter_by(acc_run=acc_run_id).order_by(AccRunBalance.datetime).all()
 
@@ -79,7 +85,10 @@ class PlotBalance:
 
     @classmethod
     def draw_web(cls, acc_run_id: int):
-        plot = cls._get_plot(acc_run_id)
+        # Определяем тему из cookie
+        user_theme = request.cookies.get('user_theme', 'light') # По умолчанию светлая
+
+        plot = cls._get_plot(acc_run_id, theme=user_theme)
 
         # Сохранение в буфер как PNG
         buf = io.BytesIO()

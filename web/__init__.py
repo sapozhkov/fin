@@ -1,6 +1,6 @@
 import os
 
-from flask import redirect, url_for, request
+from flask import redirect, url_for, request, session
 from flask_admin import Admin
 from flask_admin.menu import MenuLink
 # from flask_admin.contrib.sqla import ModelView
@@ -24,17 +24,34 @@ def load_user(user_id):
 
 def create_web(app):
     with app.app_context():
+        # --- Установка темы по умолчанию (как было до cookie) ---
         app.config['FLASK_ADMIN_SWATCH'] = 'cosmo' if app.config['DEBUG_MODE'] else 'cerulean'
+        # --- Конец установки темы по умолчанию ---
+
         app.template_folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'templates')
         app.static_folder = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'static')
+        app.static_url_path = '/static'
 
         login.init_app(app)
+
+        # Обработчик для установки темы перед каждым запросом
+        @app.before_request
+        def set_theme_from_cookie():
+            user_theme_cookie = request.cookies.get('user_theme')
+            if user_theme_cookie == 'dark':
+                app.config['FLASK_ADMIN_SWATCH'] = 'slate' if app.config['DEBUG_MODE'] else 'darkly'
+            elif user_theme_cookie == 'light':
+                # Если выбрана светлая, используем стандартные светлые
+                app.config['FLASK_ADMIN_SWATCH'] = 'cosmo' if app.config['DEBUG_MODE'] else 'cerulean'
+            # Если cookie нет или значение некорректно, используется тема по умолчанию,
+            # установленная при инициализации приложения.
 
         # Проверка авторизации перед каждым запросом,
         # а определение @login.user_loader лежит в моделях
         @app.before_request
         def require_login():
-            if not current_user.is_authenticated and request.endpoint not in ['common.login']:
+            if (not current_user.is_authenticated and request.endpoint
+                    not in ['common.login', 'static', 'common.set_theme']):
                 return redirect(url_for('common.login'))
 
         @app.context_processor

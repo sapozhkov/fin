@@ -3,7 +3,7 @@ from datetime import timedelta, datetime
 from collections import defaultdict
 from typing import List, Tuple
 
-from flask import Response, abort
+from flask import Response, abort, current_app, request
 from matplotlib import pyplot as plt, dates as mdates
 
 from app import AppConfig
@@ -64,10 +64,18 @@ class PlotRun:
         return result
 
     @staticmethod
-    def _get_plot(ticker: str, date: str, orders: list[Order] = list, title=None) -> plt:
+    def _get_plot(ticker: str, date: str, orders: list[Order] = list, title=None, theme: str = 'light') -> plt:
         """
         Приватный метод формирует само изображение, проброс его на соответствующий выход идет в других методах
         """
+        # Устанавливаем темную тему, если запрошено
+        if theme == 'dark':
+            plt.style.use('dark_background')
+        else:
+            # Сбрасываем стиль к дефолтному matplotlib, если не темная тема
+            # (на случай, если стиль был изменен где-то еще)
+            plt.style.use('default')
+
         ticker_cache = TickerCache(ticker)
         candles = ticker_cache.get_candles(date)
 
@@ -151,7 +159,10 @@ class PlotRun:
 
         config = RunConfig.from_repr_string(run.config)
 
-        plot = cls._get_plot(config.ticker, f"{run.date}", orders)
+        # Определяем тему из cookie
+        user_theme = request.cookies.get('user_theme', 'light')  # По умолчанию светлая
+
+        plot = cls._get_plot(config.ticker, f"{run.date}", orders, theme=user_theme)
 
         # Сохранение в буфер как PNG
         buf = io.BytesIO()
