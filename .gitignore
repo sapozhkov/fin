@@ -7,6 +7,7 @@ db/
 log/
 archive/
 daily_run/
+flask_session
 __pycache__/
 .DS_Store
 web/.DS_Store
