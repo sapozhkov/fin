@@ -275,7 +275,7 @@ class TestAlgorithm:
                 results.append(res)
 
         # сортировка результатов
-        sorted_results = sorted(results, key=lambda x: float(x['profit_p']), reverse=True)
+        sorted_results = sorted(results, key=lambda x: (-float(x['profit_p']), str(x['config'])))
 
         # дальше берем лучший и возвращаем его
         best_res = sorted_results[0] if len(sorted_results) > 0 else None
