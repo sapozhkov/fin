@@ -75,6 +75,8 @@ python -m pip install --upgrade setuptools
 pip install --upgrade setuptools
 ```
 
+[Инструкция для устновки в прод](readme_prod.md) 
+
 ---
 
 ```
